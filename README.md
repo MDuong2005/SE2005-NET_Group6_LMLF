@@ -35,7 +35,7 @@ Hệ thống đóng vai trò là **"Nguồn sự thật duy nhất" (Single Sour
 ## 💻 Công Nghệ Sử Dụng & Kiến Trúc
 
 * **Backend:** Java (Servlet, JSP, JSTL)
-* **Frontend:** HTML, CSS, Tailwind CSS, JavaScript
+* **Frontend:** HTML, CSS, JavaScript
 * **Database:** SQL Server (Quản lý ma trận môn học, tài khoản, log hệ thống và đường dẫn file)
 * **Kiến trúc:** Mô hình MVC (Model-View-Controller) phân rã rạch ròi giữa phân hệ xử lý dữ liệu động (Luồng phê duyệt) và phân hệ khai thác dữ liệu tĩnh (Cổng phân phối cho sinh viên/giảng viên).
 
