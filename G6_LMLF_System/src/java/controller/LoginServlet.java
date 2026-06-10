@@ -5,49 +5,26 @@
 package controller;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.Cookie;
+import dao.UserDAO;
+import model.User;
 
 /**
- *
+ * Servlet for handling user login
  * @author maid8
  */
 @WebServlet(name = "LoginServlet", urlPatterns = {"/login"})
 public class LoginServlet extends HttpServlet {
 
     /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet LoginServlet</title>");            
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet LoginServlet at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
-        }
-    }
-
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
      * Handles the HTTP <code>GET</code> method.
+     * Displays the login page.
      *
      * @param request servlet request
      * @param response servlet response
@@ -57,11 +34,13 @@ public class LoginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        // Forward to the login page UI
+        request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
     }
 
     /**
      * Handles the HTTP <code>POST</code> method.
+     * Processes login form submission.
      *
      * @param request servlet request
      * @param response servlet response
@@ -71,7 +50,65 @@ public class LoginServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        
+        // Retrieve form parameters
+        String email = request.getParameter("username");
+        String password = request.getParameter("password");
+        String rememberMe = request.getParameter("rememberMe");
+        
+        UserDAO userDAO = new UserDAO();
+        User user = userDAO.getUserByEmail(email);
+        
+        if (user != null) {
+            // Check status
+            if ("INACTIVE".equals(user.getStatus())) {
+                request.setAttribute("errorMessage", "Your account is currently INACTIVE. Please contact support.");
+                request.setAttribute("username", email);
+                request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
+                return;
+            }
+            if ("BANNED".equals(user.getStatus())) {
+                request.setAttribute("errorMessage", "Your account has been BANNED.");
+                request.setAttribute("username", email);
+                request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
+                return;
+            }
+            
+            // Check password (Assuming plain text for now. Use hash comparison in real system)
+            if (password != null && password.equals(user.getPasswordHash())) {
+                // Login successful
+                HttpSession session = request.getSession();
+                session.setAttribute("user", user); // Store entire user object in session
+                
+                // Update last login
+                userDAO.updateLastLogin(user.getUserId());
+                
+                // Handle remember me
+                if ("true".equals(rememberMe)) {
+                    Cookie cEmail = new Cookie("userEmail", email);
+                    cEmail.setMaxAge(30 * 24 * 60 * 60); // 30 days
+                    response.addCookie(cEmail);
+                } else {
+                    // Clear cookie if user unchecks it
+                    Cookie cEmail = new Cookie("userEmail", "");
+                    cEmail.setMaxAge(0);
+                    response.addCookie(cEmail);
+                }
+                
+                // Redirect to the dashboard
+                response.sendRedirect(request.getContextPath() + "/dashboard");
+            } else {
+                // Wrong password
+                request.setAttribute("errorMessage", "Invalid email or password. Please try again.");
+                request.setAttribute("username", email);
+                request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
+            }
+        } else {
+            // User not found
+            request.setAttribute("errorMessage", "Invalid email or password. Please try again.");
+            request.setAttribute("username", email);
+            request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
+        }
     }
 
     /**
@@ -81,7 +118,7 @@ public class LoginServlet extends HttpServlet {
      */
     @Override
     public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
+        return "Handles User Authentication";
+    }
 
 }
