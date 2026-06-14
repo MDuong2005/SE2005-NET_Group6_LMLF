@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package dao;
 
 import context.DBContext;
@@ -9,6 +5,8 @@ import model.User;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * User DAO
@@ -22,8 +20,6 @@ public class UserDAO extends DBContext {
      * @return User object or null if not found
      */
     public User getUserByEmail(String email) {
-        // Dummy implementation to make the test compile and run.
-        // Replace with actual SQL query later depending on the schema.
         String sql = "SELECT * FROM users WHERE email = ?";
         try {
             if (connection != null) {
@@ -77,5 +73,35 @@ public class UserDAO extends DBContext {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Get all active users
+     * @return List of active users
+     */
+    public List<User> getAllActiveUsers() {
+        List<User> list = new ArrayList<>();
+        String sql = "SELECT * FROM users WHERE status = 'ACTIVE' ORDER BY first_name, last_name";
+        try {
+            if (connection != null) {
+                PreparedStatement ps = connection.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery();
+                while (rs.next()) {
+                    User user = new User();
+                    user.setUserId(rs.getLong("user_id"));
+                    user.setFirstName(rs.getString("first_name"));
+                    user.setLastName(rs.getString("last_name"));
+                    user.setEmail(rs.getString("email"));
+                    user.setPasswordHash(rs.getString("password_hash"));
+                    user.setStatus(rs.getString("status"));
+                    user.setRegisteredAt(rs.getTimestamp("registered_at"));
+                    user.setLastLogin(rs.getTimestamp("last_login"));
+                    list.add(user);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 }
