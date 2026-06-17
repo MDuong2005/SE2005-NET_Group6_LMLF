@@ -9,5 +9,8 @@ package model;
  * @author maid8
  */
 public class Course {
-    
+    private long courseId;
+    private String code;
+    private String name;
+    private int credits;
 }

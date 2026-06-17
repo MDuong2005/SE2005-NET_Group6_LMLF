@@ -1,29 +1,28 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
-/**
- *
- * @author maid8
- */
+import java.sql.Timestamp;
+
 public class Major {
+
     private long majorId;
     private String code;
     private String name;
     private String description;
     private Long createdBy;
+    private Timestamp createdAt;
 
     public Major() {
     }
 
-    public Major(long majorId, String code, String name, String description, Long createdBy) {
+    public Major(long majorId, String code, String name,
+            String description, Long createdBy,
+            Timestamp createdAt) {
         this.majorId = majorId;
         this.code = code;
         this.name = name;
         this.description = description;
         this.createdBy = createdBy;
+        this.createdAt = createdAt;
     }
 
     public long getMajorId() {
@@ -64,5 +63,13 @@ public class Major {
 
     public void setCreatedBy(Long createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public Timestamp getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Timestamp createdAt) {
+        this.createdAt = createdAt;
     }
 }
