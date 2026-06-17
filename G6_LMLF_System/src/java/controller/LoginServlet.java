@@ -60,22 +60,43 @@ public class LoginServlet extends HttpServlet {
         User user = userDAO.getUserByEmail(email);
         
         if (user != null) {
-            // Check status
-            if ("INACTIVE".equals(user.getStatus())) {
+            // 1. Check auth_provider
+            if ("GOOGLE".equalsIgnoreCase(user.getAuthProvider())) {
+                request.setAttribute("errorMessage", "This account is registered with Google. Please sign in with Google.");
+                request.setAttribute("username", email);
+                request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
+                return;
+            }
+
+            // 2. Check status
+            if ("INACTIVE".equalsIgnoreCase(user.getStatus())) {
                 request.setAttribute("errorMessage", "Your account is currently INACTIVE. Please contact support.");
                 request.setAttribute("username", email);
                 request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
                 return;
             }
-            if ("BANNED".equals(user.getStatus())) {
+            if ("BANNED".equalsIgnoreCase(user.getStatus())) {
                 request.setAttribute("errorMessage", "Your account has been BANNED.");
                 request.setAttribute("username", email);
                 request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
                 return;
             }
             
-            // Check password (Assuming plain text for now. Use hash comparison in real system)
-            if (password != null && password.equals(user.getPasswordHash())) {
+            // 3. Check password with BCrypt
+            if (utils.PasswordUtil.checkPassword(password, user.getPasswordHash())) {
+                
+                // 4. Load Roles
+                dao.RoleDAO roleDAO = new dao.RoleDAO();
+                user.setRoles(roleDAO.getRolesByUserId(user.getUserId()));
+                
+                // 5. Check if roles are empty
+                if (user.getRoles() == null || user.getRoles().isEmpty()) {
+                    request.setAttribute("errorMessage", "Access Denied. You don't have any roles assigned. Please contact Academic Office.");
+                    request.setAttribute("username", email);
+                    request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
+                    return;
+                }
+
                 // Login successful
                 HttpSession session = request.getSession();
                 session.setAttribute("user", user); // Store entire user object in session

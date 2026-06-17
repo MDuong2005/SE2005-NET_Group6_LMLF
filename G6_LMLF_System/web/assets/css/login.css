@@ -38,16 +38,7 @@ header {
     color: #E25B1E;
     text-decoration: none;
 }
-.header-link {
-    font-size: 14px;
-    font-weight: 600;
-    color: #B14E1B;
-    text-decoration: none;
-    transition: color 0.15s ease;
-}
-.header-link:hover {
-    color: #E25B1E;
-}
+
 
 /* CONTENT */
 main {
@@ -273,6 +264,49 @@ main {
 }
 .btn-google:hover {
     background-color: #FAF8F5;
+}
+
+/* SSO Google button */
+.btn-sso-google {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border: 1px solid #1A73E8;
+    background-color: #ffffff;
+    border-radius: 4px;
+    color: #1A73E8;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+.btn-sso-google:hover {
+    background-color: #F8FBFF;
+}
+
+/* Alumni button */
+.btn-alumni {
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px;
+    border: 1px solid #FBE3D6;
+    background-color: #ffffff;
+    border-radius: 8px;
+    color: #D05A20;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.btn-alumni:hover {
+    background-color: #FCF0EA;
+    border-color: #D05A20;
 }
 
 /* Request access */

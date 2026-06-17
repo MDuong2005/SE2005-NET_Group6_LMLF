@@ -1,98 +1,148 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-package model;
+    package model;
 
-/**
- * User Model
- * @author maid8
- */
-public class User {
-    private long userId;
-    private String firstName;
-    private String lastName;
-    private String email;
-    private String passwordHash;
-    private String status;
-    private java.sql.Timestamp registeredAt;
-    private java.sql.Timestamp lastLogin;
-    
-    public User() {
-    }
+    import java.sql.Timestamp;
+    import java.util.ArrayList;
+    import java.util.List;
 
-    public User(long userId, String firstName, String lastName, String email, String passwordHash, String status, java.sql.Timestamp registeredAt, java.sql.Timestamp lastLogin) {
-        this.userId = userId;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.passwordHash = passwordHash;
-        this.status = status;
-        this.registeredAt = registeredAt;
-        this.lastLogin = lastLogin;
-    }
+    /**
+     * User Model
+     *
+     * @author maid8
+     */
+    public class User {
 
-    public long getUserId() {
-        return userId;
-    }
+        private long userId;
+        private String username;
+        private String firstName;
+        private String lastName;
+        private String email;
+        private String passwordHash;
+        private String authProvider;
+        private boolean external;
+        private boolean mustChangePassword;
+        private String status;
+        private Timestamp registeredAt;
+        private Timestamp lastLogin;
+        private Timestamp deletedAt;
 
-    public void setUserId(long userId) {
-        this.userId = userId;
-    }
+        private List<Role> roles = new ArrayList<>();
 
-    public String getFirstName() {
-        return firstName;
-    }
+        public User() {
+        }
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
+        public long getUserId() {
+            return userId;
+        }
 
-    public String getLastName() {
-        return lastName;
-    }
+        public void setUserId(long userId) {
+            this.userId = userId;
+        }
 
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
+        public String getUsername() {
+            return username;
+        }
 
-    public String getEmail() {
-        return email;
-    }
+        public void setUsername(String username) {
+            this.username = username;
+        }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+        public String getFirstName() {
+            return firstName;
+        }
 
-    public String getPasswordHash() {
-        return passwordHash;
-    }
+        public void setFirstName(String firstName) {
+            this.firstName = firstName;
+        }
 
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
-    }
+        public String getLastName() {
+            return lastName;
+        }
 
-    public String getStatus() {
-        return status;
-    }
+        public void setLastName(String lastName) {
+            this.lastName = lastName;
+        }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
+        public String getEmail() {
+            return email;
+        }
 
-    public java.sql.Timestamp getRegisteredAt() {
-        return registeredAt;
-    }
+        public void setEmail(String email) {
+            this.email = email;
+        }
 
-    public void setRegisteredAt(java.sql.Timestamp registeredAt) {
-        this.registeredAt = registeredAt;
-    }
+        public String getPasswordHash() {
+            return passwordHash;
+        }
 
-    public java.sql.Timestamp getLastLogin() {
-        return lastLogin;
-    }
+        public void setPasswordHash(String passwordHash) {
+            this.passwordHash = passwordHash;
+        }
 
-    public void setLastLogin(java.sql.Timestamp lastLogin) {
-        this.lastLogin = lastLogin;
+        public String getAuthProvider() {
+            return authProvider;
+        }
+
+        public void setAuthProvider(String authProvider) {
+            this.authProvider = authProvider;
+        }
+
+        public boolean isExternal() { return external; }
+        public void setExternal(boolean external) { this.external = external; }
+
+        public boolean isMustChangePassword() { return mustChangePassword; }
+        public boolean getMustChangePassword() { return mustChangePassword; }
+        public void setMustChangePassword(boolean mustChangePassword) { this.mustChangePassword = mustChangePassword; }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
+
+        public Timestamp getRegisteredAt() {
+            return registeredAt;
+        }
+
+        public void setRegisteredAt(Timestamp registeredAt) {
+            this.registeredAt = registeredAt;
+        }
+
+        public Timestamp getLastLogin() {
+            return lastLogin;
+        }
+
+        public void setLastLogin(Timestamp lastLogin) {
+            this.lastLogin = lastLogin;
+        }
+
+        public Timestamp getDeletedAt() {
+            return deletedAt;
+        }
+
+        public void setDeletedAt(Timestamp deletedAt) {
+            this.deletedAt = deletedAt;
+        }
+
+        public List<Role> getRoles() {
+            return roles;
+        }
+
+        public void setRoles(List<Role> roles) {
+            this.roles = roles;
+        }
+
+        public boolean hasRole(String roleName) {
+            if (roleName == null || this.roles == null) {
+                return false;
+            }
+            for (Role role : this.roles) {
+                if (role != null && role.getRoleName() != null 
+                        && role.getRoleName().equalsIgnoreCase(roleName)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
-}

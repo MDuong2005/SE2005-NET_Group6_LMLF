@@ -25,3 +25,6 @@ replay_pid*
 /G6_LMLF_System/nbproject/private/
 /G6_LMLF_System/build/
 /G6_LMLF_System/dist/
+
+# Config Files containing secrets
+config.properties
