@@ -28,7 +28,7 @@ public class AuthorizationFilter implements Filter {
     private static final String[] WHITELIST_PREFIXES = {
         "/css/", "/js/", "/images/", "/assets/", "/views/auth/"
     };
-    
+
     private static final String[] WHITELIST_EXACT = {
         "/", "/login", "/Logingoogle", "/logout"
     };
@@ -41,12 +41,12 @@ public class AuthorizationFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-        
+
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
-        
+
         String path = httpRequest.getServletPath();
-        
+
         // 1. Check Whitelist
         if (isWhitelisted(path)) {
             chain.doFilter(request, response);
@@ -61,24 +61,16 @@ public class AuthorizationFilter implements Filter {
         }
 
         User user = SessionUtil.getCurrentUser(httpRequest);
+        // System Admin: system logs
+        if (path.equals("/auditlog")
+                && !hasAnyRole(user, RoleConstants.ADMIN)) {
+            sendAccessDenied(httpRequest, httpResponse);
+            return;
+        }
 
-        // 3. Check Role-Based Access Control (RBAC)
-        if (path.startsWith("/admin") && !user.hasRole(RoleConstants.ADMIN)) {
-            sendAccessDenied(httpRequest, httpResponse);
-            return;
-        }
-        
-        if (path.startsWith("/academic") && !user.hasRole(RoleConstants.ACADEMIC_OFFICE)) {
-            sendAccessDenied(httpRequest, httpResponse);
-            return;
-        }
-        
-        if (path.startsWith("/designer") && !user.hasRole(RoleConstants.DESIGNER)) {
-            sendAccessDenied(httpRequest, httpResponse);
-            return;
-        }
-        
-        if (path.startsWith("/reviewer") && !user.hasRole(RoleConstants.REVIEWER)) {
+// System Admin: user management
+        if (path.startsWith("/admin/users")
+                && !hasAnyRole(user, RoleConstants.ADMIN)) {
             sendAccessDenied(httpRequest, httpResponse);
             return;
         }
@@ -100,8 +92,8 @@ public class AuthorizationFilter implements Filter {
         }
         return false;
     }
-    
-    private void sendAccessDenied(HttpServletRequest request, HttpServletResponse response) 
+
+    private void sendAccessDenied(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType("text/html;charset=UTF-8");
@@ -113,5 +105,19 @@ public class AuthorizationFilter implements Filter {
     @Override
     public void destroy() {
         // Cleanup code if needed
+    }
+
+    private boolean hasAnyRole(User user, String... roleNames) {
+        if (user == null || roleNames == null) {
+            return false;
+        }
+
+        for (String roleName : roleNames) {
+            if (user.hasRole(roleName)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

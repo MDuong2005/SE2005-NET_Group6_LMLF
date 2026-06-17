@@ -58,7 +58,7 @@ public class LoginServlet extends HttpServlet {
         
         UserDAO userDAO = new UserDAO();
         User user = userDAO.getUserByEmail(email);
-        
+            
         if (user != null) {
             // 1. Check auth_provider
             if ("GOOGLE".equalsIgnoreCase(user.getAuthProvider())) {
