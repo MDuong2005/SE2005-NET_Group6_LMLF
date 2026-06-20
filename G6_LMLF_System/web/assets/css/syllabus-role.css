@@ -145,44 +145,59 @@ nav a.active::after {
 }
 
 /* Page Layout */
-.container {
-    max-width: 1300px;
-    margin: 40px auto;
-    padding: 0 24px;
-    display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: 40px;
+.app-layout {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--bg-primary);
 }
 
 /* Sidebar Column */
 .sidebar {
+    width: 260px;
+    background-color: #FAF5EE; /* Soft warm off-white background matching the image sidebar */
+    border-right: 1px solid #E6D8CE; /* Muted warm border */
+    padding: 48px 16px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    justify-content: space-between;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    flex-shrink: 0;
+    box-sizing: border-box;
 }
 
-.menu-card {
-    background-color: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+.sidebar-top {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
 }
 
-.menu-title {
-    color: #C2410C;
+.sidebar-header {
+    padding: 0;
+}
+
+.sidebar-logo {
+    color: #E25822; /* Warm orange matching "Academic Office" */
+    font-size: 23px;
+    font-weight: 800;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+}
+
+.sidebar-subtitle {
+    color: #718096; /* Muted grey */
     font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 16px;
+    font-weight: 500;
 }
 
 .menu-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
     list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
 .menu-item a {
@@ -190,7 +205,7 @@ nav a.active::after {
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    color: var(--text-secondary);
+    color: #7A6B62; /* Muted brown-grey */
     text-decoration: none;
     font-weight: 500;
     font-size: 14px;
@@ -199,49 +214,38 @@ nav a.active::after {
 }
 
 .menu-item a:hover {
-    background-color: var(--bg-primary);
+    background-color: #F1ECE6;
     color: var(--text-primary);
 }
 
 .menu-item.active a {
-    background-color: var(--sidebar-active-bg);
-    color: white;
+    background-color: #EFE6DD; /* Soft beige background for active selection */
+    color: #9C4216; /* Warm dark brown-orange text for active selection */
     font-weight: 600;
 }
 
-.workspace-card {
-    border-radius: 16px;
-    height: 180px;
-    background-size: cover;
-    background-position: center;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+.sidebar-divider {
+    height: 1px;
+    background-color: #E6D8CE;
+    margin: 20px 0;
 }
 
-.workspace-card::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.85) 100%);
+.sidebar-bottom {
+    display: flex;
+    flex-direction: column;
 }
 
-.workspace-text {
-    position: absolute;
-    bottom: 16px;
-    left: 16px;
-    z-index: 2;
-    color: white;
-    font-size: 13px;
-    font-weight: 500;
+.main-wrapper {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
 }
 
-.workspace-version {
-    font-size: 11px;
-    opacity: 0.8;
+.content-container {
+    padding: 40px;
+    flex-grow: 1;
+    box-sizing: border-box;
 }
 
 /* Main Content Column */
@@ -592,10 +596,49 @@ nav a.active::after {
 .toast-success .toast-icon { color: #48BB78; }
 .toast-error .toast-icon { color: #F56565; }
 
+.page-footer {
+    border-top: 1px solid #E6D8CE;
+    padding: 20px 40px;
+    text-align: center;
+    background-color: var(--card-bg);
+    color: #8C7A6B;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: auto;
+}
+
+.floating-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: #E25822;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(226, 88, 34, 0.3);
+    cursor: pointer;
+    z-index: 999;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.floating-btn:hover {
+    background-color: #C05621;
+    transform: scale(1.05);
+}
+
+.floating-btn svg {
+    width: 22px;
+    height: 22px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 992px) {
-    .container {
-        grid-template-columns: 1fr;
+    .app-layout {
+        flex-direction: column;
     }
     .sidebar {
         display: none; /* Hide sidebar on mobile to focus on workspace content */
