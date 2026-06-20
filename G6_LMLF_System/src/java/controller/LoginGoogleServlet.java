@@ -27,6 +27,13 @@ public class LoginGoogleServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+            
+        // If already logged in, redirect to dashboard
+        if (utils.SessionUtil.isLoggedIn(request)) {
+            response.sendRedirect(request.getContextPath() + "/dashboard");
+            return;
+        }
+
         String code = request.getParameter("code");
 
         if (code == null || code.isEmpty()) {

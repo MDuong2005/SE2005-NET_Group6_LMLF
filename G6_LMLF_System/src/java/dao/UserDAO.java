@@ -8,6 +8,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * User DAO
@@ -70,9 +72,9 @@ public class UserDAO extends DBContext {
     public User login(String emailOrUsername, String password) {
 
         String sql = "SELECT * FROM users "
-                   + "WHERE (email = ? OR username = ?) "
-                   + "AND password_hash = ? "
-                   + "AND status = 'ACTIVE'";
+                + "WHERE (email = ? OR username = ?) "
+                + "AND password_hash = ? "
+                + "AND status = 'ACTIVE'";
 
         if (connection != null) {
 
@@ -119,56 +121,48 @@ public class UserDAO extends DBContext {
                 e.printStackTrace();
             }
         }
-
         return false;
     }
 
-    /**
-     * Assign role to user
-     */
-    public void assignRole(long userId, long roleId) {
+    public boolean assignRole(long userId, long roleId) {
+        if (hasUserRole(userId, roleId)) {
+            return false;
+        }
 
         String sql = "INSERT INTO user_roles "
                 + "(user_id, role_id, assigned_at) "
                 + "VALUES (?, ?, ?)";
 
         if (connection != null) {
-
             try (PreparedStatement ps = connection.prepareStatement(sql)) {
-
                 ps.setLong(1, userId);
                 ps.setLong(2, roleId);
                 ps.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
 
-                ps.executeUpdate();
-
+                return ps.executeUpdate() > 0;
             } catch (SQLException e) {
                 System.err.println("UserDAO - Error assignRole: " + e.getMessage());
                 e.printStackTrace();
             }
         }
+        return false;
     }
 
     /**
      * Update last login
      */
     public void updateLastLogin(long userId) {
-
-        String sql = "UPDATE users "
-                + "SET last_login = CURRENT_TIMESTAMP "
-                + "WHERE user_id = ?";
-
-        if (connection != null) {
-
-            try (PreparedStatement ps = connection.prepareStatement(sql)) {
-
-                ps.setLong(1, userId);
-                ps.executeUpdate();
-
-            } catch (SQLException e) {
-                System.err.println("UserDAO - Error updateLastLogin: " + e.getMessage());
-                e.printStackTrace();
+        String sql = "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE user_id = ?";
+        try {
+            if (connection != null) {
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                    ps.setLong(1, userId);
+                    ps.executeUpdate();
+                }
             }
+        } catch (SQLException e) {
+            System.err.println("UserDAO - Error updateLastLogin: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -198,5 +192,91 @@ public class UserDAO extends DBContext {
         }
 
         return null;
+    }
+
+    public List<User> getAllUsers() {
+        List<User> users = new ArrayList<>();
+        String sql = "SELECT * FROM users "
+                + "WHERE deleted_at IS NULL "
+                + "ORDER BY registered_at DESC";
+
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    users.add(mapUser(rs));
+                }
+            } catch (SQLException e) {
+                System.err.println("UserDAO - Error getAllUsers: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        return users;
+    }
+
+    public boolean createUser(User user) {
+        String sql = "INSERT INTO users "
+                + "(username, first_name, last_name, email, password_hash, "
+                + "auth_provider, is_external, must_change_password, status) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, user.getUsername());
+                ps.setString(2, user.getFirstName());
+                ps.setString(3, user.getLastName());
+                ps.setString(4, user.getEmail());
+                ps.setString(5, user.getPasswordHash());
+                ps.setString(6, user.getAuthProvider());
+                ps.setBoolean(7, user.isExternal());
+                ps.setBoolean(8, user.isMustChangePassword());
+                ps.setString(9, user.getStatus());
+
+                return ps.executeUpdate() > 0;
+            } catch (SQLException e) {
+                System.err.println("UserDAO - Error createUser: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
+    public boolean updateStatus(long userId, String status) {
+        String sql = "UPDATE users "
+                + "SET status = ? "
+                + "WHERE user_id = ? "
+                + "AND deleted_at IS NULL";
+
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, status);
+                ps.setLong(2, userId);
+
+                return ps.executeUpdate() > 0;
+            } catch (SQLException e) {
+                System.err.println("UserDAO - Error updateStatus: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
+    public boolean hasUserRole(long userId, long roleId) {
+        String sql = "SELECT 1 FROM user_roles WHERE user_id = ? AND role_id = ?";
+
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setLong(1, userId);
+                ps.setLong(2, roleId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next();
+                }
+            } catch (SQLException e) {
+                System.err.println("UserDAO - Error hasUserRole: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        return false;
     }
 }
