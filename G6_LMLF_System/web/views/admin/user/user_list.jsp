@@ -38,7 +38,14 @@
                                 <div class="email-col">${user.email} (${user.username})</div>
                             </td>
                             <td>
-                                <span class="badge badge-role">${user.authProvider}</span>
+                                <c:choose>
+                                    <c:when test="${not empty user.roles}">
+                                        <span class="badge badge-role">${user.roles[0].roleName}</span>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <span class="badge badge-role">NO ROLE</span>
+                                    </c:otherwise>
+                                </c:choose>
                             </td>
                             <td>
                                 <c:choose>
