@@ -219,6 +219,50 @@ public class UserDAO extends DBContext {
     }
 
     /**
+     * Get all users with their roles using a JOIN query
+     */
+    public java.util.List<User> getAllUsersWithRoles() {
+        java.util.List<User> list = new java.util.ArrayList<>();
+        String sql = "SELECT u.*, r.role_id, r.role_name, r.description "
+                   + "FROM users u "
+                   + "LEFT JOIN user_roles ur ON u.user_id = ur.user_id "
+                   + "LEFT JOIN roles r ON ur.role_id = r.role_id "
+                   + "ORDER BY u.registered_at DESC";
+
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                
+                long currentUserId = -1;
+                User currentUser = null;
+                
+                while (rs.next()) {
+                    long userId = rs.getLong("user_id");
+                    if (userId != currentUserId) {
+                        currentUser = mapUser(rs);
+                        list.add(currentUser);
+                        currentUserId = userId;
+                    }
+                    
+                    long roleId = rs.getLong("role_id");
+                    if (!rs.wasNull()) {
+                        model.Role role = new model.Role();
+                        role.setRoleId(roleId);
+                        role.setRoleName(rs.getString("role_name"));
+                        role.setDescription(rs.getString("description"));
+                        if (currentUser != null) {
+                            currentUser.getRoles().add(role);
+                        }
+                    }
+                }
+            } catch (SQLException e) {
+                System.err.println("UserDAO - Error getAllUsersWithRoles: " + e.getMessage());
+            }
+        }
+        return list;
+    }
+
+    /**
      * Insert new user and return generated ID
      */
     public long insertUser(User user) {

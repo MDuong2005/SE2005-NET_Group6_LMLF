@@ -41,35 +41,20 @@ public class GoogleUtils {
                 + "&redirect_uri=" + GoogleConstants.REDIRECT_URI
                 + "&grant_type=" + GoogleConstants.GRANT_TYPE;
 
-        OutputStreamWriter writer
-                = new OutputStreamWriter(
-                        conn.getOutputStream()
-                );
+        try (OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream())) {
+            writer.write(params);
+            writer.flush();
+        }
 
-        writer.write(params);
-
-        writer.flush();
-        writer.close();
-
-        BufferedReader reader
-                = new BufferedReader(
-                        new InputStreamReader(
-                                conn.getInputStream()
-                        )
-                );
-
-        StringBuilder sb
-                = new StringBuilder();
-
-        String line;
-
-        while ((line = reader.readLine()) != null) {
-
-            sb.append(line);
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
         }
 
         response = sb.toString();
-        reader.close();
         Gson gson = new Gson();
 
         TokenResponse token
@@ -101,35 +86,22 @@ public class GoogleUtils {
             String accessToken)
             throws Exception {
 
-        String link
-                = GoogleConstants.LINK_GET_USER_INFO
-                + accessToken;
+        String link = GoogleConstants.LINK_GET_USER_INFO;
 
-        URL url
-                = new URL(link);
+        URL url = new URL(link);
 
-        HttpURLConnection conn
-                = (HttpURLConnection) url.openConnection();
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
         conn.setRequestMethod("GET");
+        conn.setRequestProperty("Authorization", "Bearer " + accessToken);
 
-        BufferedReader reader
-                = new BufferedReader(
-                        new InputStreamReader(
-                                conn.getInputStream()
-                        )
-                );
-
-        StringBuilder sb
-                = new StringBuilder();
-
-        String line;
-
-        while ((line = reader.readLine()) != null) {
-
-            sb.append(line);
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
         }
-        reader.close();
         Gson gson = new Gson();
 
         return gson.fromJson(

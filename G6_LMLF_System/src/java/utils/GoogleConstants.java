@@ -27,7 +27,7 @@ public class GoogleConstants {
 
     public static final String LINK_GET_TOKEN = "https://oauth2.googleapis.com/token";
 
-    public static final String LINK_GET_USER_INFO = "https://www.googleapis.com/oauth2/v2/userinfo?access_token=";
+    public static final String LINK_GET_USER_INFO = "https://www.googleapis.com/oauth2/v2/userinfo";
 
     public static final String GRANT_TYPE = "authorization_code";
 }

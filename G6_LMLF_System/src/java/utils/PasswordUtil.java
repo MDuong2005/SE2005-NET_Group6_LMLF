@@ -23,7 +23,9 @@ public class PasswordUtil {
      */
     public static boolean checkPassword(String plainPassword, String hashedPassword) {
         if (hashedPassword == null || !hashedPassword.startsWith("$2a$")) {
-            // Fallback for plain text passwords or non-bcrypt passwords in the DB during development
+            // WARNING: Fallback for plain text passwords or non-bcrypt passwords in the DB during development
+            // TODO: Remove this fallback in Production environments
+            System.err.println("SECURITY WARNING: Using plain text password fallback check for login!");
             return plainPassword != null && plainPassword.equals(hashedPassword);
         }
         return BCrypt.checkpw(plainPassword, hashedPassword);
