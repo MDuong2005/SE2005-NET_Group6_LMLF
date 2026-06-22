@@ -34,6 +34,13 @@ public class LoginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        
+        // If already logged in, redirect to dashboard
+        if (utils.SessionUtil.isLoggedIn(request)) {
+            response.sendRedirect(request.getContextPath() + "/dashboard");
+            return;
+        }
+        
         // Forward to the login page UI
         request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
     }
@@ -56,8 +63,16 @@ public class LoginServlet extends HttpServlet {
         String password = request.getParameter("password");
         String rememberMe = request.getParameter("rememberMe");
         
+        // Basic Validation
+        if (!utils.ValidationUtil.isNotNullOrEmpty(email) || !utils.ValidationUtil.isNotNullOrEmpty(password)) {
+            request.setAttribute("errorMessage", "Vui lòng nhập đầy đủ Email/Username và Mật khẩu.");
+            request.setAttribute("username", email);
+            request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
+            return;
+        }
+        
         UserDAO userDAO = new UserDAO();
-        User user = userDAO.getUserByEmail(email);
+        User user = userDAO.getUserByEmail(email.trim());
             
         if (user != null) {
             // 1. Check auth_provider

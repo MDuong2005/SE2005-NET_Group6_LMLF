@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package filter;
 
 import constant.RoleConstants;
@@ -68,7 +64,7 @@ public class AuthorizationFilter implements Filter {
             return;
         }
 
-// System Admin: user management
+        // System Admin: user management
         if (path.startsWith("/admin/users")
                 && !hasAnyRole(user, RoleConstants.ADMIN)) {
             sendAccessDenied(httpRequest, httpResponse);
@@ -112,8 +108,9 @@ public class AuthorizationFilter implements Filter {
             return false;
         }
 
+        dao.RoleDAO roleDAO = new dao.RoleDAO();
         for (String roleName : roleNames) {
-            if (user.hasRole(roleName)) {
+            if (roleDAO.hasRole(user.getUserId(), roleName)) {
                 return true;
             }
         }
