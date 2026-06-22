@@ -80,16 +80,7 @@ public class UserManagementServlet extends HttpServlet {
     }
 
     private void listUsers(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        List<User> users = userDAO.getAllUsers();
-        // Get roles for each user to display
-        for (User u : users) {
-            List<Role> userRoles = roleDAO.getRolesByUserId(u.getUserId());
-            if (!userRoles.isEmpty()) {
-                u.setAuthProvider(userRoles.get(0).getRoleName()); // Hack to pass roleName to JSP since User doesn't have role property
-            } else {
-                u.setAuthProvider("NO ROLE");
-            }
-        }
+        List<User> users = userDAO.getAllUsersWithRoles();
         request.setAttribute("users", users);
         request.getRequestDispatcher("/views/admin/user/user_list.jsp").forward(request, response);
     }
