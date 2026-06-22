@@ -22,6 +22,13 @@ public class DashboardServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
+        // 1. Get current user
+        model.User user = utils.SessionUtil.getCurrentUser(request);
+        if (user == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
         // Thống kê số lượng chung
         request.setAttribute("activeAuthors", 124);
         request.setAttribute("totalSyllabuses", 482);
@@ -96,13 +103,6 @@ public class DashboardServlet extends HttpServlet {
         alerts.add(al4);
         
         request.setAttribute("alerts", alerts);
-
-        // 1. Get current user
-        model.User user = utils.SessionUtil.getCurrentUser(request);
-        if (user == null) {
-            response.sendRedirect(request.getContextPath() + "/login");
-            return;
-        }
 
         // 2. Route to correct fragment based on role
         String contentPage = "dashboard/student_content.jsp"; // Default fallback
