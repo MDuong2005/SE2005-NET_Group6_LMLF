@@ -6,15 +6,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LMLF System - Curriculum Portal</title>
-    <!-- Tailwind CSS CDN for modern rapid utility styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Pure CSS for Dashboard Layout -->
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/dashboard_pure.css">
     <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #F8FAFC;
-        }
         /* Custom scrollbar adjustments */
         ::-webkit-scrollbar {
             width: 6px;
@@ -35,22 +31,24 @@
         }
     </style>
 </head>
-<body class="text-slate-800 antialiased min-h-screen">
+<body>
     
     <!-- Khung bọc lưới giao diện chính -->
-    <div class="flex h-screen overflow-hidden">
+    <div class="dashboard-wrapper">
         
         <!-- ================= SIDEBAR ================= -->
         <jsp:include page="layout/sidebar.jsp" />
 
         <!-- ================= KHU VỰC NỘI DUNG CHÍNH ================= -->
-        <main class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        <main class="dashboard-main">
             
             <!-- THANH ĐẦU TRANG HEADER -->
             <jsp:include page="layout/header.jsp" />
 
             <!-- NỘI DUNG ĐỘNG ĐƯỢC NHÚNG TÙY THEO ROLE -->
-            <jsp:include page="${contentPage}" />
+            <div class="dashboard-content">
+                <jsp:include page="${contentPage}" />
+            </div>
             
         </main>
     </div>

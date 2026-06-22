@@ -176,25 +176,90 @@ CREATE TABLE syllabus_assignments (
 -- 11. SYLLABUS VERSIONS
 -- =======================================================
 CREATE TABLE syllabus_versions (
-    version_id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    syllabus_id BIGINT NOT NULL,
-    version_number NVARCHAR(20) NOT NULL,
-    change_type NVARCHAR(10),
-    description_of_changes NVARCHAR(MAX),
-    status NVARCHAR(20) NOT NULL DEFAULT 'DRAFT',
-    created_by BIGINT NOT NULL,
-    updated_by BIGINT NULL,
-    submitted_at DATETIME2,
-    approved_at DATETIME2,
-    rejected_at DATETIME2 NULL,
+version_id BIGINT IDENTITY(1,1) PRIMARY KEY,
 
-    CONSTRAINT uq_syllabus_version UNIQUE (syllabus_id, version_number),
-    CONSTRAINT chk_sv_change_type CHECK (change_type IN ('NEW','MINOR','MAJOR')),
-    CONSTRAINT chk_sv_status CHECK (status IN ('DRAFT','SUBMITTED','APPROVED','REJECTED')),
-    CONSTRAINT fk_sv_syllabus FOREIGN KEY (syllabus_id) REFERENCES syllabuses(syllabus_id),
-    CONSTRAINT fk_sv_creator FOREIGN KEY (created_by) REFERENCES users(user_id),
-    CONSTRAINT fk_sv_updated_by FOREIGN KEY (updated_by) REFERENCES users(user_id)
+syllabus_id BIGINT NOT NULL,
+
+version_number NVARCHAR(20) NOT NULL,
+
+change_type NVARCHAR(10) NULL,
+
+description_of_changes NVARCHAR(MAX) NULL,
+
+status NVARCHAR(20) NOT NULL DEFAULT 'DRAFT',
+
+created_by BIGINT NOT NULL,
+
+updated_by BIGINT NULL,
+
+submitted_at DATETIME2 NULL,
+
+approved_at DATETIME2 NULL,
+
+rejected_at DATETIME2 NULL,
+
+published_at DATETIME2 NULL,
+
+archived_at DATETIME2 NULL,
+
+published_by BIGINT NULL,
+
+CONSTRAINT uq_syllabus_version
+    UNIQUE (syllabus_id, version_number),
+
+CONSTRAINT chk_sv_change_type
+    CHECK (
+        change_type IN ('NEW','MINOR','MAJOR')
+        OR change_type IS NULL
+    ),
+
+CONSTRAINT chk_sv_status
+    CHECK (
+        status IN (
+            'DRAFT',
+            'SUBMITTED',
+            'APPROVED',
+            'REJECTED',
+            'PUBLISHED',
+            'ARCHIVED'
+        )
+    ),
+
+CONSTRAINT fk_sv_syllabus
+    FOREIGN KEY (syllabus_id)
+    REFERENCES syllabuses(syllabus_id),
+
+CONSTRAINT fk_sv_creator
+    FOREIGN KEY (created_by)
+    REFERENCES users(user_id),
+
+CONSTRAINT fk_sv_updated_by
+    FOREIGN KEY (updated_by)
+    REFERENCES users(user_id),
+
+CONSTRAINT fk_sv_published_by
+    FOREIGN KEY (published_by)
+    REFERENCES users(user_id)
+
 );
+GO
+
+/* Query syllabus + status */
+CREATE INDEX idx_syllabus_versions_syllabus_status
+ON syllabus_versions(syllabus_id, status);
+GO
+
+/* Dashboard, review queue, approval queue */
+CREATE INDEX idx_syllabus_versions_status
+ON syllabus_versions(status);
+GO
+
+/* Mỗi syllabus chỉ có 1 version đang PUBLISHED */
+CREATE UNIQUE INDEX uq_one_published_per_syllabus
+ON syllabus_versions(syllabus_id)
+WHERE status = 'PUBLISHED';
+GO
+
 
 -- =======================================================
 -- 12. SYLLABUS REVIEWS

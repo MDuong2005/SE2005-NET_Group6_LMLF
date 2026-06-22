@@ -199,4 +199,100 @@ public class UserDAO extends DBContext {
 
         return null;
     }
+    /**
+     * Get all users
+     */
+    public java.util.List<User> getAllUsers() {
+        java.util.List<User> list = new java.util.ArrayList<>();
+        String sql = "SELECT * FROM users ORDER BY registered_at DESC";
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapUser(rs));
+                }
+            } catch (SQLException e) {
+                System.err.println("UserDAO - Error getAllUsers: " + e.getMessage());
+            }
+        }
+        return list;
+    }
+
+    /**
+     * Insert new user and return generated ID
+     */
+    public long insertUser(User user) {
+        String sql = "INSERT INTO users (username, first_name, last_name, email, password_hash, auth_provider, is_external, must_change_password, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+                ps.setString(1, user.getUsername());
+                ps.setString(2, user.getFirstName());
+                ps.setString(3, user.getLastName());
+                ps.setString(4, user.getEmail());
+                ps.setString(5, user.getPasswordHash());
+                ps.setString(6, user.getAuthProvider());
+                ps.setBoolean(7, user.isExternal());
+                ps.setBoolean(8, user.isMustChangePassword());
+                ps.setString(9, user.getStatus());
+                ps.executeUpdate();
+                
+                try (ResultSet rs = ps.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        return rs.getLong(1);
+                    }
+                }
+            } catch (SQLException e) {
+                System.err.println("UserDAO - Error insertUser: " + e.getMessage());
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Update existing user info
+     */
+    public void updateUser(User user) {
+        String sql = "UPDATE users SET first_name = ?, last_name = ?, status = ? WHERE user_id = ?";
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, user.getFirstName());
+                ps.setString(2, user.getLastName());
+                ps.setString(3, user.getStatus());
+                ps.setLong(4, user.getUserId());
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                System.err.println("UserDAO - Error updateUser: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Update user status (ban/unban)
+     */
+    public void updateUserStatus(long userId, String status) {
+        String sql = "UPDATE users SET status = ? WHERE user_id = ?";
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, status);
+                ps.setLong(2, userId);
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                System.err.println("UserDAO - Error updateUserStatus: " + e.getMessage());
+            }
+        }
+    }
+    /**
+     * Remove all roles of a user
+     */
+    public void removeAllRoles(long userId) {
+        String sql = "DELETE FROM user_roles WHERE user_id = ?";
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setLong(1, userId);
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                System.err.println("UserDAO - Error removeAllRoles: " + e.getMessage());
+            }
+        }
+    }
 }
