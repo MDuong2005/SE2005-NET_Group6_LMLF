@@ -17,6 +17,7 @@ public class SyllabusReviewDAO extends DBContext {
 
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
+
             ps.setLong(1, versionId);
             ps.setLong(2, reviewerId);
             ps.setString(3, decision);

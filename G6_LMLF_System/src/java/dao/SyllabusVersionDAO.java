@@ -2,6 +2,7 @@ package dao;
 
 import context.DBContext;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 public class SyllabusVersionDAO extends DBContext {
 
@@ -10,7 +11,7 @@ public class SyllabusVersionDAO extends DBContext {
             UPDATE syllabus_versions
             SET status = 'APPROVED',
                 approved_at = GETDATE(),
-                approved_by = ?
+                updated_by = ?
             WHERE version_id = ?
               AND status = 'SUBMITTED'
         """;
@@ -28,17 +29,20 @@ public class SyllabusVersionDAO extends DBContext {
         }
     }
 
-    public boolean rejectVersion(long versionId) {
+    public boolean rejectVersion(long versionId, long reviewerId) {
         String sql = """
             UPDATE syllabus_versions
-            SET status = 'REJECTED'
+            SET status = 'REJECTED',
+                rejected_at = GETDATE(),
+                updated_by = ?
             WHERE version_id = ?
               AND status = 'SUBMITTED'
         """;
 
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
-            ps.setLong(1, versionId);
+            ps.setLong(1, reviewerId);
+            ps.setLong(2, versionId);
 
             return ps.executeUpdate() > 0;
 
