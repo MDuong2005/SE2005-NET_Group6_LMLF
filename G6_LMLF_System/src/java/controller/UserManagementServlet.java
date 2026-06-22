@@ -115,11 +115,25 @@ public class UserManagementServlet extends HttpServlet {
     }
 
     private void createUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String username = request.getParameter("username");
-        String firstName = request.getParameter("firstName");
-        String lastName = request.getParameter("lastName");
-        String email = request.getParameter("email");
-        long roleId = Long.parseLong(request.getParameter("roleId"));
+        String username = utils.ValidationUtil.sanitize(request.getParameter("username"));
+        String firstName = utils.ValidationUtil.sanitize(request.getParameter("firstName"));
+        String lastName = utils.ValidationUtil.sanitize(request.getParameter("lastName"));
+        String email = utils.ValidationUtil.sanitize(request.getParameter("email"));
+        
+        // Backend Validation
+        if (!utils.ValidationUtil.isValidUsername(username) || !utils.ValidationUtil.isValidEmail(email) || 
+            !utils.ValidationUtil.isNotEmpty(firstName) || !utils.ValidationUtil.isNotEmpty(lastName)) {
+            response.sendRedirect(request.getContextPath() + "/admin/users?action=create&error=invalid_data");
+            return;
+        }
+
+        long roleId = 0;
+        try {
+            roleId = Long.parseLong(request.getParameter("roleId"));
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/admin/users?action=create&error=invalid_role");
+            return;
+        }
 
         User newUser = new User();
         newUser.setUsername(username);
@@ -141,11 +155,25 @@ public class UserManagementServlet extends HttpServlet {
     }
 
     private void updateUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        long userId = Long.parseLong(request.getParameter("userId"));
-        String firstName = request.getParameter("firstName");
-        String lastName = request.getParameter("lastName");
-        String status = request.getParameter("status");
-        long roleId = Long.parseLong(request.getParameter("roleId"));
+        long userId;
+        long roleId;
+        try {
+            userId = Long.parseLong(request.getParameter("userId"));
+            roleId = Long.parseLong(request.getParameter("roleId"));
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/admin/users");
+            return;
+        }
+        
+        String firstName = utils.ValidationUtil.sanitize(request.getParameter("firstName"));
+        String lastName = utils.ValidationUtil.sanitize(request.getParameter("lastName"));
+        String status = utils.ValidationUtil.sanitize(request.getParameter("status"));
+
+        // Backend Validation
+        if (!utils.ValidationUtil.isNotEmpty(firstName) || !utils.ValidationUtil.isNotEmpty(lastName)) {
+            response.sendRedirect(request.getContextPath() + "/admin/users?action=edit&id=" + userId + "&error=invalid_data");
+            return;
+        }
 
         User userToUpdate = userDAO.getUserById(userId);
         if (userToUpdate != null) {
