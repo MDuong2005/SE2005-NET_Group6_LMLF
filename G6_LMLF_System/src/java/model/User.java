@@ -139,4 +139,17 @@ public class User {
     public void setRoles(List<Role> roles) {
         this.roles = roles;
     }
+
+    public boolean hasRole(String roleName) {
+        if (roleName == null || this.roles == null) {
+            return false;
+        }
+        for (Role role : this.roles) {
+            if (role != null && role.getRoleName() != null 
+                    && role.getRoleName().equalsIgnoreCase(roleName)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
