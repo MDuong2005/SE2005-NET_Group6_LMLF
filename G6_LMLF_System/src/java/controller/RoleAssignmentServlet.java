@@ -67,7 +67,7 @@ public class RoleAssignmentServlet extends HttpServlet {
         }
 
         // Regular browser navigation: load lists
-        List<Course> courses = courseDAO.getAllCourses();
+        List<Course> courses = courseDAO.listAll();
         List<User> lecturers = userDAO.getActiveUsersByRole("LECTURER");
 
         request.setAttribute("courses", courses);

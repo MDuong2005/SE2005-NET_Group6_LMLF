@@ -11,133 +11,104 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Syllabus Role Assignments - LMLF</title>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Main Stylesheet -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/syllabus-role.css?v=<%= System.currentTimeMillis() %>">
 </head>
 <body>
 
-    <div class="app-layout">
-        <!-- SIDEBAR -->
-        <aside class="sidebar">
-            <div class="sidebar-top">
-                <div class="sidebar-header">
-                    <h2 class="sidebar-logo">Academic Office</h2>
-                    <p class="sidebar-subtitle">Academic Year 2024-25</p>
+    <!-- Top Navigation Header -->
+    <header>
+        <div class="header-left">
+            <a href="#" class="logo">LMLF</a>
+            <ul class="nav-menu">
+                <li><a href="${pageContext.request.contextPath}/dashboard">Dashboard</a></li>
+                <li class="active"><a href="${pageContext.request.contextPath}/curriculum">Curriculum</a></li>
+                <li><a href="#">Faculty</a></li>
+                <li><a href="#">Settings</a></li>
+            </ul>
+        </div>
+        <div class="header-right">
+            <div class="global-search">
+                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                <input type="text" placeholder="Global search...">
+            </div>
+
+            <button class="icon-btn">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 4.86 6 7.42 6 10.5v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6.5C8 8.02 9.51 6.5 11.5 6.5S15 8.02 15 11.5V17z"/></svg>
+            </button>
+
+            <div class="profile-menu" onclick="window.location.href='${pageContext.request.contextPath}/logout'" title="Logout">
+                <div class="avatar">
+                    <%
+                        String userInitials = "AD";
+                        String userEmail = "";
+                        model.User user = (model.User) session.getAttribute("user");
+                        if (user != null && user.getEmail() != null) {
+                            userEmail = user.getEmail();
+                            if (userEmail.length() >= 2) {
+                                userInitials = userEmail.substring(0, 2).toUpperCase();
+                            } else {
+                                userInitials = userEmail.toUpperCase();
+                            }
+                        }
+                    %>
+                    <%= userInitials %>
                 </div>
-                <ul class="menu-list">
-                    <li class="menu-item active">
-                        <a href="#">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
-                                <circle cx="9" cy="7" r="4" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 11l2 2 4-4" />
-                            </svg>
-                            Role Assignment
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="#">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <rect x="3" y="3" width="18" height="18" rx="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v18M15 3v18M3 9h18M3 15h18" />
-                            </svg>
-                            Curriculum Matrix
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="#">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.05 11a9 9 0 11.22 4m-.22-4h4v-4" />
-                            </svg>
-                            Revision History
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="#">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                            </svg>
-                            Approval Workflow
-                        </a>
-                    </li>
-                </ul>
+                <div class="profile-name-container">
+                    <span class="profile-name"><%= userEmail.isEmpty() ? "Admin User" : userEmail %></span>
+                    <span class="profile-role">Admin User</span>
+                </div>
+                <div class="caret"></div>
             </div>
-            <div class="sidebar-bottom">
-                <div class="sidebar-divider"></div>
-                <ul class="menu-list">
-                    <li class="menu-item">
-                        <a href="#">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <circle cx="12" cy="12" r="10" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m0 4h.01" />
-                            </svg>
-                            Support
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="#">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                            User Guide
-                        </a>
-                    </li>
-                </ul>
-            </div>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside>
+            <div class="sidebar-section-title">Course Management</div>
+            <ul class="sidebar-menu">
+                <li class="active">
+                    <a href="${pageContext.request.contextPath}/curriculum/role-assignment">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        Role Assignments
+                    </a>
+                </li>
+                <li>
+                    <a href="${pageContext.request.contextPath}/course">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        Course Management
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Prerequisites
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        Approval Workflow
+                    </a>
+                </li>
+            </ul>
         </aside>
 
-        <!-- MAIN WRAPPER (HEADER + CONTENT) -->
-        <div class="main-wrapper">
-            <!-- HEADER -->
-            <header>
-                <div class="header-left">
-                    <a href="${pageContext.request.contextPath}/dashboard" class="logo">LMLF</a>
-                    <nav>
-                        <a href="${pageContext.request.contextPath}/dashboard">Dashboard</a>
-                        <a href="${pageContext.request.contextPath}/curriculum" class="active">Curriculum</a>
-                        <a href="#">Faculty</a>
-                        <a href="#">Settings</a>
-                    </nav>
+        <!-- Main Workspace Panel -->
+        <main>
+            <div class="main-content">
+                <!-- Header titles -->
+                <div>
+                    <h1 class="page-title">Syllabus Role Assignments</h1>
+                    <p class="page-subtitle">Configure and manage administrative roles for specific course syllabi and semesters.</p>
                 </div>
-                <div class="header-right">
-                    <!-- Search Box -->
-                    <div class="search-box">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                        <input type="text" placeholder="Search curriculum...">
-                    </div>
-                    
-                    <!-- Notification Bell -->
-                    <div class="header-icon">
-                        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                        </svg>
-                    </div>
 
-                    <!-- Profile Icon -->
-                    <div class="header-icon" onclick="window.location.href='${pageContext.request.contextPath}/logout'" title="Logout">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                </div>
-            </header>
-
-            <!-- CONTENT CONTAINER -->
-            <div class="content-container">
-                <!-- MAIN PAGE -->
-                <section class="main-content">
-                    <!-- Header titles -->
-                    <div>
-                        <h1 class="page-title">Syllabus Role Assignments</h1>
-                        <p class="page-subtitle">Configure and manage administrative roles for specific course syllabi and semesters.</p>
-                    </div>
-
-                    <!-- Filter Card -->
-                    <div class="filter-card">
+                <!-- Filter Card -->
+                <div class="filter-card">
                         <!-- Course Code Dropdown -->
                         <div class="form-group">
                             <label class="form-label" for="courseSelect">Course Code</label>
@@ -148,7 +119,7 @@
                                     if (courses != null) {
                                         for (Course c : courses) {
                                     %>
-                                        <option value="<%= c.getCourseId() %>"><%= c.getCode() %> - <%= c.getName() %></option>
+                                        <option value="<%= String.valueOf(c.getCourseId()) %>"><%= c.getCode() %> - <%= c.getName() %></option>
                                     <%
                                         }
                                     }
@@ -274,14 +245,8 @@
                         </div>
                     </div>
 
-                </section>
             </div>
-
-            <!-- FOOTER -->
-            <footer class="page-footer">
-                <p>&copy; 2024 AcademiaLink Education Management System. All Rights Reserved.</p>
-            </footer>
-        </div>
+        </main>
     </div>
 
     <!-- FLOATING ACTION BUTTON -->
