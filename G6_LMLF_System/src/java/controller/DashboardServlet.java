@@ -105,21 +105,28 @@ public class DashboardServlet extends HttpServlet {
         request.setAttribute("alerts", alerts);
 
         // 2. Route to correct fragment based on role
-        String contentPage = "dashboard/student_content.jsp"; // Default fallback
+        String contentPage = "student/dashboard.jsp"; // Default fallback
+        String cssFile = "student/student.css";
         
         if (user.hasRole("ADMIN")) {
-            contentPage = "dashboard/admin_content.jsp";
+            contentPage = "admin/dashboard.jsp";
+            cssFile = "admin/dashboard.css";
         } else if (user.hasRole("STUDENT")) {
-            contentPage = "dashboard/student_content.jsp";
+            contentPage = "student/dashboard.jsp";
+            cssFile = "student/student.css";
         } else if (user.hasRole("ALUMNI")) {
-            contentPage = "dashboard/alumni_content.jsp";
+            contentPage = "alumni/dashboard.jsp";
+            cssFile = "alumni/alumni.css";
         } else if (user.hasRole("LECTURER")) {
-            contentPage = "dashboard/lecturer_content.jsp";
+            contentPage = "lecturer/dashboard.jsp";
+            cssFile = "lecturer/lecturer.css";
         } else if (user.hasRole("ACADEMIC_OFFICE")) {
-            contentPage = "dashboard/office_content.jsp";
+            contentPage = "academic/dashboard.jsp";
+            cssFile = "academic/academic.css";
         }
 
         request.setAttribute("contentPage", contentPage);
+        request.setAttribute("cssFile", cssFile);
 
         // Forward tới file master layout (dashboard.jsp)
         request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);

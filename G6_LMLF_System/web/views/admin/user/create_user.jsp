@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Create User - LMLF Admin</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin_pure.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin/admin.css">
 </head>
 <body>
     <div class="container form-container">
