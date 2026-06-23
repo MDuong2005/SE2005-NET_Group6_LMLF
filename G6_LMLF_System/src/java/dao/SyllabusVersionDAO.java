@@ -41,7 +41,7 @@ public class SyllabusVersionDAO extends DBContext {
             PreparedStatement ps = connection.prepareStatement(sql);
             ps.setLong(1, reviewerId);
 
-            ResultSet rs = ps.  executeQuery();
+            ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
                 Map<String, Object> row = new HashMap<>();
