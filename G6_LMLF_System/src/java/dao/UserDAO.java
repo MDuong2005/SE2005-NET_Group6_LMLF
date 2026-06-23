@@ -62,9 +62,38 @@ public class UserDAO extends DBContext {
                 e.printStackTrace();
             }
         }
-
+        
         return null;
     }
+
+    /**
+     * Get active users by role name
+     */
+    public List<User> getActiveUsersByRole(String roleName) {
+        List<User> users = new ArrayList<>();
+        String sql = "SELECT u.* FROM users u "
+                + "JOIN user_roles ur ON u.user_id = ur.user_id "
+                + "JOIN roles r ON ur.role_id = r.role_id "
+                + "WHERE r.role_name = ? "
+                + "AND u.status = 'ACTIVE' "
+                + "AND u.deleted_at IS NULL";
+
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, roleName);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        users.add(mapUser(rs));
+                    }
+                }
+            } catch (SQLException e) {
+                System.err.println("UserDAO - Error getActiveUsersByRole: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        return users;
+    }
+
 
     /**
      * Login by email/username and password
