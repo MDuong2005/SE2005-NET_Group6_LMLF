@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <title>System Audit Logs - LMLF Admin</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin_pure.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin/admin.css">
 </head>
 <body>
 
