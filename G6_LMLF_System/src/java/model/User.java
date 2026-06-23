@@ -1,8 +1,8 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
+
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * User Model
@@ -10,26 +10,22 @@ package model;
  */
 public class User {
     private long userId;
+    private String username;
     private String firstName;
     private String lastName;
     private String email;
     private String passwordHash;
+    private String authProvider;
+    private boolean external;
+    private boolean mustChangePassword;
     private String status;
-    private java.sql.Timestamp registeredAt;
-    private java.sql.Timestamp lastLogin;
+    private Timestamp registeredAt;
+    private Timestamp lastLogin;
+    private Timestamp deletedAt;
+
+    private List<Role> roles = new ArrayList<>();
     
     public User() {
-    }
-
-    public User(long userId, String firstName, String lastName, String email, String passwordHash, String status, java.sql.Timestamp registeredAt, java.sql.Timestamp lastLogin) {
-        this.userId = userId;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.passwordHash = passwordHash;
-        this.status = status;
-        this.registeredAt = registeredAt;
-        this.lastLogin = lastLogin;
     }
 
     public long getUserId() {
@@ -38,6 +34,14 @@ public class User {
 
     public void setUserId(long userId) {
         this.userId = userId;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getFirstName() {
@@ -72,6 +76,30 @@ public class User {
         this.passwordHash = passwordHash;
     }
 
+    public String getAuthProvider() {
+        return authProvider;
+    }
+
+    public void setAuthProvider(String authProvider) {
+        this.authProvider = authProvider;
+    }
+
+    public boolean isExternal() {
+        return external;
+    }
+
+    public void setExternal(boolean external) {
+        this.external = external;
+    }
+
+    public boolean isMustChangePassword() {
+        return mustChangePassword;
+    }
+
+    public void setMustChangePassword(boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword;
+    }
+
     public String getStatus() {
         return status;
     }
@@ -80,19 +108,48 @@ public class User {
         this.status = status;
     }
 
-    public java.sql.Timestamp getRegisteredAt() {
+    public Timestamp getRegisteredAt() {
         return registeredAt;
     }
 
-    public void setRegisteredAt(java.sql.Timestamp registeredAt) {
+    public void setRegisteredAt(Timestamp registeredAt) {
         this.registeredAt = registeredAt;
     }
 
-    public java.sql.Timestamp getLastLogin() {
+    public Timestamp getLastLogin() {
         return lastLogin;
     }
 
-    public void setLastLogin(java.sql.Timestamp lastLogin) {
+    public void setLastLogin(Timestamp lastLogin) {
         this.lastLogin = lastLogin;
+    }
+
+    public Timestamp getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(Timestamp deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public List<Role> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(List<Role> roles) {
+        this.roles = roles;
+    }
+
+    public boolean hasRole(String roleName) {
+        if (roleName == null || this.roles == null) {
+            return false;
+        }
+        for (Role role : this.roles) {
+            if (role != null && role.getRoleName() != null 
+                    && role.getRoleName().equalsIgnoreCase(roleName)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
