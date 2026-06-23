@@ -8,7 +8,7 @@
     </div>
     <div class="date-badge">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
         <c:out value="${currentLocalDate}" default="Today" />
     </div>
@@ -98,19 +98,19 @@
         </div>
         <div class="panel-body" style="padding: 1.5rem;">
             <div class="flex flex-col gap-3">
-                <button class="w-full flex items-center gap-3" style="padding: 0.75rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; color: #334155; font-weight: 600; font-size: 0.95rem; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.borderColor = 'var(--fpt-orange)'; this.style.transform = 'translateY(-1px)'; this.style.boxShadow = '0 4px 12px rgba(242,111,33,0.1)';" onmouseout="this.style.borderColor = '#e2e8f0'; this.style.transform = 'none'; this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.02)';">
+                <button class="w-full flex items-center gap-3" style="padding: 0.75rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; color: #334155; font-weight: 600; font-size: 0.95rem; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.borderColor='var(--fpt-orange)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(242,111,33,0.1)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.02)';">
                     <div style="background: var(--fpt-orange-light); color: var(--fpt-orange); width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold;">+</div>
                     Create Course
                 </button>
-                <button class="w-full flex items-center gap-3" style="padding: 0.75rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; color: #334155; font-weight: 600; font-size: 0.95rem; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.borderColor = 'var(--fpt-orange)'; this.style.transform = 'translateY(-1px)'; this.style.boxShadow = '0 4px 12px rgba(242,111,33,0.1)';" onmouseout="this.style.borderColor = '#e2e8f0'; this.style.transform = 'none'; this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.02)';">
+                <button class="w-full flex items-center gap-3" style="padding: 0.75rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; color: #334155; font-weight: 600; font-size: 0.95rem; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.borderColor='var(--fpt-orange)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(242,111,33,0.1)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.02)';">
                     <div style="background: var(--fpt-orange-light); color: var(--fpt-orange); width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold;">+</div>
                     Assign Designer
                 </button>
-                <button class="w-full flex items-center gap-3" style="padding: 0.75rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; color: #334155; font-weight: 600; font-size: 0.95rem; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.borderColor = 'var(--fpt-orange)'; this.style.transform = 'translateY(-1px)'; this.style.boxShadow = '0 4px 12px rgba(242,111,33,0.1)';" onmouseout="this.style.borderColor = '#e2e8f0'; this.style.transform = 'none'; this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.02)';">
+                <button class="w-full flex items-center gap-3" style="padding: 0.75rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; color: #334155; font-weight: 600; font-size: 0.95rem; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.borderColor='var(--fpt-orange)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(242,111,33,0.1)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.02)';">
                     <div style="background: var(--fpt-orange-light); color: var(--fpt-orange); width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold;">+</div>
                     Assign Reviewer
                 </button>
-                <button class="w-full flex items-center gap-3" style="padding: 0.75rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; color: #334155; font-weight: 600; font-size: 0.95rem; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.borderColor = 'var(--fpt-orange)'; this.style.transform = 'translateY(-1px)'; this.style.boxShadow = '0 4px 12px rgba(242,111,33,0.1)';" onmouseout="this.style.borderColor = '#e2e8f0'; this.style.transform = 'none'; this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.02)';">
+                <button class="w-full flex items-center gap-3" style="padding: 0.75rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; color: #334155; font-weight: 600; font-size: 0.95rem; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.borderColor='var(--fpt-orange)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(242,111,33,0.1)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.02)';">
                     <div style="background: var(--fpt-orange-light); color: var(--fpt-orange); width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold;">+</div>
                     Publish Syllabus
                 </button>
@@ -175,21 +175,21 @@
                     <p class="list-item-desc" style="font-size: 0.8rem; color: #64748b; margin-top: 0.25rem;">2 hours ago</p>
                 </div>
             </div>
-
+            
             <div class="list-item" style="border: none; padding: 0 0 0 1.5rem; border-left: 2px solid #22c55e; border-radius: 0; background: transparent;">
                 <div class="list-item-content">
                     <p class="list-item-title" style="font-weight: 600; color: #1e293b; font-size: 0.95rem;">Reviewer John approved syllabus version <span style="color: var(--fpt-orange);">V1.2</span> for PRJ301</p>
                     <p class="list-item-desc" style="font-size: 0.8rem; color: #64748b; margin-top: 0.25rem;">5 hours ago</p>
                 </div>
             </div>
-
+            
             <div class="list-item" style="border: none; padding: 0 0 0 1.5rem; border-left: 2px solid #ef4444; border-radius: 0; background: transparent;">
                 <div class="list-item-content">
                     <p class="list-item-title" style="font-weight: 600; color: #1e293b; font-size: 0.95rem;">Reviewer rejected MAD101 version <span style="color: var(--fpt-orange);">V1.1</span></p>
                     <p class="list-item-desc" style="font-size: 0.8rem; color: #64748b; margin-top: 0.25rem;">1 day ago</p>
                 </div>
             </div>
-
+            
             <div class="list-item" style="border: none; padding: 0 0 0 1.5rem; border-left: 2px solid #8b5cf6; border-radius: 0; background: transparent;">
                 <div class="list-item-content">
                     <p class="list-item-title" style="font-weight: 600; color: #1e293b; font-size: 0.95rem;">Academic Office published syllabus version <span style="color: var(--fpt-orange);">V2.0</span> for IOT102</p>
