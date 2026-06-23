@@ -1,8 +1,11 @@
 package dao;
 
 import context.DBContext;
+import model.SyllabusVersion;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Statement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -180,7 +183,7 @@ public class SyllabusVersionDAO extends DBContext {
 
     public boolean archiveCurrentPublishedVersion(long syllabusId) {
         String sql = """
-        UPDATE syllabus_version_publications
+        UPDATE syllabus_versions
         SET status = 'ARCHIVED',
             archived_at = GETDATE()
         WHERE syllabus_id = ?
@@ -208,10 +211,12 @@ public class SyllabusVersionDAO extends DBContext {
           AND status = 'APPROVED'
     """;
 
-        String insertPublicationSql = """
-        INSERT INTO syllabus_version_publications
-        (version_id, syllabus_id, status, published_by, published_at)
-        VALUES (?, ?, 'PUBLISHED', ?, GETDATE())
+        String updateVersionSql = """
+        UPDATE syllabus_versions
+        SET status = 'PUBLISHED',
+            published_at = GETDATE(),
+            updated_by = ?
+        WHERE version_id = ?
     """;
 
         String updateSyllabusSql = """
@@ -246,21 +251,16 @@ public class SyllabusVersionDAO extends DBContext {
                 return false;
             }
 
-            PreparedStatement insertPs
-                    = connection.prepareStatement(insertPublicationSql);
+            PreparedStatement updateVersionPs = connection.prepareStatement(updateVersionSql);
+            updateVersionPs.setLong(1, publisherId);
+            updateVersionPs.setLong(2, versionId);
+            updateVersionPs.executeUpdate();
 
-            insertPs.setLong(1, versionId);
-            insertPs.setLong(2, syllabusId);
-            insertPs.setLong(3, publisherId);
-            insertPs.executeUpdate();
-
-            PreparedStatement updatePs
-                    = connection.prepareStatement(updateSyllabusSql);
-
-            updatePs.setString(1, versionNumber);
-            updatePs.setLong(2, publisherId);
-            updatePs.setLong(3, syllabusId);
-            updatePs.executeUpdate();
+            PreparedStatement updateSyllabusPs = connection.prepareStatement(updateSyllabusSql);
+            updateSyllabusPs.setString(1, versionNumber);
+            updateSyllabusPs.setLong(2, publisherId);
+            updateSyllabusPs.setLong(3, syllabusId);
+            updateSyllabusPs.executeUpdate();
 
             connection.commit();
             return true;
@@ -320,6 +320,7 @@ public class SyllabusVersionDAO extends DBContext {
             return false;
         }
     }
+    
 
     public List<Map<String, Object>> getVersionHistory(long syllabusId) {
         List<Map<String, Object>> list = new ArrayList<>();
@@ -334,12 +335,10 @@ public class SyllabusVersionDAO extends DBContext {
             sv.submitted_at,
             sv.approved_at,
             sv.rejected_at,
-            svp.status AS publish_status,
-            svp.published_at,
-            svp.archived_at
+            sv.status AS publish_status,
+            sv.published_at,
+            sv.archived_at
         FROM syllabus_versions sv
-        LEFT JOIN syllabus_version_publications svp
-            ON sv.version_id = svp.version_id
         WHERE sv.syllabus_id = ?
         ORDER BY sv.version_id DESC
     """;
@@ -373,5 +372,128 @@ public class SyllabusVersionDAO extends DBContext {
         }
 
         return list;
+    }
+
+    public SyllabusVersion getLatestBySyllabusId(long syllabusId) {
+        String sql = "SELECT TOP 1 * FROM syllabus_versions WHERE syllabus_id = ? ORDER BY version_id DESC";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, syllabusId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return mapResultSetToSyllabusVersion(rs);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public List<SyllabusVersion> getBySyllabusId(long syllabusId) {
+        List<SyllabusVersion> list = new ArrayList<>();
+        String sql = "SELECT * FROM syllabus_versions WHERE syllabus_id = ? ORDER BY version_id DESC";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, syllabusId);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                list.add(mapResultSetToSyllabusVersion(rs));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public SyllabusVersion getById(long versionId) {
+        String sql = "SELECT * FROM syllabus_versions WHERE version_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, versionId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return mapResultSetToSyllabusVersion(rs);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public boolean create(SyllabusVersion version) {
+        String sql = "INSERT INTO syllabus_versions (syllabus_id, version_number, change_type, description_of_changes, status, created_by, submitted_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setLong(1, version.getSyllabusId());
+            ps.setString(2, version.getVersionNumber());
+            ps.setString(3, version.getChangeType());
+            ps.setString(4, version.getDescriptionOfChanges());
+            ps.setString(5, version.getStatus() != null ? version.getStatus() : "DRAFT");
+            ps.setLong(6, version.getCreatedBy());
+            if ("SUBMITTED".equals(version.getStatus())) {
+                ps.setTimestamp(7, new java.sql.Timestamp(System.currentTimeMillis()));
+            } else {
+                ps.setNull(7, java.sql.Types.TIMESTAMP);
+            }
+            int affected = ps.executeUpdate();
+            if (affected > 0) {
+                ResultSet rs = ps.getGeneratedKeys();
+                if (rs.next()) {
+                    version.setVersionId(rs.getLong(1));
+                }
+                return true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean update(SyllabusVersion version) {
+        String sql = "UPDATE syllabus_versions SET version_number = ?, change_type = ?, description_of_changes = ?, status = ?, updated_by = ?, submitted_at = ? WHERE version_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, version.getVersionNumber());
+            ps.setString(2, version.getChangeType());
+            ps.setString(3, version.getDescriptionOfChanges());
+            ps.setString(4, version.getStatus());
+            ps.setLong(5, version.getUpdatedBy() != null ? version.getUpdatedBy() : 1L);
+            if ("SUBMITTED".equals(version.getStatus())) {
+                ps.setTimestamp(6, new java.sql.Timestamp(System.currentTimeMillis()));
+            } else {
+                ps.setNull(6, java.sql.Types.TIMESTAMP);
+            }
+            ps.setLong(7, version.getVersionId());
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean submit(long versionId) {
+        String sql = "UPDATE syllabus_versions SET status = 'SUBMITTED', submitted_at = GETDATE() WHERE version_id = ? AND status = 'DRAFT'";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, versionId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    private SyllabusVersion mapResultSetToSyllabusVersion(ResultSet rs) throws Exception {
+        SyllabusVersion version = new SyllabusVersion(
+            rs.getLong("syllabus_id"),
+            rs.getString("version_number"),
+            rs.getString("change_type"),
+            rs.getLong("created_by")
+        );
+        version.setVersionId(rs.getLong("version_id"));
+        version.setDescriptionOfChanges(rs.getString("description_of_changes"));
+        version.setStatus(rs.getString("status"));
+        long updatedBy = rs.getLong("updated_by");
+        version.setUpdatedBy(rs.wasNull() ? null : updatedBy);
+        version.setSubmittedAt(rs.getTimestamp("submitted_at"));
+        version.setApprovedAt(rs.getTimestamp("approved_at"));
+        version.setRejectedAt(rs.getTimestamp("rejected_at"));
+        version.setPublishedAt(rs.getTimestamp("published_at"));
+        version.setArchivedAt(rs.getTimestamp("archived_at"));
+        return version;
     }
 }
