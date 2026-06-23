@@ -15,92 +15,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/dashboard_pure.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/syllabus-role.css?v=<%= System.currentTimeMillis() %>">
 </head>
 <body>
+    
+    <div class="dashboard-wrapper">
+        
+        <!-- ================= SIDEBAR ================= -->
+        <jsp:include page="layout/sidebar.jsp" />
 
-    <!-- Top Navigation Header -->
-    <header>
-        <div class="header-left">
-            <a href="#" class="logo">LMLF</a>
-            <ul class="nav-menu">
-                <li><a href="${pageContext.request.contextPath}/dashboard">Dashboard</a></li>
-                <li class="active"><a href="${pageContext.request.contextPath}/curriculum">Curriculum</a></li>
-                <li><a href="#">Faculty</a></li>
-                <li><a href="#">Settings</a></li>
-            </ul>
-        </div>
-        <div class="header-right">
-            <div class="global-search">
-                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                <input type="text" placeholder="Global search...">
-            </div>
+        <!-- ================= KHU VỰC NỘI DUNG CHÍNH ================= -->
+        <main class="dashboard-main">
+            
+            <!-- THANH ĐẦU TRANG HEADER -->
+            <jsp:include page="layout/header.jsp" />
 
-            <button class="icon-btn">
-                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 4.86 6 7.42 6 10.5v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6.5C8 8.02 9.51 6.5 11.5 6.5S15 8.02 15 11.5V17z"/></svg>
-            </button>
-
-            <div class="profile-menu" onclick="window.location.href='${pageContext.request.contextPath}/logout'" title="Logout">
-                <div class="avatar">
-                    <%
-                        String userInitials = "AD";
-                        String userEmail = "";
-                        model.User user = (model.User) session.getAttribute("user");
-                        if (user != null && user.getEmail() != null) {
-                            userEmail = user.getEmail();
-                            if (userEmail.length() >= 2) {
-                                userInitials = userEmail.substring(0, 2).toUpperCase();
-                            } else {
-                                userInitials = userEmail.toUpperCase();
-                            }
-                        }
-                    %>
-                    <%= userInitials %>
-                </div>
-                <div class="profile-name-container">
-                    <span class="profile-name"><%= userEmail.isEmpty() ? "Admin User" : userEmail %></span>
-                    <span class="profile-role">Admin User</span>
-                </div>
-                <div class="caret"></div>
-            </div>
-        </div>
-    </header>
-
-    <div class="app-container">
-        <!-- Sidebar Navigation -->
-        <aside>
-            <div class="sidebar-section-title">Course Management</div>
-            <ul class="sidebar-menu">
-                <li class="active">
-                    <a href="${pageContext.request.contextPath}/curriculum/role-assignment">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                        Role Assignments
-                    </a>
-                </li>
-                <li>
-                    <a href="${pageContext.request.contextPath}/course">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                        Course Management
-                    </a>
-                </li>
-                <li>
-                    <a href="#">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        Prerequisites
-                    </a>
-                </li>
-                <li>
-                    <a href="#">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                        Approval Workflow
-                    </a>
-                </li>
-            </ul>
-        </aside>
-
-        <!-- Main Workspace Panel -->
-        <main>
-            <div class="main-content">
+            <div class="dashboard-content">
+                <div class="main-content">
                 <!-- Header titles -->
                 <div>
                     <h1 class="page-title">Syllabus Role Assignments</h1>
@@ -245,16 +177,12 @@
                         </div>
                     </div>
 
+                </div>
             </div>
         </main>
     </div>
 
-    <!-- FLOATING ACTION BUTTON -->
-    <div class="floating-btn" title="Chat & Support">
-        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-    </div>
+
 
     <!-- TOAST NOTIFICATION -->
     <div id="toast" class="toast">

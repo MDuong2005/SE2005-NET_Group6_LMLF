@@ -102,11 +102,11 @@
                     <div style="background: var(--fpt-orange-light); color: var(--fpt-orange); width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold;">+</div>
                     Create Course
                 </button>
-                <button class="w-full flex items-center gap-3" style="padding: 0.75rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; color: #334155; font-weight: 600; font-size: 0.95rem; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.borderColor='var(--fpt-orange)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(242,111,33,0.1)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.02)';">
+                <button class="w-full flex items-center gap-3" onclick="window.location.href='${pageContext.request.contextPath}/curriculum/role-assignment'" style="padding: 0.75rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; color: #334155; font-weight: 600; font-size: 0.95rem; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.borderColor='var(--fpt-orange)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(242,111,33,0.1)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.02)';">
                     <div style="background: var(--fpt-orange-light); color: var(--fpt-orange); width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold;">+</div>
                     Assign Designer
                 </button>
-                <button class="w-full flex items-center gap-3" style="padding: 0.75rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; color: #334155; font-weight: 600; font-size: 0.95rem; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.borderColor='var(--fpt-orange)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(242,111,33,0.1)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.02)';">
+                <button class="w-full flex items-center gap-3" onclick="window.location.href='${pageContext.request.contextPath}/curriculum/role-assignment'" style="padding: 0.75rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; color: #334155; font-weight: 600; font-size: 0.95rem; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.borderColor='var(--fpt-orange)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(242,111,33,0.1)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.02)';">
                     <div style="background: var(--fpt-orange-light); color: var(--fpt-orange); width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold;">+</div>
                     Assign Reviewer
                 </button>
@@ -123,7 +123,7 @@
 <div class="panel mb-6">
     <div class="panel-header">
         <h3 class="panel-title">Assignments Status</h3>
-        <a href="#" class="view-all">View All Assignments</a>
+        <a href="${pageContext.request.contextPath}/curriculum/role-assignment" class="view-all">View All Assignments</a>
     </div>
     <div class="panel-body">
         <table style="width: 100%; text-align: left; border-collapse: collapse;">
