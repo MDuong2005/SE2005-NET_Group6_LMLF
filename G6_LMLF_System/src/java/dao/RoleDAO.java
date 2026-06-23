@@ -34,19 +34,12 @@ public class RoleDAO extends DBContext {
                 + "FROM roles "
                 + "WHERE role_id = ?";
 
-        try {
-
-            PreparedStatement ps
-                    = connection.prepareStatement(sql);
-
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, roleId);
-
-            ResultSet rs
-                    = ps.executeQuery();
-
-            if (rs.next()) {
-
-                return mapRole(rs);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapRole(rs);
+                }
             }
 
         } catch (Exception e) {
@@ -65,19 +58,10 @@ public class RoleDAO extends DBContext {
         String sql
                 = "SELECT * FROM roles";
 
-        try {
-
-            PreparedStatement ps
-                    = connection.prepareStatement(sql);
-
-            ResultSet rs
-                    = ps.executeQuery();
-
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-
-                list.add(
-                        mapRole(rs)
-                );
+                list.add(mapRole(rs));
             }
 
         } catch (Exception e) {
@@ -100,21 +84,12 @@ public class RoleDAO extends DBContext {
                 + "ON r.role_id = ur.role_id "
                 + "WHERE ur.user_id = ?";
 
-        try {
-
-            PreparedStatement ps
-                    = connection.prepareStatement(sql);
-
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, userId);
-
-            ResultSet rs
-                    = ps.executeQuery();
-
-            while (rs.next()) {
-
-                roles.add(
-                        mapRole(rs)
-                );
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    roles.add(mapRole(rs));
+                }
             }
 
         } catch (Exception e) {
@@ -137,19 +112,12 @@ public class RoleDAO extends DBContext {
                 + "WHERE ur.user_id = ? "
                 + "AND r.role_name = ?";
 
-        try {
-
-            PreparedStatement ps
-                    = connection.prepareStatement(sql);
-
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, userId);
-
             ps.setString(2, roleName);
-
-            ResultSet rs
-                    = ps.executeQuery();
-
-            return rs.next();
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
 
         } catch (Exception e) {
 

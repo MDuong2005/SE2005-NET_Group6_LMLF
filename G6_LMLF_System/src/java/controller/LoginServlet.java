@@ -34,6 +34,13 @@ public class LoginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        
+        // If already logged in, redirect to dashboard
+        if (utils.SessionUtil.isLoggedIn(request)) {
+            response.sendRedirect(request.getContextPath() + "/dashboard");
+            return;
+        }
+        
         // Forward to the login page UI
         request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
     }
@@ -56,26 +63,55 @@ public class LoginServlet extends HttpServlet {
         String password = request.getParameter("password");
         String rememberMe = request.getParameter("rememberMe");
         
-        UserDAO userDAO = new UserDAO();
-        User user = userDAO.getUserByEmail(email);
+        // Basic Validation
+        if (!utils.ValidationUtil.isNotNullOrEmpty(email) || !utils.ValidationUtil.isNotNullOrEmpty(password)) {
+            request.setAttribute("errorMessage", "Vui lòng nhập đầy đủ Email/Username và Mật khẩu.");
+            request.setAttribute("username", email);
+            request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
+            return;
+        }
         
+        UserDAO userDAO = new UserDAO();
+        User user = userDAO.getUserByEmail(email.trim());
+            
         if (user != null) {
-            // Check status
-            if ("INACTIVE".equals(user.getStatus())) {
+            // 1. Check auth_provider
+            if ("GOOGLE".equalsIgnoreCase(user.getAuthProvider())) {
+                request.setAttribute("errorMessage", "This account is registered with Google. Please sign in with Google.");
+                request.setAttribute("username", email);
+                request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
+                return;
+            }
+
+            // 2. Check status
+            if ("INACTIVE".equalsIgnoreCase(user.getStatus())) {
                 request.setAttribute("errorMessage", "Your account is currently INACTIVE. Please contact support.");
                 request.setAttribute("username", email);
                 request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
                 return;
             }
-            if ("BANNED".equals(user.getStatus())) {
+            if ("BANNED".equalsIgnoreCase(user.getStatus())) {
                 request.setAttribute("errorMessage", "Your account has been BANNED.");
                 request.setAttribute("username", email);
                 request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
                 return;
             }
             
-            // Check password (Assuming plain text for now. Use hash comparison in real system)
-            if (password != null && password.equals(user.getPasswordHash())) {
+            // 3. Check password with BCrypt
+            if (utils.PasswordUtil.checkPassword(password, user.getPasswordHash())) {
+                
+                // 4. Load Roles
+                dao.RoleDAO roleDAO = new dao.RoleDAO();
+                user.setRoles(roleDAO.getRolesByUserId(user.getUserId()));
+                
+                // 5. Check if roles are empty
+                if (user.getRoles() == null || user.getRoles().isEmpty()) {
+                    request.setAttribute("errorMessage", "Access Denied. You don't have any roles assigned. Please contact Academic Office.");
+                    request.setAttribute("username", email);
+                    request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
+                    return;
+                }
+
                 // Login successful
                 HttpSession session = request.getSession();
                 session.setAttribute("user", user); // Store entire user object in session
