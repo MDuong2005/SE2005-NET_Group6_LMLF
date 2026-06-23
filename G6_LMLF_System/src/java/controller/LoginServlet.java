@@ -17,14 +17,14 @@ import model.User;
 
 /**
  * Servlet for handling user login
+ *
  * @author maid8
  */
 @WebServlet(name = "LoginServlet", urlPatterns = {"/login"})
 public class LoginServlet extends HttpServlet {
 
     /**
-     * Handles the HTTP <code>GET</code> method.
-     * Displays the login page.
+     * Handles the HTTP <code>GET</code> method. Displays the login page.
      *
      * @param request servlet request
      * @param response servlet response
@@ -34,20 +34,20 @@ public class LoginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
+
         // If already logged in, redirect to dashboard
         if (utils.SessionUtil.isLoggedIn(request)) {
             response.sendRedirect(request.getContextPath() + "/dashboard");
             return;
         }
-        
+
         // Forward to the login page UI
         request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
     }
 
     /**
-     * Handles the HTTP <code>POST</code> method.
-     * Processes login form submission.
+     * Handles the HTTP <code>POST</code> method. Processes login form
+     * submission.
      *
      * @param request servlet request
      * @param response servlet response
@@ -57,12 +57,12 @@ public class LoginServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
+
         // Retrieve form parameters
         String email = request.getParameter("username");
         String password = request.getParameter("password");
         String rememberMe = request.getParameter("rememberMe");
-        
+
         // Basic Validation
         if (!utils.ValidationUtil.isNotNullOrEmpty(email) || !utils.ValidationUtil.isNotNullOrEmpty(password)) {
             request.setAttribute("errorMessage", "Vui lòng nhập đầy đủ Email/Username và Mật khẩu.");
@@ -70,10 +70,10 @@ public class LoginServlet extends HttpServlet {
             request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
             return;
         }
-        
+
         UserDAO userDAO = new UserDAO();
         User user = userDAO.getUserByEmail(email.trim());
-            
+
         if (user != null) {
             // 1. Check auth_provider
             if ("GOOGLE".equalsIgnoreCase(user.getAuthProvider())) {
@@ -96,14 +96,14 @@ public class LoginServlet extends HttpServlet {
                 request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
                 return;
             }
-            
+
             // 3. Check password with BCrypt
             if (utils.PasswordUtil.checkPassword(password, user.getPasswordHash())) {
-                
+
                 // 4. Load Roles
                 dao.RoleDAO roleDAO = new dao.RoleDAO();
                 user.setRoles(roleDAO.getRolesByUserId(user.getUserId()));
-                
+
                 // 5. Check if roles are empty
                 if (user.getRoles() == null || user.getRoles().isEmpty()) {
                     request.setAttribute("errorMessage", "Access Denied. You don't have any roles assigned. Please contact Academic Office.");
@@ -115,10 +115,10 @@ public class LoginServlet extends HttpServlet {
                 // Login successful
                 HttpSession session = request.getSession();
                 session.setAttribute("user", user); // Store entire user object in session
-                
+
                 // Update last login
                 userDAO.updateLastLogin(user.getUserId());
-                
+
                 // Handle remember me
                 if ("true".equals(rememberMe)) {
                     Cookie cEmail = new Cookie("userEmail", email);
@@ -130,9 +130,24 @@ public class LoginServlet extends HttpServlet {
                     cEmail.setMaxAge(0);
                     response.addCookie(cEmail);
                 }
-                
+
                 // Redirect to the dashboard
-                response.sendRedirect(request.getContextPath() + "/dashboard");
+                boolean isReviewer = false;
+
+                if (user.getRoles() != null) {
+                    for (model.Role role : user.getRoles()) {
+                        if ("REVIEWER".equalsIgnoreCase(role.getRoleName())) {
+                            isReviewer = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (isReviewer) {
+                    response.sendRedirect(request.getContextPath() + "/review?action=pending");
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                }
             } else {
                 // Wrong password
                 request.setAttribute("errorMessage", "Invalid email or password. Please try again.");
