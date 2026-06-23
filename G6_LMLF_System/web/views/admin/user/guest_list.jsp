@@ -5,17 +5,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>User Management - LMLF Admin</title>
+    <title>Guest Management - LMLF Admin</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin/admin.css">
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h2>User Management</h2>
+            <h2>Guest User Management</h2>
             <div class="header-actions">
-                <a href="${pageContext.request.contextPath}/dashboard" class="btn btn-back">&larr; Dashboard</a>
-                <a href="${pageContext.request.contextPath}/admin/guests" class="btn btn-back" style="background-color: #f39c12; color: white; border-color: #e67e22;">Manage Guests</a>
-                <a href="${pageContext.request.contextPath}/admin/users?action=create" class="btn btn-primary">+ Add User</a>
+                <a href="${pageContext.request.contextPath}/admin/users" class="btn btn-back">Internal Users</a>
+                <a href="${pageContext.request.contextPath}/admin/guests?action=create" class="btn btn-primary">+ Add Guest User</a>
             </div>
         </div>
         <div class="table-container">
@@ -23,7 +22,7 @@
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>User Info</th>
+                        <th>Guest Info</th>
                         <th>Role</th>
                         <th>Status</th>
                         <th>Registered</th>
@@ -31,12 +30,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <c:forEach var="user" items="${users}">
+                    <c:forEach var="user" items="${guests}">
                         <tr>
                             <td style="color: #95a5a6;">#${user.userId}</td>
                             <td>
-                                <div class="user-col">${user.firstName} ${user.lastName}</div>
-                                <div class="email-col">${user.email} (${user.username})</div>
+                                <div class="user-col">${user.firstName} ${user.lastName} <span class="badge badge-role" style="font-size: 0.6rem; padding: 2px 4px; margin-left: 5px;">GUEST</span></div>
+                                <div class="email-col">${user.email}</div>
                             </td>
                             <td>
                                 <c:choose>
@@ -60,15 +59,13 @@
                             </td>
                             <td><fmt:formatDate value="${user.registeredAt}" pattern="MMM dd, yyyy" /></td>
                             <td class="action-links">
-                                <a href="${pageContext.request.contextPath}/admin/users?action=edit&id=${user.userId}" class="btn-edit">Edit</a>
-                                
                                 <c:if test="${user.email != sessionScope.user.email}">
-                                    <form action="${pageContext.request.contextPath}/admin/users" method="POST">
+                                    <form action="${pageContext.request.contextPath}/admin/guests" method="POST" style="display:inline;">
                                         <input type="hidden" name="id" value="${user.userId}">
                                         <c:choose>
                                             <c:when test="${user.status == 'ACTIVE'}">
                                                 <input type="hidden" name="action" value="ban">
-                                                <button type="submit" class="btn-ban" onclick="return confirm('Are you sure you want to ban this user?');">Ban</button>
+                                                <button type="submit" class="btn-ban" onclick="return confirm('Are you sure you want to ban this guest?');">Ban</button>
                                             </c:when>
                                             <c:otherwise>
                                                 <input type="hidden" name="action" value="unban">

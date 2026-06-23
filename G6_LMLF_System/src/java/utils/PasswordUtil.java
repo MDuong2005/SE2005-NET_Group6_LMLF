@@ -30,4 +30,17 @@ public class PasswordUtil {
         }
         return BCrypt.checkpw(plainPassword, hashedPassword);
     }
+
+    /**
+     * Generates a random 8-character password.
+     */
+    public static String generateRandomPassword() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        StringBuilder sb = new StringBuilder(8);
+        for (int i = 0; i < 8; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
 }
