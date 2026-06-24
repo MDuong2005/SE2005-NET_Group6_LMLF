@@ -149,12 +149,12 @@ public class GuestManagementServlet extends HttpServlet {
             // Send email
             boolean emailSent = EmailUtil.sendGuestCredentials(email, plainPassword, roleName);
             if (!emailSent) {
-                // Log warning or redirect with partial success message
                 System.err.println("Failed to send email to " + email);
             }
+            response.sendRedirect(request.getContextPath() + "/admin/guests?success=Guest created successfully");
+        } else {
+            response.sendRedirect(request.getContextPath() + "/admin/guests?error=Email already exists or invalid data");
         }
-        
-        response.sendRedirect(request.getContextPath() + "/admin/guests");
     }
 
     private void toggleStatus(HttpServletRequest request, HttpServletResponse response, String action) throws IOException {
