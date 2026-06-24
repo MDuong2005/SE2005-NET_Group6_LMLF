@@ -151,10 +151,15 @@ public class SubmitSyllabusServlet extends HttpServlet {
                 
                 // Bước 2: Tạo Syllabus Assignment
                 long designerId = 1;
-                boolean assignmentCreated = assignmentDAO.createAssignmentForCourse(
-                    syllabus.getCourseId(), 
-                    designerId
-                );
+                model.SyllabusAssignment newAssignment = new model.SyllabusAssignment();
+                newAssignment.setCourseId(syllabus.getCourseId());
+                newAssignment.setDesignerId(designerId);
+                newAssignment.setReviewerId(0);
+                newAssignment.setSemester("Current"); 
+                newAssignment.setAcademicYear(java.time.Year.now().getValue());
+                newAssignment.setAssignmentStatus("PENDING");
+                
+                boolean assignmentCreated = assignmentDAO.create(newAssignment);
                 
                 if (assignmentCreated) {
                     System.out.println("✅ Created syllabus_assignment for course: " + syllabus.getCourseId());
