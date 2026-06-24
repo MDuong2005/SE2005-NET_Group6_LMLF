@@ -6,6 +6,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Connection;
+
 
 public class SyllabusAssignmentDAO extends DBContext {
 
@@ -183,5 +185,89 @@ public class SyllabusAssignmentDAO extends DBContext {
         // Fallback to assignedAt and default user if no audit log
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MMM dd, yyyy");
         return "Last updated: " + sdf.format(existing.getAssignedAt()) + " by Administrator";
+    }
+    
+    
+    
+    
+    /**
+     * Tạo syllabus assignment cho course khi syllabus được submit
+     * @param courseId ID của course
+     * @param designerId ID của designer
+     * @return true nếu tạo thành công, false nếu đã tồn tại hoặc không có reviewer
+     */
+    public boolean createAssignmentForCourse(long courseId, long designerId) {
+        String sql = """
+            INSERT INTO syllabus_assignments (
+                course_id,
+                designer_id,
+                reviewer_id,
+                semester,
+                academic_year,
+                assignment_status,
+                assigned_at
+            )
+            SELECT 
+                ?,
+                ?,
+                u.user_id,
+                'Fall',
+                YEAR(GETDATE()),
+                'ACTIVE',
+                GETDATE()
+            FROM users u
+            JOIN user_roles ur ON u.user_id = ur.user_id
+            JOIN roles r ON ur.role_id = r.role_id
+            WHERE r.role_name = 'SYLLABUS_REVIEWER'
+              AND NOT EXISTS (
+                  SELECT 1 FROM syllabus_assignments sa 
+                  WHERE sa.course_id = ? 
+                    AND sa.assignment_status IN ('PENDING', 'ACTIVE')
+              )
+        """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setLong(1, courseId);
+            ps.setLong(2, designerId);
+            ps.setLong(3, courseId);
+            
+            int affected = ps.executeUpdate();
+            return affected > 0;
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Kiểm tra xem course đã có assignment chưa
+     */
+    public Connection getConnection() {
+        return connection;
+    }
+    public boolean hasActiveAssignment(long courseId) {
+        String sql = """
+            SELECT COUNT(*) FROM syllabus_assignments 
+            WHERE course_id = ? 
+              AND assignment_status IN ('PENDING', 'ACTIVE')
+        """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setLong(1, courseId);
+            var rs = ps.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }
