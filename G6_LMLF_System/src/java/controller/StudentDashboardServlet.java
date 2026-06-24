@@ -8,15 +8,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * CurriculumServlet maps the "/curriculum" URL to "views/curriculum.jsp".
+ * StudentDashboardServlet maps the "/student-dashboard" URL to "/views/studentDashboard.jsp".
  */
-@WebServlet(name = "CurriculumServlet", urlPatterns = {"/curriculum"})
-public class CurriculumServlet extends HttpServlet {
+@WebServlet(name = "StudentDashboardServlet", urlPatterns = {"/student-dashboard"})
+public class StudentDashboardServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.getRequestDispatcher("/views/curriculum.jsp").forward(request, response);
+        request.getRequestDispatcher("/views/studentDashboard.jsp").forward(request, response);
     }
 
     @Override
@@ -27,6 +27,6 @@ public class CurriculumServlet extends HttpServlet {
 
     @Override
     public String getServletInfo() {
-        return "Curriculum Servlet";
+        return "Student Dashboard Servlet";
     }
 }

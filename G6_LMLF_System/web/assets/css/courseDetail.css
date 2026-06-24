@@ -1,0 +1,716 @@
+/* Course Detail CSS for LMLF System - Pure CSS (No Tailwind) */
+
+/* Core Variables */
+:root {
+    --bg-page: #FAF9F6;
+    --bg-sidebar: #F5F3EF;
+    --bg-card: #FFFFFF;
+    --border-color: #EBE6DF;
+    
+    --primary-brand: #9E3E0E;      /* LMLF brand color */
+    --accent-orange: #FA5E1E;      /* Action items and buttons */
+    --active-menu-bg: #FCECE5;     /* Sidebar menu background */
+    --active-menu-text: #9E3E0E;   /* Sidebar menu text active */
+    
+    --text-primary: #1C1917;       /* Primary title text */
+    --text-secondary: #57524E;     /* Body secondary text */
+    --text-muted: #8C857E;         /* Captions and helper text */
+    --text-inactive: #78716C;      /* Inactive links/tabs */
+    
+    --shadow-subtle: 0 1px 3px rgba(28, 25, 23, 0.05);
+}
+
+/* Reset & Base styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Base Layout Structure */
+.portal-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+}
+
+/* ==================== TOP HEADER ==================== */
+.portal-header {
+    height: 70px;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 28px;
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+.header-logo-wrap {
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+}
+
+.logo-text {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--primary-brand);
+    letter-spacing: -0.03em;
+}
+
+.header-nav {
+    display: flex;
+    align-items: center;
+    gap: 36px;
+    height: 100%;
+}
+
+.nav-item {
+    text-decoration: none;
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--text-inactive);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    position: relative;
+    transition: color 0.2s;
+    border-bottom: 2px solid transparent;
+}
+
+.nav-item:hover {
+    color: var(--text-primary);
+}
+
+.nav-item.active {
+    color: var(--primary-brand);
+    font-weight: 700;
+    border-bottom: 2.5px solid var(--primary-brand);
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Search input design */
+.header-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background-color: #FAF9F6;
+    border: 1.5px solid var(--border-color);
+    border-radius: 10px;
+    padding: 8px 14px;
+    box-sizing: border-box;
+}
+
+.search-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.search-input {
+    border: none;
+    background: transparent;
+    font-size: 13.5px;
+    outline: none;
+    padding-left: 8px;
+    color: var(--text-primary);
+    width: 180px;
+    transition: width 0.2s ease-in-out;
+}
+
+.search-input:focus {
+    width: 240px;
+}
+
+.header-icon-btn {
+    background: none;
+    border: none;
+    color: var(--text-inactive);
+    cursor: pointer;
+    position: relative;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.header-icon-btn:hover {
+    background-color: #FAF8F5;
+    color: var(--text-primary);
+}
+
+.header-icon-btn svg {
+    width: 22px;
+    height: 22px;
+}
+
+.header-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 0 0 2px var(--border-color);
+    transition: box-shadow 0.2s;
+}
+
+.header-avatar:hover {
+    box-shadow: 0 0 0 2px var(--accent-orange);
+}
+
+.avatar-photo {
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+}
+
+/* ==================== BODY CONTAINER ==================== */
+.portal-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    width: 100%;
+}
+
+/* ========== LEFT SIDEBAR ========== */
+.sidebar {
+    width: 260px;
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px 0;
+    flex-shrink: 0;
+    overflow-y: auto;
+}
+
+.sidebar-top-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header-section {
+    display: flex;
+    flex-direction: column;
+    padding: 0 24px;
+    margin-bottom: 28px;
+}
+
+.sidebar-header-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary-brand);
+    letter-spacing: 0.05em;
+    line-height: 1.3;
+}
+
+.sidebar-subtitle {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.sidebar-nav {
+    flex-grow: 1;
+}
+
+.menu-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.menu-item a {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 24px;
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+}
+
+.menu-item a:hover {
+    color: var(--text-primary);
+    background-color: rgba(28, 25, 23, 0.03);
+}
+
+.menu-item.active a {
+    background-color: var(--active-menu-bg);
+    color: var(--active-menu-text);
+    font-weight: 600;
+    border-left: 3.5px solid var(--active-menu-text);
+}
+
+.menu-icon {
+    width: 20px;
+    height: 20px;
+    color: inherit;
+}
+
+.sidebar-bottom {
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Handbook Help Card */
+.handbook-help-card {
+    background-color: var(--active-menu-bg);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-subtle);
+}
+
+.help-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary-brand);
+    margin-bottom: 6px;
+}
+
+.help-card-subtitle {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+.btn-view-handbook {
+    display: inline-block;
+    width: 100%;
+    text-align: center;
+    background-color: #5A200B;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-weight: 700;
+    font-size: 11px;
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    transition: background-color 0.2s;
+}
+
+.btn-view-handbook:hover {
+    background-color: #3C1405;
+}
+
+/* ========== MAIN CONTENT ========== */
+.portal-main {
+    flex-grow: 1;
+    padding: 32px 40px;
+    overflow-y: auto;
+    background-color: var(--bg-page);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    box-sizing: border-box;
+}
+
+/* Breadcrumbs */
+.breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.breadcrumbs a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.breadcrumbs a:hover {
+    color: var(--primary-brand);
+}
+
+.crumb-separator {
+    color: #C0B7AF;
+}
+
+.crumb-active {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Page Title Row */
+.page-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.title-left {
+    max-width: 65%;
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+}
+
+.page-subtitle {
+    font-size: 14.5px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+}
+
+.title-actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* Buttons */
+.btn {
+    padding: 12px 20px;
+    font-size: 13.5px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+    text-decoration: none;
+}
+
+.btn-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.btn-filled {
+    background-color: var(--primary-brand);
+    color: var(--bg-card);
+    border: none;
+}
+
+.btn-filled:hover {
+    background-color: #83330B;
+}
+
+.btn-outlined {
+    background-color: var(--bg-card);
+    border: 1.5px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.btn-outlined:hover {
+    background-color: #FAF9F6;
+    color: var(--text-primary);
+    border-color: #D3C9BE;
+}
+
+/* Layout Grid */
+.course-detail-layout-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 28px;
+    align-items: start;
+    width: 100%;
+}
+
+.grid-left-col {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.grid-right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Detail Card component */
+.detail-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: var(--shadow-subtle);
+    display: flex;
+    flex-direction: column;
+}
+
+.card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    letter-spacing: -0.01em;
+}
+
+/* Course Description Specifics */
+.description-text {
+    font-size: 14.5px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 24px;
+}
+
+.course-meta-tags-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.meta-tag {
+    background-color: #FAF9F6;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tag-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+}
+
+.tag-value {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Learning Outcomes Specifics */
+.outcomes-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.outcomes-list li {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.outcome-num {
+    background-color: var(--active-menu-bg);
+    color: var(--primary-brand);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+}
+
+.outcome-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* Textbooks & Materials Specifics */
+.reading-item {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.reading-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.reading-item:first-of-type {
+    padding-top: 0;
+}
+
+.reading-title {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.reading-author {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* Syllabus Versions Specifics */
+.syllabus-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.syllabus-item {
+    border: 1.5px solid var(--border-color);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.syllabus-item:hover {
+    border-color: #D3C9BE;
+    box-shadow: 0 4px 12px rgba(28, 25, 23, 0.03);
+}
+
+.syllabus-item.active-version {
+    border-color: var(--primary-brand);
+    background-color: #FDFBF9;
+}
+
+.syllabus-item-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.syllabus-version-name {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.badge-status-active {
+    background-color: #E2F5EA;
+    color: #137333;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 100px;
+}
+
+.badge-status-archived {
+    background-color: #EDE9E4;
+    color: var(--text-inactive);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 100px;
+}
+
+.syllabus-updated-date {
+    font-size: 12.5px;
+    color: var(--text-muted);
+}
+
+.btn-link-viewer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    color: var(--primary-brand);
+    font-size: 13.5px;
+    font-weight: 700;
+    margin-top: 6px;
+    transition: opacity 0.2s;
+}
+
+.btn-link-viewer:hover {
+    opacity: 0.85;
+}
+
+.btn-link-viewer.link-archived {
+    color: var(--text-secondary);
+}
+
+.viewer-link-icon {
+    width: 14px;
+    height: 14px;
+}
+
+/* Metrics and Stats Specifics */
+.stats-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+}
+
+.stat-value {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.stat-progress-track {
+    background-color: #EDE9E4;
+    height: 6px;
+    border-radius: 10px;
+    width: 100%;
+    overflow: hidden;
+}
+
+.stat-progress-bar {
+    background-color: #2B6CB0;
+    height: 100%;
+    border-radius: 10px;
+}
+
+.stat-progress-bar.bar-orange {
+    background-color: var(--accent-orange);
+}
