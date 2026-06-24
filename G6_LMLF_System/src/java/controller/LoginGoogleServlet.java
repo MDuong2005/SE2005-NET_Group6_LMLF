@@ -54,6 +54,13 @@ public class LoginGoogleServlet extends HttpServlet {
                 User user = userDAO.getUserByEmail(email);
                 
                 if (user != null) {
+                    // 1. Check auth_provider
+                    if (!"GOOGLE".equalsIgnoreCase(user.getAuthProvider())) {
+                        request.setAttribute("errorMessage", "This account is registered as a Guest. Please log in using the username and password sent to your email.");
+                        request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
+                        return;
+                    }
+
                     // Check status before logging in
                     if ("INACTIVE".equalsIgnoreCase(user.getStatus())) {
                         request.setAttribute("errorMessage", "Your account is currently INACTIVE. Please contact support.");

@@ -77,6 +77,7 @@ public class GuestManagementServlet extends HttpServlet {
     private void listGuests(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         List<User> guests = userDAO.getExternalUsersWithRoles();
         request.setAttribute("guests", guests);
+        request.setAttribute("roles", roleDAO.getAllRoles());
         request.getRequestDispatcher("/views/admin/user/guest_list.jsp").forward(request, response);
     }
 
