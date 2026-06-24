@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Main Stylesheet -->
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/dashboard_pure.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/academic/academic.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/syllabus-role.css?v=<%= System.currentTimeMillis() %>">
 </head>
 <body>
@@ -23,13 +23,13 @@
     <div class="dashboard-wrapper">
         
         <!-- ================= SIDEBAR ================= -->
-        <jsp:include page="layout/sidebar.jsp" />
+        <jsp:include page="../layout/sidebar.jsp" />
 
         <!-- ================= KHU VỰC NỘI DUNG CHÍNH ================= -->
         <main class="dashboard-main">
             
             <!-- THANH ĐẦU TRANG HEADER -->
-            <jsp:include page="layout/header.jsp" />
+            <jsp:include page="../layout/header.jsp" />
 
             <div class="dashboard-content">
                 <div class="main-content">
@@ -301,7 +301,7 @@
 
             document.getElementById('lastUpdatedText').textContent = "Loading data...";
 
-            fetch('${pageContext.request.contextPath}/curriculum/role-assignment?action=get&courseId=' + courseId + '&semester=' + semester + '&academicYear=' + academicYear)
+            fetch('${pageContext.request.contextPath}/role-assignment?action=get&courseId=' + courseId + '&semester=' + semester + '&academicYear=' + academicYear)
                 .then(response => {
                     if (!response.ok) throw new Error('Network response not ok');
                     return response.json();
@@ -384,7 +384,7 @@
             params.append('semester', semester);
             params.append('academicYear', academicYear);
 
-            fetch('${pageContext.request.contextPath}/curriculum/role-assignment', {
+            fetch('${pageContext.request.contextPath}/role-assignment', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'

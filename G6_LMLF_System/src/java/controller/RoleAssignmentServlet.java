@@ -17,7 +17,7 @@ import model.Course;
 import model.User;
 import model.SyllabusAssignment;
 
-@WebServlet(name = "RoleAssignmentServlet", urlPatterns = {"/curriculum/role-assignment"})
+@WebServlet(name = "RoleAssignmentServlet", urlPatterns = {"/role-assignment"})
 public class RoleAssignmentServlet extends HttpServlet {
 
     private final CourseDAO courseDAO = new CourseDAO();
@@ -74,7 +74,7 @@ public class RoleAssignmentServlet extends HttpServlet {
         request.setAttribute("lecturers", lecturers);
 
         // Render JSP
-        request.getRequestDispatcher("/views/role-assignment.jsp").forward(request, response);
+        request.getRequestDispatcher("/views/academic/role-assignment.jsp").forward(request, response);
     }
 
     @Override
