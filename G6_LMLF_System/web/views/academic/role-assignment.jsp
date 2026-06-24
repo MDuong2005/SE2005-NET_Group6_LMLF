@@ -1,8 +1,43 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="java.util.List" %>
-<%@ page import="model.Course" %>
-<%@ page import="model.User" %>
-<%@ page import="model.SyllabusAssignment" %>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page import="java.util.List"%>
+<%@page import="model.Course"%>
+<%@page import="model.User"%>
+<%@page import="model.SyllabusAssignment"%>
+<%
+    List<SyllabusAssignment> assignmentList = (List<SyllabusAssignment>) request.getAttribute("assignmentList");
+    List<Course> courses = (List<Course>) request.getAttribute("courses");
+    List<User> lecturers = (List<User>) request.getAttribute("lecturers");
+    String errorMessage = (String) request.getAttribute("errorMessage");
+    String action = (String) request.getAttribute("action");
+    if (action == null) {
+        action = "";
+    }
+    
+    // Extract and clear success message from session
+    String successMessage = (String) session.getAttribute("successMessage");
+    if (successMessage != null) {
+        session.removeAttribute("successMessage");
+    } else {
+        successMessage = "";
+    }
+    if (errorMessage == null) {
+        errorMessage = "";
+    }
+    
+    // Retain form values for error feedback
+    String tempCourseId = (String) request.getAttribute("tempCourseId");
+    String tempDesignerId = (String) request.getAttribute("tempDesignerId");
+    String tempReviewerId = (String) request.getAttribute("tempReviewerId");
+    String tempSemester = (String) request.getAttribute("tempSemester");
+    String tempYear = (String) request.getAttribute("tempYear");
+    String tempStatus = (String) request.getAttribute("tempStatus");
+    if (tempYear == null || tempYear.isEmpty()) {
+        tempYear = "2026";
+    }
+    
+    SyllabusAssignment editAssignment = (SyllabusAssignment) request.getAttribute("assignment");
+    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm");
+%>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -16,397 +51,1000 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Main Stylesheet -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/academic/academic.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/syllabus-role.css?v=<%= System.currentTimeMillis() %>">
+    
+    <style>
+        /* Custom scoped workspace variables mapped to FPT Academic theme */
+        :root {
+            --primary: var(--fpt-orange, #FF6B00);
+            --primary-hover: var(--fpt-orange-hover, #E05E00);
+            --primary-light: var(--fpt-orange-light, #FFF0E6);
+            --border-color: #E2E8F0;
+            --bg-card: #FFFFFF;
+            --text-dark: #1E293B;
+            --text-muted: #64748B;
+            --danger: #EF4444;
+            --danger-hover: #DC2626;
+            --radius-lg: 12px;
+            --radius-md: 8px;
+            --radius-sm: 6px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Scoped styles for the core workspace area */
+        .workspace-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .workspace-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .workspace-header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--text-dark);
+            letter-spacing: -0.5px;
+            margin: 0;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            height: 42px;
+            padding: 0 20px;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Filter block styling */
+        .filter-row {
+            display: flex;
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .form-select, .form-input {
+            height: 42px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 0 16px;
+            font-family: inherit;
+            font-size: 14px;
+            color: var(--text-dark);
+            outline: none;
+            transition: var(--transition);
+            background-color: #FFFFFF;
+        }
+
+        .form-select:focus, .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(242, 111, 33, 0.15);
+        }
+
+        .search-group {
+            flex: 3;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .search-input-wrapper .form-input {
+            padding-left: 44px;
+            width: 100%;
+        }
+
+        .search-input-wrapper svg {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            fill: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .btn-search {
+            height: 42px;
+            padding: 0 24px;
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-search:hover {
+            background-color: var(--primary-hover);
+        }
+
+        /* Data Grid Tables */
+        .table-card {
+            padding: 0;
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .data-table th {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            font-weight: 700;
+            font-size: 14px;
+            padding: 14px 10px;
+            letter-spacing: 0.5px;
+            border: none;
+        }
+
+        .data-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+            color: var(--text-dark);
+        }
+
+        .data-table tbody tr {
+            transition: var(--transition);
+        }
+
+        .data-table tbody tr:hover {
+            background-color: #F8FAFC;
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge-code {
+            display: inline-block;
+            background-color: var(--primary);
+            color: #FFFFFF;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-semester {
+            display: inline-block;
+            background-color: #ECEFF1;
+            color: #455A64;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            border: 1px solid #CFD8DC;
+        }
+
+        .badge-year {
+            display: inline-block;
+            background-color: #E2E8F0;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .text-bold {
+            font-weight: 700;
+        }
+
+        .actions-cell {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            background-color: #FFFFFF;
+            transition: var(--transition);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-action-edit {
+            color: var(--primary);
+        }
+
+        .btn-action-edit:hover {
+            background-color: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary-hover);
+        }
+
+        .btn-action svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Empty State */
+        .empty-state {
+            padding: 48px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .empty-state-icon {
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background-color: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .empty-state-text {
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 400px;
+        }
+
+        /* Pagination style */
+        .pagination-footer {
+            border-top: 1px solid var(--border-color);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #FFFFFF;
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .pagination-info span {
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-btn {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--border-color);
+            background-color: #FFFFFF;
+            color: var(--text-dark);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .page-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            color: var(--primary);
+            background-color: var(--primary-light);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .page-indicator {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin: 0 12px;
+        }
+
+        /* Modals and Overlays */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 24px;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal-container {
+            background-color: #FFFFFF;
+            width: 100%;
+            max-width: 520px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes modalIn {
+            from {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            background-color: #F1F5F9;
+            color: var(--text-dark);
+        }
+
+        .modal-body {
+            padding: 24px;
+            max-height: 480px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-color);
+            background-color: #F8FAFC;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-secondary {
+            background-color: #FFFFFF;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            height: 42px;
+            padding: 0 20px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .btn-secondary:hover {
+            background-color: #F1F5F9;
+            color: var(--text-dark);
+            border-color: #CBD5E1;
+        }
+
+        .modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Alert notifications */
+        .alert-error {
+            background-color: #FEF2F2;
+            border: 1px solid #FCA5A5;
+            color: var(--danger);
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .alert-success {
+            background-color: #DCFCE7;
+            border: 1px solid #86EFAC;
+            color: #166534;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        /* Custom alert styling */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background-color: #2D3748;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 10px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-success {
+            border-left: 4px solid #48BB78;
+        }
+
+        .toast-error {
+            border-left: 4px solid #F56565;
+        }
+
+        .toast-icon {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .toast-success .toast-icon { color: #48BB78; }
+        .toast-error .toast-icon { color: #F56565; }
+    </style>
 </head>
 <body>
-    
+
     <div class="dashboard-wrapper">
-        
         <!-- ================= SIDEBAR ================= -->
         <jsp:include page="../layout/sidebar.jsp" />
 
-        <!-- ================= KHU VỰC NỘI DUNG CHÍNH ================= -->
+        <!-- ================= MAIN CONTENT AREA ================= -->
         <main class="dashboard-main">
-            
-            <!-- THANH ĐẦU TRANG HEADER -->
+            <!-- ================= TOP HEADER ================= -->
             <jsp:include page="../layout/header.jsp" />
 
+            <!-- ================= DYNAMIC WORKSPACE ================= -->
             <div class="dashboard-content">
-                <div class="main-content">
-                <!-- Header titles -->
-                <div>
-                    <h1 class="page-title">Syllabus Role Assignments</h1>
-                    <p class="page-subtitle">Configure and manage administrative roles for specific course syllabi and semesters.</p>
-                </div>
+                <div class="workspace-container">
 
-                <!-- Filter Card -->
-                <div class="filter-card">
-                        <!-- Course Code Dropdown -->
-                        <div class="form-group">
-                            <label class="form-label" for="courseSelect">Course Code</label>
-                            <div class="select-container">
-                                <select id="courseSelect" class="select-input" onchange="loadAssignment()">
+                    <!-- General Workspace Header -->
+                    <div class="workspace-header">
+                        <h1>Syllabus Role Assignments</h1>
+                        <button type="button" class="btn-primary" onclick="openCreateModal()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            Add New Assignment
+                        </button>
+                    </div>
+
+                    <!-- Search Filter Row Card -->
+                    <div class="card">
+                        <form action="${pageContext.request.contextPath}/role-assignment" method="get" class="filter-row">
+                            <div class="form-group search-group">
+                                <label for="searchKeyword">Search Assignments</label>
+                                <div class="search-input-wrapper">
+                                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                                    <input type="text" id="searchKeyword" name="keyword" class="form-input" 
+                                           placeholder="Search by course code, designer, reviewer..." 
+                                           value="<%= request.getAttribute("keyword") == null ? "" : request.getAttribute("keyword") %>">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group" style="flex: 1.5;">
+                                <label for="filterSemester">Filter by Semester</label>
+                                <select id="filterSemester" name="filterSemester" class="form-select" onchange="this.form.submit()">
                                     <%
-                                    List<Course> courses = (List<Course>) request.getAttribute("courses");
-                                    if (courses != null) {
-                                        for (Course c : courses) {
+                                    String selectedFilterSemester = (String) request.getAttribute("filterSemester");
+                                    if (selectedFilterSemester == null) selectedFilterSemester = "";
                                     %>
-                                        <option value="<%= String.valueOf(c.getCourseId()) %>"><%= c.getCode() %> - <%= c.getName() %></option>
+                                    <option value="" <%= "".equals(selectedFilterSemester) ? "selected" : "" %>>-- All Semesters --</option>
+                                    <option value="Spring" <%= "Spring".equalsIgnoreCase(selectedFilterSemester) ? "selected" : "" %>>Spring</option>
+                                    <option value="Summer" <%= "Summer".equalsIgnoreCase(selectedFilterSemester) ? "selected" : "" %>>Summer</option>
+                                    <option value="Fall" <%= "Fall".equalsIgnoreCase(selectedFilterSemester) ? "selected" : "" %>>Fall</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" style="flex: 1.5;">
+                                <label for="filterYear">Filter by Year</label>
+                                <select id="filterYear" name="filterYear" class="form-select" onchange="this.form.submit()">
                                     <%
+                                    Integer selectedFilterYear = (Integer) request.getAttribute("filterYear");
+                                    %>
+                                    <option value="" <%= selectedFilterYear == null ? "selected" : "" %>>-- All Years --</option>
+                                    <option value="2024" <%= selectedFilterYear != null && selectedFilterYear == 2024 ? "selected" : "" %>>2024</option>
+                                    <option value="2025" <%= selectedFilterYear != null && selectedFilterYear == 2025 ? "selected" : "" %>>2025</option>
+                                    <option value="2026" <%= selectedFilterYear != null && selectedFilterYear == 2026 ? "selected" : "" %>>2026</option>
+                                    <option value="2027" <%= selectedFilterYear != null && selectedFilterYear == 2027 ? "selected" : "" %>>2027</option>
+                                    <option value="2028" <%= selectedFilterYear != null && selectedFilterYear == 2028 ? "selected" : "" %>>2028</option>
+                                </select>
+                            </div>
+                            
+                            <button type="submit" class="btn-search">Search</button>
+                        </form>
+                    </div>
+
+                    <!-- Assignments Data Table Card -->
+                    <div class="card table-card">
+                        <table class="data-table" id="assignmentTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px;">ID</th>
+                                    <th>Subject Course</th>
+                                    <th>Semester</th>
+                                    <th>Academic Year</th>
+                                    <th>Syllabus Designer</th>
+                                    <th>Syllabus Reviewer</th>
+                                    <th>Status</th>
+                                    <th>Assigned At</th>
+                                    <th style="width: 80px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <%
+                                if(assignmentList != null && !assignmentList.isEmpty()){
+                                    for(SyllabusAssignment item : assignmentList){
+                                        
+                                        // Format Status pill colors
+                                        String status = item.getAssignmentStatus() != null ? item.getAssignmentStatus() : "PENDING";
+                                        String statusColor = "#64748B";
+                                        String statusBg = "#F1F5F9";
+                                        if ("PENDING".equals(status)) {
+                                            statusColor = "#D97706";
+                                            statusBg = "#FEF3C7";
+                                        } else if ("ACCEPTED".equals(status) || "ACTIVE".equals(status)) {
+                                            statusColor = "#059669";
+                                            statusBg = "#D1FAE5";
+                                        } else if ("REJECTED".equals(status)) {
+                                            statusColor = "#DC2626";
+                                            statusBg = "#FEE2E2";
+                                        } else if ("COMPLETED".equals(status)) {
+                                            statusColor = "#2563EB";
+                                            statusBg = "#DBEAFE";
                                         }
+                                        
+                                        String assignedAtStr = "";
+                                        if (item.getAssignedAt() != null) {
+                                            assignedAtStr = sdf.format(item.getAssignedAt());
+                                        }
+                                %>
+                                <tr>
+                                    <td><%= item.getAssignmentId() %></td>
+                                    <td>
+                                        <span class="badge-code"><%= item.getCourseCode() %></span>
+                                    </td>
+                                    <td>
+                                        <span class="badge-semester"><%= item.getSemester() %></span>
+                                    </td>
+                                    <td>
+                                        <span class="badge-year"><%= item.getAcademicYear() %></span>
+                                    </td>
+                                    <td>
+                                        <span class="text-bold"><%= item.getDesignerName() %></span>
+                                        <br/>
+                                        <small style="color: var(--text-muted);"><%= item.getDesignerEmail() %></small>
+                                    </td>
+                                    <td>
+                                        <span class="text-bold"><%= item.getReviewerName() %></span>
+                                        <br/>
+                                        <small style="color: var(--text-muted);"><%= item.getReviewerEmail() %></small>
+                                    </td>
+                                    <td>
+                                        <span style="display: inline-block; padding: 4px 10px; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; color: <%= statusColor %>; background-color: <%= statusBg %>;">
+                                            <%= status %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span style="font-size: 13px; color: var(--text-dark); font-weight: 500;"><%= assignedAtStr %></span>
+                                    </td>
+                                    <td>
+                                        <div class="actions-cell">
+                                            <a href="${pageContext.request.contextPath}/role-assignment?action=edit&id=<%= item.getAssignmentId() %>" 
+                                               class="btn-action btn-action-edit" title="Edit">
+                                                <svg viewBox="0 0 24 24">
+                                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <%
                                     }
-                                    %>
-                                </select>
-                                <svg class="select-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"></path>
-                                </svg>
-                            </div>
-                        </div>
+                                } else {
+                                 %>
+                                <tr>
+                                    <td colspan="9">
+                                        <div class="empty-state">
+                                            <div class="empty-state-icon">
+                                                <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                                </svg>
+                                            </div>
+                                            <div class="text-bold">No Syllabus Assignments Found</div>
+                                            <div class="empty-state-text">
+                                                There are no syllabus role assignments matching the request.
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
 
-                        <!-- Academic Year Input -->
-                        <div class="form-group">
-                            <label class="form-label" for="yearInput">Academic Year</label>
-                            <div class="select-container">
-                                <input type="number" id="yearInput" class="select-input" value="2026" min="2020" max="2035" onchange="loadAssignment()">
-                                <!-- Calendar Icon -->
-                                <svg class="select-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z"></path>
-                                </svg>
+                        <!-- Client side Pagination Footer -->
+                        <% if(assignmentList != null && !assignmentList.isEmpty()){ %>
+                        <div class="pagination-footer">
+                            <div class="pagination-info" id="paginationInfo">
+                                Showing <span>0</span> to <span>0</span> of <span><%= assignmentList.size() %></span> entries
+                            </div>
+                            <div class="pagination-controls">
+                                <button class="page-btn" id="btnFirst" title="First Page">&lt;&lt;</button>
+                                <button class="page-btn" id="btnPrev" title="Previous Page">&lt;</button>
+                                <span class="page-indicator" id="pageIndicator">Page 1 of 1</span>
+                                <button class="page-btn" id="btnNext" title="Next Page">&gt;</button>
+                                <button class="page-btn" id="btnLast" title="Last Page">&gt;&gt;</button>
                             </div>
                         </div>
-
-                        <!-- Semester Dropdown -->
-                        <div class="form-group">
-                            <label class="form-label" for="semesterSelect">Semester</label>
-                            <div class="select-container">
-                                <select id="semesterSelect" class="select-input" onchange="loadAssignment()">
-                                    <option value="Spring">Spring</option>
-                                    <option value="Summer" selected>Summer</option>
-                                    <option value="Fall">Fall</option>
-                                </select>
-                                <svg class="select-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"></path>
-                                </svg>
-                            </div>
-                        </div>
+                        <% } %>
                     </div>
-
-                    <!-- Role Assignment List Card -->
-                    <div class="roles-card">
-                        <div class="roles-header">
-                            <div class="roles-header-cell">Assigned Role</div>
-                            <div class="roles-header-cell">Assigned Lecturer Account</div>
-                        </div>
-
-                        <!-- Syllabus Designer Row -->
-                        <div class="role-row">
-                            <div class="role-details">
-                                <div class="role-icon-box role-icon-designer">
-                                    <!-- Pencil/Edit Icon -->
-                                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"></path>
-                                    </svg>
-                                </div>
-                                <div class="role-meta">
-                                    <span class="role-title">Syllabus Designer</span>
-                                    <span class="role-desc">Authoring & mapping content</span>
-                                </div>
-                            </div>
-                            <!-- Designer Lecturer Selector -->
-                            <div class="user-select-box">
-                                <div id="designerDisplay" class="user-select-display" onclick="toggleDropdown('designer')">
-                                    <span id="designerText" style="color: var(--text-muted);">Choose lecturer...</span>
-                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
-                                    </svg>
-                                </div>
-                                <div id="designerDropdown" class="user-select-dropdown">
-                                    <input type="text" id="designerSearch" class="search-user-input" placeholder="Search by name or email..." onkeyup="filterLecturers('designer')">
-                                    <div id="designerOptions"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Syllabus Reviewer Row -->
-                        <div class="role-row">
-                            <div class="role-details">
-                                <div class="role-icon-box role-icon-reviewer">
-                                    <!-- Checked Clipboard Icon -->
-                                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                </div>
-                                <div class="role-meta">
-                                    <span class="role-title">Syllabus Reviewer</span>
-                                    <span class="role-desc">Validation & quality control</span>
-                                </div>
-                            </div>
-                            <!-- Reviewer Lecturer Selector -->
-                            <div class="user-select-box">
-                                <div id="reviewerDisplay" class="user-select-display" onclick="toggleDropdown('reviewer')">
-                                    <span id="reviewerText" style="color: var(--text-muted);">Choose lecturer...</span>
-                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
-                                    </svg>
-                                </div>
-                                <div id="reviewerDropdown" class="user-select-dropdown">
-                                    <input type="text" id="reviewerSearch" class="search-user-input" placeholder="Search by name or email..." onkeyup="filterLecturers('reviewer')">
-                                    <div id="reviewerOptions"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Footer toolbar and save buttons -->
-                    <div class="actions-footer">
-                        <div class="last-updated" id="lastUpdatedContainer">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 111.083.87l-.517.408a1.25 1.25 0 00-.488.948c0 .248.04.49.121.72M12 8.25h.008v.008H12V8.25zM21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <span id="lastUpdatedText">Loading last update details...</span>
-                        </div>
-                        <div class="button-group">
-                            <button class="btn btn-cancel" onclick="resetForm()">Cancel</button>
-                            <button class="btn btn-save" onclick="saveAssignment()">
-                                <!-- Document/Save Icon -->
-                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                                Save Assignment
-                            </button>
-                        </div>
-                    </div>
-
                 </div>
             </div>
         </main>
     </div>
 
+    <!-- ================= ADD MAPPING MODAL ================= -->
+    <div class="modal-overlay <%= "create".equals(action) ? "open" : "" %>" id="createModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Add Syllabus Role Assignment</h3>
+                <button class="modal-close" onclick="closeModal('createModal')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+             <form action="${pageContext.request.contextPath}/role-assignment?action=create" method="post" class="modal-form" onsubmit="return validateRoles('createDesignerId', 'createReviewerId')">
+                <div class="modal-body">
 
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="createCourseId">Subject Course *</label>
+                        <select id="createCourseId" name="courseId" class="form-select" required>
+                            <option value="">-- Choose Course --</option>
+                            <%
+                            if(courses != null) {
+                                for(Course c : courses) {
+                                    boolean isSelected = String.valueOf(c.getCourseId()).equals(tempCourseId);
+                            %>
+                            <option value="<%= c.getCourseId() %>" <%= isSelected ? "selected" : "" %>><%= c.getCode() %> - <%= c.getName() %></option>
+                            <%
+                                }
+                            }
+                            %>
+                        </select>
+                    </div>
 
-    <!-- TOAST NOTIFICATION -->
-    <div id="toast" class="toast">
-        <span id="toastIcon" class="toast-icon">✓</span>
-        <span id="toastMessage">Saved successfully.</span>
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="createSemester">Semester *</label>
+                        <select id="createSemester" name="semester" class="form-select" required>
+                            <option value="Spring" <%= "Spring".equals(tempSemester) ? "selected" : "" %>>Spring</option>
+                            <option value="Summer" <%= "Summer".equals(tempSemester) || tempSemester == null ? "selected" : "" %>>Summer</option>
+                            <option value="Fall" <%= "Fall".equals(tempSemester) ? "selected" : "" %>>Fall</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="createYear">Academic Year *</label>
+                        <input type="number" id="createYear" name="academicYear" class="form-input" min="2020" max="2035" value="<%= tempYear %>" required />
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="createDesignerId">Syllabus Designer *</label>
+                        <select id="createDesignerId" name="designerId" class="form-select" required>
+                            <option value="">-- Choose Lecturer --</option>
+                            <%
+                            if(lecturers != null) {
+                                for(User u : lecturers) {
+                                    String fullName = u.getFirstName() + " " + u.getLastName();
+                                    boolean isSelected = String.valueOf(u.getUserId()).equals(tempDesignerId);
+                            %>
+                            <option value="<%= u.getUserId() %>" <%= isSelected ? "selected" : "" %>><%= fullName %> (<%= u.getEmail() %>)</option>
+                            <%
+                                }
+                            }
+                            %>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="createReviewerId">Syllabus Reviewer *</label>
+                        <select id="createReviewerId" name="reviewerId" class="form-select" required>
+                            <option value="">-- Choose Lecturer --</option>
+                            <%
+                            if(lecturers != null) {
+                                for(User u : lecturers) {
+                                    String fullName = u.getFirstName() + " " + u.getLastName();
+                                    boolean isSelected = String.valueOf(u.getUserId()).equals(tempReviewerId);
+                            %>
+                            <option value="<%= u.getUserId() %>" <%= isSelected ? "selected" : "" %>><%= fullName %> (<%= u.getEmail() %>)</option>
+                            <%
+                                }
+                            }
+                            %>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModal('createModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Assignment</button>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <!-- JAVASCRIPT LOGIC -->
+    <!-- ================= EDIT MAPPING MODAL ================= -->
+    <div class="modal-overlay <%= "edit".equals(action) && editAssignment != null ? "open" : "" %>" id="editModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Edit Syllabus Role Assignment</h3>
+                <button class="modal-close" onclick="closeModal('editModal')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <% if(editAssignment != null) { %>
+             <form action="${pageContext.request.contextPath}/role-assignment?action=edit" method="post" class="modal-form" onsubmit="return validateRoles('editDesignerId', 'editReviewerId')">
+                <input type="hidden" name="assignmentId" value="<%= editAssignment.getAssignmentId() %>">
+                <div class="modal-body">
+
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="editCourseId">Subject Course *</label>
+                        <select id="editCourseId" name="courseId" class="form-select" required>
+                            <%
+                            if(courses != null) {
+                                for(Course c : courses) {
+                                    boolean isSelected = c.getCourseId() == editAssignment.getCourseId();
+                            %>
+                            <option value="<%= c.getCourseId() %>" <%= isSelected ? "selected" : "" %>><%= c.getCode() %> - <%= c.getName() %></option>
+                            <%
+                                }
+                            }
+                            %>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="editSemester">Semester *</label>
+                        <select id="editSemester" name="semester" class="form-select" required>
+                            <option value="Spring" <%= "Spring".equals(editAssignment.getSemester()) ? "selected" : "" %>>Spring</option>
+                            <option value="Summer" <%= "Summer".equals(editAssignment.getSemester()) ? "selected" : "" %>>Summer</option>
+                            <option value="Fall" <%= "Fall".equals(editAssignment.getSemester()) ? "selected" : "" %>>Fall</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="editYear">Academic Year *</label>
+                        <input type="number" id="editYear" name="academicYear" class="form-input" min="2020" max="2035" value="<%= editAssignment.getAcademicYear() %>" required />
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="editDesignerId">Syllabus Designer *</label>
+                        <select id="editDesignerId" name="designerId" class="form-select" required>
+                            <%
+                            if(lecturers != null) {
+                                for(User u : lecturers) {
+                                    String fullName = u.getFirstName() + " " + u.getLastName();
+                                    boolean isSelected = u.getUserId() == editAssignment.getDesignerId();
+                            %>
+                            <option value="<%= u.getUserId() %>" <%= isSelected ? "selected" : "" %>><%= fullName %> (<%= u.getEmail() %>)</option>
+                            <%
+                                }
+                            }
+                            %>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="editReviewerId">Syllabus Reviewer *</label>
+                        <select id="editReviewerId" name="reviewerId" class="form-select" required>
+                            <%
+                            if(lecturers != null) {
+                                for(User u : lecturers) {
+                                    String fullName = u.getFirstName() + " " + u.getLastName();
+                                    boolean isSelected = u.getUserId() == editAssignment.getReviewerId();
+                            %>
+                            <option value="<%= u.getUserId() %>" <%= isSelected ? "selected" : "" %>><%= fullName %> (<%= u.getEmail() %>)</option>
+                            <%
+                                }
+                            }
+                            %>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModal('editModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Update Assignment</button>
+                </div>
+             </form>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Client-side Pagination & Modal Controllers JS -->
     <script>
-        // Lecturers list from JSTL / Servlet context
-        const lecturers = [
-            <%
-            List<User> lecturers = (List<User>) request.getAttribute("lecturers");
-            if (lecturers != null) {
-                for (int i = 0; i < lecturers.size(); i++) {
-                    User u = lecturers.get(i);
-                    String fullName = u.getFirstName() + " " + u.getLastName();
-            %>
-                { id: <%= u.getUserId() %>, name: "<%= fullName.trim() %>", email: "<%= u.getEmail() %>" }<%= (i < lecturers.size() - 1) ? "," : "" %>
-            <%
-                }
+        function openCreateModal() {
+            document.getElementById('createModal').classList.add('open');
+            document.getElementById('createCourseId').focus();
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('open');
+            const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+        }
+
+        function validateRoles(designerSelectId, reviewerSelectId) {
+            const designer = document.getElementById(designerSelectId).value;
+            const reviewer = document.getElementById(reviewerSelectId).value;
+            if (designer && reviewer && designer === reviewer) {
+                showToast("Syllabus Designer and Reviewer must be different accounts.", false);
+                return false;
             }
-            %>
-        ];
+            return true;
+        }
 
-        // State to keep track of loaded details
-        let currentLoadedDesignerId = 0;
-        let currentLoadedReviewerId = 0;
+        document.addEventListener('DOMContentLoaded', function () {
+            const table = document.getElementById('assignmentTable');
+            if (!table) return;
 
-        let selectedDesignerId = 0;
-        let selectedReviewerId = 0;
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
 
-        // Initialize lists
-        window.addEventListener('click', function(e) {
-            // Close dropdowns if click outside
-            if (!e.target.closest('.user-select-box')) {
-                closeAllDropdowns();
+            const isNoData = rows.length === 1 && rows[0].cells.length === 1 && rows[0].querySelector('.empty-state');
+            if (isNoData) return;
+
+            const rowsPerPage = 5;
+            let currentPage = 1;
+            const totalPages = Math.ceil(rows.length / rowsPerPage);
+
+            function showPage(page) {
+                currentPage = page;
+                const start = (page - 1) * rowsPerPage;
+                const end = Math.min(start + rowsPerPage, rows.length);
+
+                rows.forEach((row, index) => {
+                    if (index >= start && index < end) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                document.getElementById('pageIndicator').textContent = 'Page ' + page + ' of ' + totalPages;
+                document.getElementById('paginationInfo').innerHTML = 'Showing <span>' + (start + 1) + '</span> to <span>' + end + '</span> of <span>' + rows.length + '</span> entries';
+
+                document.getElementById('btnFirst').disabled = (page === 1);
+                document.getElementById('btnPrev').disabled = (page === 1);
+                document.getElementById('btnNext').disabled = (page === totalPages);
+                document.getElementById('btnLast').disabled = (page === totalPages);
+            }
+
+            document.getElementById('btnFirst').addEventListener('click', () => showPage(1));
+            document.getElementById('btnPrev').addEventListener('click', () => showPage(currentPage - 1));
+            document.getElementById('btnNext').addEventListener('click', () => showPage(currentPage + 1));
+            document.getElementById('btnLast').addEventListener('click', () => showPage(totalPages));
+
+            showPage(1);
+
+            // Display Toast messages on Load
+            const successMsg = "<%= successMessage != null ? successMessage.replace("\"", "\\\"").replace("\n", "\\n") : "" %>";
+            const errorMsg = "<%= errorMessage != null ? errorMessage.replace("\"", "\\\"").replace("\n", "\\n") : "" %>";
+            if (successMsg && successMsg.trim().length > 0) {
+                showToast(successMsg, true);
+            }
+            if (errorMsg && errorMsg.trim().length > 0) {
+                showToast(errorMsg, false);
             }
         });
-
-        function closeAllDropdowns() {
-            document.getElementById('designerDropdown').style.display = 'none';
-            document.getElementById('reviewerDropdown').style.display = 'none';
-            document.getElementById('designerDisplay').classList.remove('active');
-            document.getElementById('reviewerDisplay').classList.remove('active');
-        }
-
-        function toggleDropdown(role) {
-            const dropdown = document.getElementById(role + 'Dropdown');
-            const display = document.getElementById(role + 'Display');
-            const isVisible = dropdown.style.display === 'block';
-            
-            closeAllDropdowns();
-            
-            if (!isVisible) {
-                dropdown.style.display = 'block';
-                display.classList.add('active');
-                document.getElementById(role + 'Search').value = '';
-                filterLecturers(role);
-                document.getElementById(role + 'Search').focus();
-            }
-        }
-
-        function filterLecturers(role) {
-            const query = document.getElementById(role + 'Search').value.toLowerCase();
-            const optionsDiv = document.getElementById(role + 'Options');
-            optionsDiv.innerHTML = '';
-
-            const filtered = lecturers.filter(u => 
-                u.name.toLowerCase().includes(query) || 
-                u.email.toLowerCase().includes(query)
-            );
-
-            if (filtered.length === 0) {
-                optionsDiv.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--text-muted); font-size:13px;">No accounts found</div>';
-                return;
-            }
-
-            filtered.forEach(u => {
-                const opt = document.createElement('div');
-                opt.className = 'user-option';
-                opt.onclick = () => selectLecturer(role, u);
-                
-                const nameSpan = document.createElement('span');
-                nameSpan.className = 'user-option-name';
-                nameSpan.textContent = u.name;
-
-                const emailSpan = document.createElement('span');
-                emailSpan.className = 'user-option-email';
-                emailSpan.textContent = u.email;
-
-                opt.appendChild(nameSpan);
-                opt.appendChild(emailSpan);
-                optionsDiv.appendChild(opt);
-            });
-        }
-
-        function selectLecturer(role, user) {
-            if (role === 'designer') {
-                selectedDesignerId = user.id;
-                document.getElementById('designerText').textContent = user.name + ' (' + user.email + ')';
-                document.getElementById('designerText').style.color = 'var(--text-primary)';
-            } else {
-                selectedReviewerId = user.id;
-                document.getElementById('reviewerText').textContent = user.name + ' (' + user.email + ')';
-                document.getElementById('reviewerText').style.color = 'var(--text-primary)';
-            }
-            closeAllDropdowns();
-        }
-
-        // Load assignments based on dropdown choices
-        function loadAssignment() {
-            const courseId = document.getElementById('courseSelect').value;
-            const semester = document.getElementById('semesterSelect').value;
-            const academicYear = document.getElementById('yearInput').value;
-
-            document.getElementById('lastUpdatedText').textContent = "Loading data...";
-
-            fetch('${pageContext.request.contextPath}/role-assignment?action=get&courseId=' + courseId + '&semester=' + semester + '&academicYear=' + academicYear)
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.found) {
-                        selectedDesignerId = data.designerId;
-                        selectedReviewerId = data.reviewerId;
-                        currentLoadedDesignerId = data.designerId;
-                        currentLoadedReviewerId = data.reviewerId;
-
-                        document.getElementById('designerText').textContent = data.designerName + ' (' + data.designerEmail + ')';
-                        document.getElementById('designerText').style.color = 'var(--text-primary)';
-                        
-                        document.getElementById('reviewerText').textContent = data.reviewerName + ' (' + data.reviewerEmail + ')';
-                        document.getElementById('reviewerText').style.color = 'var(--text-primary)';
-                    } else {
-                        selectedDesignerId = 0;
-                        selectedReviewerId = 0;
-                        currentLoadedDesignerId = 0;
-                        currentLoadedReviewerId = 0;
-
-                        document.getElementById('designerText').textContent = 'Choose lecturer...';
-                        document.getElementById('designerText').style.color = 'var(--text-muted)';
-                        
-                        document.getElementById('reviewerText').textContent = 'Choose lecturer...';
-                        document.getElementById('reviewerText').style.color = 'var(--text-muted)';
-                    }
-                    document.getElementById('lastUpdatedText').textContent = data.lastUpdated || 'No assignment found.';
-                })
-                .catch(err => {
-                    console.error('Error fetching assignment: ', err);
-                    showToast('Failed to load assignments.', false);
-                    document.getElementById('lastUpdatedText').textContent = 'Error loading update info.';
-                });
-        }
-
-        function resetForm() {
-            // Restore last loaded state
-            if (currentLoadedDesignerId > 0) {
-                const des = lecturers.find(l => l.id === currentLoadedDesignerId);
-                if (des) selectLecturer('designer', des);
-            } else {
-                selectedDesignerId = 0;
-                document.getElementById('designerText').textContent = 'Choose lecturer...';
-                document.getElementById('designerText').style.color = 'var(--text-muted)';
-            }
-
-            if (currentLoadedReviewerId > 0) {
-                const rev = lecturers.find(l => l.id === currentLoadedReviewerId);
-                if (rev) selectLecturer('reviewer', rev);
-            } else {
-                selectedReviewerId = 0;
-                document.getElementById('reviewerText').textContent = 'Choose lecturer...';
-                document.getElementById('reviewerText').style.color = 'var(--text-muted)';
-            }
-            showToast('Form reset to last saved state.', true);
-        }
-
-        function saveAssignment() {
-            const courseId = document.getElementById('courseSelect').value;
-            const semester = document.getElementById('semesterSelect').value;
-            const academicYear = document.getElementById('yearInput').value;
-
-            if (selectedDesignerId === 0 || selectedReviewerId === 0) {
-                showToast('Please select both a Syllabus Designer and a Syllabus Reviewer.', false);
-                return;
-            }
-
-            if (selectedDesignerId === selectedReviewerId) {
-                showToast('Syllabus Designer and Reviewer must be different accounts.', false);
-                return;
-            }
-
-            // POST form parameters
-            const params = new URLSearchParams();
-            params.append('courseId', courseId);
-            params.append('designerId', selectedDesignerId);
-            params.append('reviewerId', selectedReviewerId);
-            params.append('semester', semester);
-            params.append('academicYear', academicYear);
-
-            fetch('${pageContext.request.contextPath}/role-assignment', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: params
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    showToast(data.message, true);
-                    currentLoadedDesignerId = selectedDesignerId;
-                    currentLoadedReviewerId = selectedReviewerId;
-                    document.getElementById('lastUpdatedText').textContent = data.lastUpdated;
-                } else {
-                    showToast(data.message, false);
-                }
-            })
-            .catch(err => {
-                console.error('Save error: ', err);
-                showToast('Failed to save assignments due to network error.', false);
-            });
-        }
 
         function showToast(message, isSuccess = true) {
             const toast = document.getElementById('toast');
@@ -426,11 +1064,12 @@
                 toast.classList.remove('show');
             }, 3000);
         }
-
-        // Load assignment on load
-        document.addEventListener('DOMContentLoaded', () => {
-            loadAssignment();
-        });
     </script>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="toast">
+        <span id="toastIcon" class="toast-icon">✓</span>
+        <span id="toastMessage">Saved successfully.</span>
+    </div>
 </body>
 </html>

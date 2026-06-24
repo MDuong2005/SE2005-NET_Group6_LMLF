@@ -883,8 +883,8 @@
                     }
                 });
 
-                document.getElementById('pageIndicator').textContent = `Page ${page} of ${totalPages}`;
-                document.getElementById('paginationInfo').innerHTML = `Showing <span>${start + 1}</span> to <span>${end}</span> of <span>${rows.length}</span> entries`;
+                document.getElementById('pageIndicator').textContent = 'Page ' + page + ' of ' + totalPages;
+                document.getElementById('paginationInfo').innerHTML = 'Showing <span>' + (start + 1) + '</span> to <span>' + end + '</span> of <span>' + rows.length + '</span> entries';
 
                 document.getElementById('btnFirst').disabled = (page === 1);
                 document.getElementById('btnPrev').disabled = (page === 1);

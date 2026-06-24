@@ -39,6 +39,12 @@ public class CoursePrerequisiteServlet extends HttpServlet {
         String keyword = req.getParameter("keyword");
         String filterCourseIdStr = req.getParameter("filterCourseId");
 
+        // Handle deletion via GET request
+        if ("delete".equals(action)) {
+            handleDelete(req, resp);
+            return;
+        }
+
         // Load specific mapping if action is edit
         if ("edit".equals(action)) {
             String idStr = req.getParameter("id");
