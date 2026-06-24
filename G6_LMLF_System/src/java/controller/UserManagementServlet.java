@@ -81,7 +81,9 @@ public class UserManagementServlet extends HttpServlet {
 
     private void listUsers(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         List<User> users = userDAO.getAllUsersWithRoles();
+        List<Role> roles = roleDAO.getAllRoles();
         request.setAttribute("users", users);
+        request.setAttribute("roles", roles);
         request.getRequestDispatcher("/views/admin/user/user_list.jsp").forward(request, response);
     }
 
@@ -140,10 +142,10 @@ public class UserManagementServlet extends HttpServlet {
         newUser.setFirstName(firstName);
         newUser.setLastName(lastName);
         newUser.setEmail(email);
-        newUser.setPasswordHash("default123"); // Default password
-        newUser.setAuthProvider("LOCAL");
+        newUser.setPasswordHash(null); // Internal users use Google Login
+        newUser.setAuthProvider("GOOGLE");
         newUser.setExternal(false);
-        newUser.setMustChangePassword(true);
+        newUser.setMustChangePassword(false);
         newUser.setStatus("ACTIVE");
 
         long generatedId = userDAO.insertUser(newUser);

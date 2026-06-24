@@ -273,69 +273,7 @@
 </div>
 
 <!-- BOTTOM ROW: TABLES -->
-<div class="two-col-grid mb-6">
-    <!-- Recent Syllabi Pending Review -->
-    <div class="panel" style="box-shadow: 0 4px 20px rgba(0,0,0,0.03); border-radius: 1.25rem; border: none; overflow: hidden;">
-        <div class="panel-header" style="border-bottom: 1px dashed #e2e8f0; padding: 1.5rem 1.5rem 1rem 1.5rem;">
-            <h3 class="panel-title" style="color: #0f172a; font-size: 1.15rem;">Recent Syllabi Pending Review</h3>
-        </div>
-        <div class="panel-body">
-            <div class="data-table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Course Code</th>
-                            <th>Course Name</th>
-                            <th>Instructor</th>
-                            <th>Submitted At</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td style="font-weight: 600; color: #2563eb;">SE335</td>
-                            <td>Software Engineering</td>
-                            <td>Dr. Nguyen Van A</td>
-                            <td>May 22, 2025</td>
-                            <td><button class="btn-review-sm" onclick="window.location.href='${pageContext.request.contextPath}/review?id=335'">Review</button></td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 600; color: #2563eb;">DB310</td>
-                            <td>Database Systems</td>
-                            <td>Dr. Tran Thi B</td>
-                            <td>May 21, 2025</td>
-                            <td><button class="btn-review-sm" onclick="window.location.href='${pageContext.request.contextPath}/review?id=310'">Review</button></td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 600; color: #2563eb;">AI420</td>
-                            <td>Artificial Intelligence</td>
-                            <td>Dr. Le Van C</td>
-                            <td>May 20, 2025</td>
-                            <td><button class="btn-review-sm" onclick="window.location.href='${pageContext.request.contextPath}/review?id=420'">Review</button></td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 600; color: #2563eb;">PRJ301</td>
-                            <td>Project Management</td>
-                            <td>Dr. Pham Thi D</td>
-                            <td>May 20, 2025</td>
-                            <td><button class="btn-review-sm" onclick="window.location.href='${pageContext.request.contextPath}/review?id=301'">Review</button></td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 600; color: #2563eb;">WEB205</td>
-                            <td>Web Development</td>
-                            <td>Dr. Hoang Van E</td>
-                            <td>May 19, 2025</td>
-                            <td><button class="btn-review-sm" onclick="window.location.href='${pageContext.request.contextPath}/review?id=205'">Review</button></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="table-panel-footer">
-                <a href="${pageContext.request.contextPath}/review">View all pending syllabi</a>
-            </div>
-        </div>
-    </div>
-
+<div class="mb-6">
     <!-- Recent Role Assignments -->
     <div class="panel" style="box-shadow: 0 4px 20px rgba(0,0,0,0.03); border-radius: 1.25rem; border: none; overflow: hidden;">
         <div class="panel-header" style="border-bottom: 1px dashed #e2e8f0; padding: 1.5rem 1.5rem 1rem 1.5rem;">
@@ -353,47 +291,41 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <%
+                        java.util.List<model.SyllabusAssignment> recentAssignments = (java.util.List<model.SyllabusAssignment>) request.getAttribute("recentAssignments");
+                        if (recentAssignments != null && !recentAssignments.isEmpty()) {
+                            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MMM dd, yyyy");
+                            for (model.SyllabusAssignment sa : recentAssignments) {
+                        %>
                         <tr>
-                            <td style="font-weight: 600;">Dr. Nguyen Van A</td>
-                            <td>Course Instructor</td>
-                            <td>SE335</td>
-                            <td>May 22, 2025</td>
+                            <td style="font-weight: 600;"><%= sa.getDesignerName() %></td>
+                            <td>Syllabus Designer</td>
+                            <td><%= sa.getCourseCode() %> (<%= sa.getSemester() %> <%= sa.getAcademicYear() %>)</td>
+                            <td><%= sa.getAssignedAt() != null ? sdf.format(sa.getAssignedAt()) : "" %></td>
                         </tr>
                         <tr>
-                            <td style="font-weight: 600;">Dr. Tran Thi B</td>
-                            <td>Course Instructor</td>
-                            <td>DB310</td>
-                            <td>May 21, 2025</td>
+                            <td style="font-weight: 600;"><%= sa.getReviewerName() %></td>
+                            <td>Syllabus Reviewer</td>
+                            <td><%= sa.getCourseCode() %> (<%= sa.getSemester() %> <%= sa.getAcademicYear() %>)</td>
+                            <td><%= sa.getAssignedAt() != null ? sdf.format(sa.getAssignedAt()) : "" %></td>
                         </tr>
+                        <%
+                            }
+                        } else {
+                        %>
                         <tr>
-                            <td style="font-weight: 600;">Dr. Le Van C</td>
-                            <td>Syllabus Approver</td>
-                            <td>Faculty of IT</td>
-                            <td>May 20, 2025</td>
+                            <td colspan="4" style="text-align: center; color: #64748b;">No recent role assignments found.</td>
                         </tr>
-                        <tr>
-                            <td style="font-weight: 600;">Dr. Pham Thi D</td>
-                            <td>Course Instructor</td>
-                            <td>PRJ301</td>
-                            <td>May 19, 2025</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 600;">Dr. Hoang Van E</td>
-                            <td>Syllabus Editor</td>
-                            <td>Faculty of Engineering</td>
-                            <td>May 18, 2025</td>
-                        </tr>
+                        <% } %>
                     </tbody>
                 </table>
             </div>
             <div class="table-panel-footer">
-                <a href="${pageContext.request.contextPath}/curriculum/role-assignment">View all role assignments</a>
+                <a href="${pageContext.request.contextPath}/role-assignment">View all role assignments</a>
             </div>
         </div>
     </div>
-</div>
-
-<!-- BOTTOM-MOST SECTION: QUICK ACTIONS -->
+</div><!-- BOTTOM-MOST SECTION: QUICK ACTIONS -->
 <div style="margin-bottom: 2rem;">
     <h3 style="font-size: 1.125rem; font-weight: 700; color: #0f172a; margin-bottom: 1rem;">Quick Actions</h3>
     <div class="quick-actions-grid">
@@ -410,7 +342,7 @@
             </div>
         </div>
         <!-- Action 2 -->
-        <div class="quick-action-card" onclick="window.location.href='#'">
+        <div class="quick-action-card" onclick="window.location.href='${pageContext.request.contextPath}/course-prerequisite'">
             <div class="quick-action-icon bg-green-light">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -422,7 +354,7 @@
             </div>
         </div>
         <!-- Action 3 -->
-        <div class="quick-action-card" onclick="window.location.href='${pageContext.request.contextPath}/curriculum/role-assignment'">
+        <div class="quick-action-card" onclick="window.location.href='${pageContext.request.contextPath}/role-assignment'">
             <div class="quick-action-icon bg-orange-light">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -431,30 +363,6 @@
             <div class="quick-action-content">
                 <h4>Assign Roles</h4>
                 <p>Assign roles to teachers</p>
-            </div>
-        </div>
-        <!-- Action 4 -->
-        <div class="quick-action-card" onclick="window.location.href='${pageContext.request.contextPath}/review'">
-            <div class="quick-action-icon bg-purple-light">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-            </div>
-            <div class="quick-action-content">
-                <h4>Review Syllabi</h4>
-                <p>Review pending syllabi</p>
-            </div>
-        </div>
-        <!-- Action 5 -->
-        <div class="quick-action-card" onclick="window.location.href='#'">
-            <div class="quick-action-icon" style="background-color: #f0fdfa; color: #0d9488; border: 1px solid #ccfbf1;">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-            </div>
-            <div class="quick-action-content">
-                <h4>Generate Reports</h4>
-                <p>View detailed reports</p>
             </div>
         </div>
     </div>

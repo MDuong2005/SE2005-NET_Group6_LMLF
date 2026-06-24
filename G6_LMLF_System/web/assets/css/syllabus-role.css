@@ -1,9 +1,9 @@
 /* Syllabus Role Assignments CSS */
 :root {
     /* User's color system & layout variables */
-    --primary: #FF6B00;
-    --primary-hover: #E05E00;
-    --primary-light: #FFF0E6;
+    --primary: var(--fpt-orange, #FF6B00);
+    --primary-hover: var(--fpt-orange-hover, #E05E00);
+    --primary-light: var(--fpt-orange-light, #FFF0E6);
     --bg-main: #F8FAFC;
     --bg-card: #FFFFFF;
     --border-color: #E2E8F0;

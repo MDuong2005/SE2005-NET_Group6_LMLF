@@ -18,6 +18,7 @@ public class SyllabusAssignment {
     private String semester;
     private int academicYear;
     private Timestamp assignedAt;
+    private String assignmentStatus;
 
     // Display helpers (for showing lecturer name/email/course code on front end)
     private String courseCode;
@@ -133,5 +134,13 @@ public class SyllabusAssignment {
 
     public void setReviewerEmail(String reviewerEmail) {
         this.reviewerEmail = reviewerEmail;
+    }
+
+    public String getAssignmentStatus() {
+        return assignmentStatus;
+    }
+
+    public void setAssignmentStatus(String assignmentStatus) {
+        this.assignmentStatus = assignmentStatus;
     }
 }

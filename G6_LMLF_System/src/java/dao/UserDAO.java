@@ -444,4 +444,30 @@ public class UserDAO extends DBContext {
         }
         return false;
     }
+
+    public int getInternalUsersCount() {
+        String sql = "SELECT COUNT(*) FROM users WHERE is_external = 0 AND deleted_at IS NULL";
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public int getGuestUsersCount() {
+        String sql = "SELECT COUNT(*) FROM users WHERE is_external = 1 AND deleted_at IS NULL";
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
 }

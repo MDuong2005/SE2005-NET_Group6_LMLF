@@ -13,10 +13,48 @@
         <div class="header">
             <h2>Guest User Management</h2>
             <div class="header-actions">
+                <a href="${pageContext.request.contextPath}/dashboard" class="btn btn-back">&larr; Dashboard</a>
                 <a href="${pageContext.request.contextPath}/admin/users" class="btn btn-back">Internal Users</a>
                 <a href="${pageContext.request.contextPath}/admin/guests?action=create" class="btn btn-primary">+ Add Guest User</a>
             </div>
         </div>
+        <style>
+            .tabs {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 20px;
+                border-bottom: 2px solid #ecf0f1;
+                padding-bottom: 10px;
+                flex-wrap: wrap;
+            }
+            .tab-btn {
+                padding: 8px 16px;
+                border: none;
+                background: #f8f9fa;
+                border-radius: 4px;
+                cursor: pointer;
+                font-weight: 600;
+                color: #7f8c8d;
+                transition: all 0.3s;
+            }
+            .tab-btn:hover {
+                background: #e2e6ea;
+            }
+            .tab-btn.active {
+                background: #e67e22;
+                color: white;
+            }
+        </style>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="filterRole('ALL', this)">All Guests</button>
+            <c:forEach var="role" items="${roles}">
+                <c:if test="${role.roleName == 'REVIEWER' || role.roleName == 'DESIGNER'}">
+                    <button class="tab-btn" onclick="filterRole('${role.roleName}', this)">${role.roleName}</button>
+                </c:if>
+            </c:forEach>
+        </div>
+
         <div class="table-container">
             <table>
                 <thead>
@@ -31,7 +69,7 @@
                 </thead>
                 <tbody>
                     <c:forEach var="user" items="${guests}">
-                        <tr>
+                        <tr class="guest-row" data-role="${not empty user.roles ? user.roles[0].roleName : 'NONE'}">
                             <td style="color: #95a5a6;">#${user.userId}</td>
                             <td>
                                 <div class="user-col">${user.firstName} ${user.lastName} <span class="badge badge-role" style="font-size: 0.6rem; padding: 2px 4px; margin-left: 5px;">GUEST</span></div>
@@ -81,5 +119,22 @@
             </table>
         </div>
     </div>
+
+    <script>
+        function filterRole(role, btnElement) {
+            // Update active tab button UI
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            // Filter rows
+            document.querySelectorAll('.guest-row').forEach(row => {
+                if (role === 'ALL' || row.dataset.role === role) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    </script>
 </body>
 </html>
