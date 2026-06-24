@@ -1,6 +1,7 @@
 package controller;
 
 import dao.SyllabusDAO;
+import dao.SyllabusAssignmentDAO;
 import dao.SyllabusVersionDAO;
 import model.Syllabus;
 import model.SyllabusVersion;
@@ -18,11 +19,13 @@ public class SubmitSyllabusServlet extends HttpServlet {
 
     private SyllabusDAO syllabusDAO;
     private SyllabusVersionDAO versionDAO;
+    private SyllabusAssignmentDAO assignmentDAO;
 
     @Override
     public void init() {
         syllabusDAO = new SyllabusDAO();
         versionDAO = new SyllabusVersionDAO();
+        assignmentDAO = new SyllabusAssignmentDAO();
     }
 
     @Override
@@ -73,7 +76,7 @@ public class SubmitSyllabusServlet extends HttpServlet {
                 Syllabus syllabus = syllabusDAO.getById(syllabusId);
                 
                 if (syllabus == null) {
-                    response.sendRedirect("syllabus/submit?action=list&error=Syllabus not found");
+                    response.sendRedirect("submit?action=list&error=Syllabus not found");
                     return;
                 }
                 
@@ -82,11 +85,10 @@ public class SubmitSyllabusServlet extends HttpServlet {
                 request.setAttribute("syllabus", syllabus);
                 request.setAttribute("versions", versions);
                 request.setAttribute("pageTitle", "Submit Syllabus - " + syllabus.getTitle());
-                // Đường dẫn đúng: views/designer/syllabus/submit.jsp
                 request.getRequestDispatcher("/views/designer/syllabus/submit.jsp").forward(request, response);
                 return;
             } catch (NumberFormatException e) {
-                response.sendRedirect("syllabus/submit?action=list&error=Invalid syllabus ID");
+                response.sendRedirect("submit?action=list&error=Invalid syllabus ID");
                 return;
             }
         }
@@ -104,22 +106,22 @@ public class SubmitSyllabusServlet extends HttpServlet {
         request.setAttribute("syllabuses", draftSyllabuses);
         request.setAttribute("totalSyllabuses", draftSyllabuses.size());
         request.setAttribute("pageTitle", "Submit Syllabus for Review");
-        // Đường dẫn đúng: views/designer/syllabus/submit.jsp
         request.getRequestDispatcher("/views/designer/syllabus/submit.jsp").forward(request, response);
     }
 
+    // ==================== SUBMIT SYLLABUS ====================
     private void submitSyllabus(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         String syllabusIdStr = request.getParameter("syllabusId");
         String versionIdStr = request.getParameter("versionId");
         
         if (syllabusIdStr == null || syllabusIdStr.trim().isEmpty()) {
-            response.sendRedirect("syllabus/submit?action=list&error=Invalid syllabus ID");
+            response.sendRedirect("submit?action=list&error=Invalid syllabus ID");
             return;
         }
         
         if (versionIdStr == null || versionIdStr.trim().isEmpty()) {
-            response.sendRedirect("syllabus/submit?action=list&error=Please select a version to submit");
+            response.sendRedirect("submit?action=list&error=Please select a version to submit");
             return;
         }
         
@@ -129,28 +131,44 @@ public class SubmitSyllabusServlet extends HttpServlet {
             
             Syllabus syllabus = syllabusDAO.getById(syllabusId);
             if (syllabus == null) {
-                response.sendRedirect("syllabus/submit?action=list&error=Syllabus not found");
+                response.sendRedirect("submit?action=list&error=Syllabus not found");
                 return;
             }
             
             SyllabusVersion version = versionDAO.getById(versionId);
             if (version == null) {
-                response.sendRedirect("syllabus/submit?action=list&error=Version not found");
+                response.sendRedirect("submit?action=list&error=Version not found");
                 return;
             }
             
             if (!"DRAFT".equals(version.getStatus())) {
-                response.sendRedirect("syllabus/submit?action=list&error=Only DRAFT versions can be submitted");
+                response.sendRedirect("submit?action=list&error=Only DRAFT versions can be submitted");
                 return;
             }
             
+            // Bước 1: Submit version
             if (versionDAO.submit(versionId)) {
-                response.sendRedirect("syllabus/submit?action=list&success=Syllabus submitted successfully for review");
+                
+                // Bước 2: Tạo Syllabus Assignment
+                long designerId = 1;
+                boolean assignmentCreated = assignmentDAO.createAssignmentForCourse(
+                    syllabus.getCourseId(), 
+                    designerId
+                );
+                
+                if (assignmentCreated) {
+                    System.out.println("✅ Created syllabus_assignment for course: " + syllabus.getCourseId());
+                } else {
+                    System.out.println("ℹ️ Assignment already exists or no reviewer found for course: " + syllabus.getCourseId());
+                }
+                
+                // ✅ CHUYỂN VỀ TRANG LIST (My Syllabuses)
+                response.sendRedirect("create?action=list&success=Syllabus submitted successfully for review");
             } else {
-                response.sendRedirect("syllabus/submit?action=list&error=Failed to submit syllabus");
+                response.sendRedirect("submit?action=list&error=Failed to submit syllabus");
             }
         } catch (NumberFormatException e) {
-            response.sendRedirect("syllabus/submit?action=list&error=Invalid input format");
+            response.sendRedirect("submit?action=list&error=Invalid input format");
         }
     }
 }
