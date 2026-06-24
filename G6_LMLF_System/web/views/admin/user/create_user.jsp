@@ -12,6 +12,23 @@
         <div class="header form-header">
             <h2>Add New User</h2>
         </div>
+        
+        <c:if test="${not empty param.error}">
+            <div class="alert alert-danger" style="margin: 0 25px 15px 25px; padding: 10px; background-color: #f8d7da; color: #721c24; border-radius: 4px; border: 1px solid #f5c6cb;">
+                <c:choose>
+                    <c:when test="${param.error == 'invalid_data'}">
+                        Username (3-20 chars, no spaces) or Email format is invalid.
+                    </c:when>
+                    <c:when test="${param.error == 'duplicate_user'}">
+                        This Username or Email already exists in the system.
+                    </c:when>
+                    <c:otherwise>
+                        An error occurred while creating the user.
+                    </c:otherwise>
+                </c:choose>
+            </div>
+        </c:if>
+
         <div class="form-body">
             <form action="${pageContext.request.contextPath}/admin/users" method="POST">
                 <input type="hidden" name="action" value="create">
@@ -47,8 +64,8 @@
                     </select>
                 </div>
                 
-                <p style="font-size: 12px; color: #7f8c8d; margin-top: -10px;">
-                    * The default password will be <strong>default123</strong>. User will be forced to change it on first login.
+                <p style="font-size: 12px; color: #16a085; margin-top: -10px;">
+                    <i class="fas fa-info-circle"></i> This is an Internal User. They MUST log in via Google using the email address provided above. No password is required.
                 </p>
 
                 <div class="form-actions">

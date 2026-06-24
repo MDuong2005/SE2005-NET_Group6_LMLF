@@ -151,9 +151,10 @@ public class UserManagementServlet extends HttpServlet {
         long generatedId = userDAO.insertUser(newUser);
         if (generatedId > 0) {
             userDAO.assignRole(generatedId, roleId);
+            response.sendRedirect(request.getContextPath() + "/admin/users");
+        } else {
+            response.sendRedirect(request.getContextPath() + "/admin/users?action=create&error=duplicate_user");
         }
-        
-        response.sendRedirect(request.getContextPath() + "/admin/users");
     }
 
     private void updateUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
