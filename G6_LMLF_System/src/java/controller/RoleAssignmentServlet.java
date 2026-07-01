@@ -138,7 +138,7 @@ public class RoleAssignmentServlet extends HttpServlet {
 
         String courseIdStr = req.getParameter("courseId");
         String designerIdStr = req.getParameter("designerId");
-        String reviewerIdStr = req.getParameter("reviewerId");
+        String[] reviewerIds = req.getParameterValues("reviewerId");
         String semester = req.getParameter("semester");
         String yearStr = req.getParameter("academicYear");
         String status = req.getParameter("status");
@@ -146,14 +146,13 @@ public class RoleAssignmentServlet extends HttpServlet {
         req.setAttribute("action", "create");
         req.setAttribute("tempCourseId", courseIdStr);
         req.setAttribute("tempDesignerId", designerIdStr);
-        req.setAttribute("tempReviewerId", reviewerIdStr);
         req.setAttribute("tempSemester", semester);
         req.setAttribute("tempYear", yearStr);
         req.setAttribute("tempStatus", status);
 
         if (courseIdStr == null || courseIdStr.trim().isEmpty() || 
             designerIdStr == null || designerIdStr.trim().isEmpty() ||
-            reviewerIdStr == null || reviewerIdStr.trim().isEmpty() ||
+            reviewerIds == null || reviewerIds.length == 0 ||
             semester == null || semester.trim().isEmpty() ||
             yearStr == null || yearStr.trim().isEmpty()) {
             req.setAttribute("errorMessage", "All fields are required.");
@@ -164,42 +163,53 @@ public class RoleAssignmentServlet extends HttpServlet {
         try {
             Long courseId = Long.parseLong(courseIdStr.trim());
             Long designerId = Long.parseLong(designerIdStr.trim());
-            Long reviewerId = Long.parseLong(reviewerIdStr.trim());
             int academicYear = Integer.parseInt(yearStr.trim());
 
-            if (designerId.equals(reviewerId)) {
-                req.setAttribute("errorMessage", "Syllabus Designer and Reviewer must be different lecturers.");
-                forwardToList(req, resp);
-                return;
+            boolean hasSuccess = false;
+            boolean hasDuplicate = false;
+            HttpSession session = req.getSession();
+            User loggedInUser = (User) session.getAttribute("user");
+            String ipAddress = req.getRemoteAddr();
+
+            for (String revIdStr : reviewerIds) {
+                if (revIdStr == null || revIdStr.trim().isEmpty()) {
+                    continue;
+                }
+                Long reviewerId = Long.parseLong(revIdStr.trim());
+
+                if (designerId.equals(reviewerId)) {
+                    continue; // Skip same account
+                }
+
+                if (assignmentDAO.isDuplicateForReviewer(courseId, semester, academicYear, reviewerId)) {
+                    hasDuplicate = true;
+                    continue;
+                }
+
+                SyllabusAssignment sa = new SyllabusAssignment();
+                sa.setCourseId(courseId);
+                sa.setDesignerId(designerId);
+                sa.setReviewerId(reviewerId);
+                sa.setSemester(semester);
+                sa.setAcademicYear(academicYear);
+                sa.setAssignmentStatus((status != null && !status.trim().isEmpty()) ? status : "PENDING");
+
+                boolean result = assignmentDAO.create(sa);
+                if (result) {
+                    assignmentDAO.saveAssignment(sa, loggedInUser.getUserId(), ipAddress);
+                    hasSuccess = true;
+                }
             }
 
-            if (assignmentDAO.isDuplicate(courseId, semester, academicYear)) {
-                req.setAttribute("errorMessage", "An assignment for this course, semester and academic year already exists.");
-                forwardToList(req, resp);
-                return;
-            }
-
-            SyllabusAssignment sa = new SyllabusAssignment();
-            sa.setCourseId(courseId);
-            sa.setDesignerId(designerId);
-            sa.setReviewerId(reviewerId);
-            sa.setSemester(semester);
-            sa.setAcademicYear(academicYear);
-            sa.setAssignmentStatus((status != null && !status.trim().isEmpty()) ? status : "PENDING");
-
-            boolean result = assignmentDAO.create(sa);
-
-            if (result) {
-                HttpSession session = req.getSession();
-                User loggedInUser = (User) session.getAttribute("user");
-                String ipAddress = req.getRemoteAddr();
-                
-                assignmentDAO.saveAssignment(sa, loggedInUser.getUserId(), ipAddress);
-                
-                req.getSession().setAttribute("successMessage", "Added syllabus role assignment successfully!");
+            if (hasSuccess) {
+                req.getSession().setAttribute("successMessage", "Added syllabus role assignment(s) successfully!");
                 resp.sendRedirect(req.getContextPath() + "/role-assignment");
             } else {
-                req.setAttribute("errorMessage", "Failed to save syllabus role assignment. Please try again.");
+                if (hasDuplicate) {
+                    req.setAttribute("errorMessage", "An assignment for this course, reviewer, semester and academic year already exists.");
+                } else {
+                    req.setAttribute("errorMessage", "Failed to save syllabus role assignment. Please check inputs.");
+                }
                 forwardToList(req, resp);
             }
 

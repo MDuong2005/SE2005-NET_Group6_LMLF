@@ -454,6 +454,27 @@ public class SyllabusAssignmentDAO extends DBContext {
     }
 
     /**
+     * Check duplicate mapping including reviewer_id
+     */
+    public boolean isDuplicateForReviewer(long courseId, String semester, int academicYear, long reviewerId) {
+        String sql = "SELECT 1 FROM syllabus_assignments WHERE course_id = ? AND semester = ? AND academic_year = ? AND reviewer_id = ?";
+        try {
+            if (connection != null) {
+                PreparedStatement ps = connection.prepareStatement(sql);
+                ps.setLong(1, courseId);
+                ps.setString(2, semester);
+                ps.setInt(3, academicYear);
+                ps.setLong(4, reviewerId);
+                ResultSet rs = ps.executeQuery();
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
      * Insert new assignment
      */
     public boolean create(SyllabusAssignment assignment) {

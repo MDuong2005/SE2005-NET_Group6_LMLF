@@ -595,6 +595,200 @@
         }
         .toast-success .toast-icon { color: #48BB78; }
         .toast-error .toast-icon { color: #F56565; }
+
+        /* Redesigned two-column modal styles */
+        .modal-layout-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 24px;
+            min-height: 400px;
+        }
+        .modal-col-left {
+            border-right: 1px solid var(--border-color);
+            padding-right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .modal-col-right {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding-left: 4px;
+        }
+        .info-alert-box {
+            background-color: #EFF6FF;
+            border: 1px solid #BFDBFE;
+            color: #1D4ED8;
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            font-size: 13px;
+            line-height: 1.5;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            margin-top: auto;
+        }
+        .info-alert-box svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2.5;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        /* Custom Multiselect Dropdown Widget Styles */
+        .multiselect-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .multiselect-select-box {
+            min-height: 42px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 6px 36px 6px 12px;
+            font-size: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            background-color: #FFFFFF;
+            cursor: pointer;
+            position: relative;
+            transition: var(--transition);
+            align-items: center;
+        }
+        .multiselect-select-box:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(242, 111, 33, 0.15);
+        }
+        .multiselect-select-box::after {
+            content: "";
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid var(--text-muted);
+            pointer-events: none;
+        }
+        .multiselect-placeholder {
+            color: #94A3B8;
+            user-select: none;
+        }
+        .multiselect-dropdown-panel {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: calc(100% + 4px);
+            background-color: #FFFFFF;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            animation: fadeIn 0.15s ease;
+        }
+        .multiselect-dropdown-panel.open {
+            display: flex;
+        }
+        .multiselect-search-row {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: #F8FAFC;
+            position: relative;
+        }
+        .multiselect-search-input {
+            width: 100%;
+            height: 34px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 0 10px 0 32px;
+            font-size: 13.5px;
+            outline: none;
+            box-sizing: border-box;
+            background-color: #FFFFFF;
+        }
+        .multiselect-search-input:focus {
+            border-color: var(--primary);
+        }
+        .multiselect-search-icon {
+            position: absolute;
+            left: 22px;
+            top: 20px;
+            width: 14px;
+            height: 14px;
+            fill: var(--text-muted);
+        }
+        .multiselect-options-list {
+            max-height: 200px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding: 6px 0;
+        }
+        .multiselect-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 14px;
+            cursor: pointer;
+            transition: background-color 0.15s;
+            font-size: 13.5px;
+            color: var(--text-dark);
+            user-select: none;
+        }
+        .multiselect-option:hover {
+            background-color: #F1F5F9;
+        }
+        .multiselect-option input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .multiselect-footer {
+            padding: 8px 14px;
+            border-top: 1px solid var(--border-color);
+            background-color: #F8FAFC;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .multiselect-clear-all {
+            color: var(--danger);
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .multiselect-clear-all:hover {
+            text-decoration: underline;
+        }
+        .reviewer-tag {
+            background-color: #EFF6FF;
+            color: #1D4ED8;
+            border: 1px solid #BFDBFE;
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .reviewer-tag .remove-tag {
+            cursor: pointer;
+            font-weight: 800;
+            color: #2563EB;
+        }
+        .reviewer-tag .remove-tag:hover {
+            color: #DC2626;
+        }
     </style>
 </head>
 <body>
@@ -797,84 +991,121 @@
 
     <!-- ================= ADD MAPPING MODAL ================= -->
     <div class="modal-overlay <%= "create".equals(action) ? "open" : "" %>" id="createModal">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3>Add Syllabus Role Assignment</h3>
+        <div class="modal-container" style="max-width: 900px;">
+            <div class="modal-header" style="padding: 20px 28px;">
+                <h3 style="font-size: 20px; font-weight: 800; color: #0F172A; letter-spacing: -0.5px;">Assign Syllabus Roles</h3>
                 <button class="modal-close" onclick="closeModal('createModal')">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             </div>
-             <form action="${pageContext.request.contextPath}/role-assignment?action=create" method="post" class="modal-form" onsubmit="return validateRoles('createDesignerId', 'createReviewerId')">
-                <div class="modal-body">
+             <form action="${pageContext.request.contextPath}/role-assignment?action=create" method="post" class="modal-form" onsubmit="return validateCreateForm()">
+                <div class="modal-body" style="padding: 28px; max-height: 520px;">
+                    <div class="modal-layout-grid">
+                        
+                        <!-- Left Column: Select Subject Course & Term -->
+                        <div class="modal-col-left">
+                            <h4 style="font-size: 15px; font-weight: 800; color: #1E293B; margin-bottom: 4px;">1. Select Subject Course & Term</h4>
+                            
+                            <!-- Subject Course -->
+                            <div class="form-group">
+                                <label for="createCourseId">Subject Course *</label>
+                                <select id="createCourseId" name="courseId" class="form-select" required>
+                                    <option value="">-- Choose Course --</option>
+                                    <%
+                                    if(courses != null) {
+                                        for(Course c : courses) {
+                                            boolean isSelected = String.valueOf(c.getCourseId()).equals(tempCourseId);
+                                    %>
+                                    <option value="<%= c.getCourseId() %>" <%= isSelected ? "selected" : "" %>><%= c.getCode() %> - <%= c.getName() %></option>
+                                    <%
+                                        }
+                                    }
+                                    %>
+                                </select>
+                            </div>
 
-                    <div class="form-group" style="margin-bottom: 16px;">
-                        <label for="createCourseId">Subject Course *</label>
-                        <select id="createCourseId" name="courseId" class="form-select" required>
-                            <option value="">-- Choose Course --</option>
-                            <%
-                            if(courses != null) {
-                                for(Course c : courses) {
-                                    boolean isSelected = String.valueOf(c.getCourseId()).equals(tempCourseId);
-                            %>
-                            <option value="<%= c.getCourseId() %>" <%= isSelected ? "selected" : "" %>><%= c.getCode() %> - <%= c.getName() %></option>
-                            <%
-                                }
-                            }
-                            %>
-                        </select>
-                    </div>
+                            <!-- Semester -->
+                            <div class="form-group">
+                                <label for="createSemester">Semester *</label>
+                                <select id="createSemester" name="semester" class="form-select" required>
+                                    <option value="Spring" <%= "Spring".equals(tempSemester) ? "selected" : "" %>>Spring</option>
+                                    <option value="Summer" <%= "Summer".equals(tempSemester) || tempSemester == null ? "selected" : "" %>>Summer</option>
+                                    <option value="Fall" <%= "Fall".equals(tempSemester) ? "selected" : "" %>>Fall</option>
+                                </select>
+                            </div>
 
-                    <div class="form-group" style="margin-bottom: 16px;">
-                        <label for="createSemester">Semester *</label>
-                        <select id="createSemester" name="semester" class="form-select" required>
-                            <option value="Spring" <%= "Spring".equals(tempSemester) ? "selected" : "" %>>Spring</option>
-                            <option value="Summer" <%= "Summer".equals(tempSemester) || tempSemester == null ? "selected" : "" %>>Summer</option>
-                            <option value="Fall" <%= "Fall".equals(tempSemester) ? "selected" : "" %>>Fall</option>
-                        </select>
-                    </div>
+                            <!-- Academic Year -->
+                            <div class="form-group">
+                                <label for="createYear">Academic Year *</label>
+                                <input type="number" id="createYear" name="academicYear" class="form-input" min="2020" max="2035" value="<%= tempYear %>" required />
+                            </div>
+                        </div>
 
-                    <div class="form-group" style="margin-bottom: 16px;">
-                        <label for="createYear">Academic Year *</label>
-                        <input type="number" id="createYear" name="academicYear" class="form-input" min="2020" max="2035" value="<%= tempYear %>" required />
-                    </div>
+                        <!-- Right Column: Assign Roles -->
+                        <div class="modal-col-right">
+                            <h4 style="font-size: 15px; font-weight: 800; color: #1E293B; margin-bottom: 4px;">2. Assign Roles</h4>
 
-                    <div class="form-group" style="margin-bottom: 16px;">
-                        <label for="createDesignerId">Syllabus Designer *</label>
-                        <select id="createDesignerId" name="designerId" class="form-select" required>
-                            <option value="">-- Choose Lecturer --</option>
-                            <%
-                            if(lecturers != null) {
-                                for(User u : lecturers) {
-                                    String fullName = u.getFirstName() + " " + u.getLastName();
-                                    boolean isSelected = String.valueOf(u.getUserId()).equals(tempDesignerId);
-                            %>
-                            <option value="<%= u.getUserId() %>" <%= isSelected ? "selected" : "" %>><%= fullName %> (<%= u.getEmail() %>)</option>
-                            <%
-                                }
-                            }
-                            %>
-                        </select>
-                    </div>
+                            <!-- Syllabus Designer -->
+                            <div class="form-group">
+                                <label for="createDesignerId">Syllabus Designer (Select one) *</label>
+                                <select id="createDesignerId" name="designerId" class="form-select" onchange="handleDesignerChange(this.value)" required>
+                                    <option value="">-- Choose Lecturer --</option>
+                                    <%
+                                    if(lecturers != null) {
+                                        for(User u : lecturers) {
+                                            String fullName = u.getFirstName() + " " + u.getLastName();
+                                            boolean isSelected = String.valueOf(u.getUserId()).equals(tempDesignerId);
+                                    %>
+                                    <option value="<%= u.getUserId() %>" <%= isSelected ? "selected" : "" %>><%= fullName %> (<%= u.getEmail() %>)</option>
+                                    <%
+                                        }
+                                    }
+                                    %>
+                                </select>
+                            </div>
 
-                    <div class="form-group" style="margin-bottom: 16px;">
-                        <label for="createReviewerId">Syllabus Reviewer *</label>
-                        <select id="createReviewerId" name="reviewerId" class="form-select" required>
-                            <option value="">-- Choose Lecturer --</option>
-                            <%
-                            if(lecturers != null) {
-                                for(User u : lecturers) {
-                                    String fullName = u.getFirstName() + " " + u.getLastName();
-                                    boolean isSelected = String.valueOf(u.getUserId()).equals(tempReviewerId);
-                            %>
-                            <option value="<%= u.getUserId() %>" <%= isSelected ? "selected" : "" %>><%= fullName %> (<%= u.getEmail() %>)</option>
-                            <%
-                                }
-                            }
-                            %>
-                        </select>
+                            <!-- Syllabus Reviewer (Select one or more) -->
+                            <div class="form-group">
+                                <label>Syllabus Reviewer (Select one or more) *</label>
+                                <div class="multiselect-wrapper">
+                                    <!-- Display selected tag badges or placeholder -->
+                                    <div class="multiselect-select-box" id="reviewerSelectBox" onclick="toggleReviewerPanel(event)">
+                                        <span class="multiselect-placeholder" id="reviewerPlaceholder">Select reviewer...</span>
+                                    </div>
+                                    
+                                    <!-- Search & Checkbox list panel -->
+                                    <div class="multiselect-dropdown-panel" id="reviewerDropdownPanel">
+                                        <div class="multiselect-search-row" onclick="event.stopPropagation()">
+                                            <svg class="multiselect-search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                                            <input type="text" class="multiselect-search-input" id="reviewerSearchInput" placeholder="Search reviewer..." oninput="filterReviewersList(this.value)">
+                                        </div>
+                                        <div class="multiselect-options-list" id="reviewerOptionsList" onclick="event.stopPropagation()">
+                                            <%
+                                            if(lecturers != null) {
+                                                for(User u : lecturers) {
+                                                    String fullName = u.getFirstName() + " " + u.getLastName();
+                                            %>
+                                            <label class="multiselect-option" data-name="<%= fullName.toLowerCase() %> <%= u.getEmail().toLowerCase() %>" id="reviewer-opt-<%= u.getUserId() %>">
+                                                <input type="checkbox" name="reviewerId" value="<%= u.getUserId() %>" onchange="handleReviewerCheckboxChange(this, '<%= fullName %> (<%= u.getEmail() %>)')">
+                                                <span><%= fullName %> (<%= u.getEmail() %>)</span>
+                                            </label>
+                                            <%
+                                                }
+                                            }
+                                            %>
+                                        </div>
+                                        <div class="multiselect-footer" onclick="event.stopPropagation()">
+                                            <span id="selectedReviewersText">0 reviewers selected</span>
+                                            <a href="javascript:void(0)" class="multiselect-clear-all" onclick="clearAllReviewers()">Clear all</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer" style="padding: 20px 28px;">
                     <button type="button" class="btn-secondary" onclick="closeModal('createModal')">Cancel</button>
                     <button type="submit" class="btn-primary">Save Assignment</button>
                 </div>
@@ -971,7 +1202,144 @@
 
     <!-- Client-side Pagination & Modal Controllers JS -->
     <script>
+        let selectedReviewers = []; // array of {id, name}
+
+        function toggleReviewerPanel(e) {
+            e.stopPropagation();
+            document.getElementById('reviewerDropdownPanel').classList.toggle('open');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const panel = document.getElementById('reviewerDropdownPanel');
+            const selectBox = document.getElementById('reviewerSelectBox');
+            if (panel && !panel.contains(e.target) && !selectBox.contains(e.target)) {
+                panel.classList.remove('open');
+            }
+        });
+
+        function handleReviewerCheckboxChange(checkbox, fullName) {
+            const id = checkbox.value;
+            if (checkbox.checked) {
+                if (!selectedReviewers.some(r => r.id === id)) {
+                    selectedReviewers.push({ id: id, name: fullName });
+                }
+            } else {
+                selectedReviewers = selectedReviewers.filter(r => r.id !== id);
+            }
+            renderReviewerTags();
+        }
+
+        function removeReviewerTag(id, event) {
+            if (event) {
+                event.stopPropagation();
+            }
+            selectedReviewers = selectedReviewers.filter(r => r.id !== id);
+            
+            // Uncheck the checkbox in panel
+            const checkbox = document.querySelector('input[name="reviewerId"][value="' + id + '"]');
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+            
+            renderReviewerTags();
+        }
+
+        function clearAllReviewers() {
+            selectedReviewers = [];
+            const checkboxes = document.querySelectorAll('input[name="reviewerId"]');
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+            });
+            renderReviewerTags();
+        }
+
+        function filterReviewersList(query) {
+            const lowerQuery = query.toLowerCase().trim();
+            const options = document.querySelectorAll('.multiselect-option');
+            options.forEach(opt => {
+                const name = opt.getAttribute('data-name');
+                if (name.includes(lowerQuery)) {
+                    opt.style.display = 'flex';
+                } else {
+                    opt.style.display = 'none';
+                }
+            });
+        }
+
+        function renderReviewerTags() {
+            const selectBox = document.getElementById('reviewerSelectBox');
+            const placeholder = document.getElementById('reviewerPlaceholder');
+            const countText = document.getElementById('selectedReviewersText');
+            if (!selectBox || !placeholder || !countText) return;
+
+            // Remove existing tag elements
+            const existingTags = selectBox.querySelectorAll('.reviewer-tag');
+            existingTags.forEach(t => t.remove());
+
+            if (selectedReviewers.length === 0) {
+                placeholder.style.display = 'block';
+                countText.textContent = '0 reviewers selected';
+            } else {
+                placeholder.style.display = 'none';
+                countText.textContent = selectedReviewers.length + ' reviewer' + (selectedReviewers.length > 1 ? 's' : '') + ' selected';
+
+                // Append tags
+                selectedReviewers.forEach(r => {
+                    const tag = document.createElement('span');
+                    tag.className = 'reviewer-tag';
+                    tag.innerHTML = r.name + ' <span class="remove-tag" onclick="removeReviewerTag(\'' + r.id + '\', event)">&times;</span>';
+                    selectBox.insertBefore(tag, null);
+                });
+            }
+        }
+
+        function handleDesignerChange(designerId) {
+            // Uncheck and disable the designer in reviewers list
+            const options = document.querySelectorAll('.multiselect-option');
+            options.forEach(opt => {
+                const checkbox = opt.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    if (checkbox.value === designerId) {
+                        checkbox.checked = false;
+                        checkbox.disabled = true;
+                        opt.style.opacity = '0.5';
+                        opt.style.cursor = 'not-allowed';
+                        // Remove from selected list if it was checked
+                        removeReviewerTag(designerId);
+                    } else {
+                        checkbox.disabled = false;
+                        opt.style.opacity = '1';
+                        opt.style.cursor = 'pointer';
+                    }
+                }
+            });
+        }
+
+        function validateCreateForm() {
+            const course = document.getElementById('createCourseId').value;
+            const designer = document.getElementById('createDesignerId').value;
+            
+            if (!course) {
+                showToast("Please select a subject course.", false);
+                return false;
+            }
+            if (!designer) {
+                showToast("Please select a syllabus designer.", false);
+                return false;
+            }
+            if (selectedReviewers.length === 0) {
+                showToast("Please select at least one syllabus reviewer.", false);
+                return false;
+            }
+            return true;
+        }
+
         function openCreateModal() {
+            clearAllReviewers();
+            document.getElementById('createCourseId').value = '';
+            document.getElementById('createDesignerId').value = '';
+            handleDesignerChange('');
             document.getElementById('createModal').classList.add('open');
             document.getElementById('createCourseId').focus();
         }
