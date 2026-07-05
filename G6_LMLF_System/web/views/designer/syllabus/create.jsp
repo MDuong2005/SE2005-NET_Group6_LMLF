@@ -1,5 +1,6 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -8,6 +9,109 @@
     <title>${pageTitle} - LMLF Designer</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/designer/designer.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .task-info-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+        .task-info-box.show {
+            display: block;
+        }
+        .task-info-box .task-label {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        .task-info-box .task-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #1a2332;
+        }
+        .task-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1rem;
+        }
+        .form-section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1a2332;
+            margin: 1.5rem 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e8ecf1;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .form-section-title i {
+            color: var(--fpt-orange);
+        }
+        .form-section-title .badge-count {
+            font-size: 0.7rem;
+            background: var(--fpt-orange-light);
+            color: var(--fpt-orange);
+            padding: 0.1rem 0.6rem;
+            border-radius: 9999px;
+            font-weight: 600;
+        }
+        .material-item, .lo-item, .session-item, .assessment-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            display: grid;
+            gap: 0.75rem;
+            align-items: end;
+        }
+        .material-item {
+            grid-template-columns: 2fr 1.5fr 1fr 1fr;
+        }
+        .lo-item {
+            grid-template-columns: 1fr 2fr;
+        }
+        .session-item {
+            grid-template-columns: 0.5fr 1.5fr 1fr 0.5fr 1fr 0.5fr;
+            align-items: center;
+        }
+        .assessment-item {
+            grid-template-columns: 1.5fr 1fr 0.8fr 0.8fr 1fr 0.8fr;
+        }
+        .add-btn {
+            margin-top: 0.5rem;
+        }
+        .btn-remove {
+            color: #ef4444;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0 0.5rem;
+        }
+        .btn-remove:hover {
+            color: #dc2626;
+        }
+        @media (max-width: 768px) {
+            .task-info-grid {
+                grid-template-columns: 1fr;
+            }
+            .material-item, .lo-item, .session-item, .assessment-item {
+                grid-template-columns: 1fr;
+            }
+            .session-item {
+                grid-template-columns: 1fr;
+            }
+            .assessment-item {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
 <div class="dashboard-wrapper">
@@ -145,7 +249,7 @@
             <div class="content-header">
                 <div>
                     <h2><i class="fas fa-${mode == 'create' ? 'plus-circle' : 'edit'}"></i> ${pageTitle}</h2>
-                    <p>${mode == 'create' ? 'Create a new syllabus document' : 'Edit existing syllabus'}</p>
+                    <p>${mode == 'create' ? 'Create a new syllabus from assigned task' : 'Edit existing syllabus'}</p>
                 </div>
                 <div class="content-header-actions">
                     <a href="${pageContext.request.contextPath}/syllabus/create?action=list" class="btn btn-secondary">
@@ -180,59 +284,278 @@
             <!-- Form -->
             <div class="form-container">
                 <c:choose>
-                    <%-- CREATE MODE --%>
+                    <%-- ==================== CREATE MODE ==================== --%>
                     <c:when test="${mode == 'create' || empty mode}">
-                        <form action="${pageContext.request.contextPath}/syllabus/create" method="post">
+                        <form action="${pageContext.request.contextPath}/syllabus/create" method="post" id="syllabusForm">
                             <input type="hidden" name="action" value="create">
 
+                            <!-- ===== BƯỚC 1: CHỌN TASK ===== -->
                             <div class="form-group">
-                                <label>Select Course <span class="required">*</span></label>
-                                <select name="courseId" class="form-control" required>
-                                    <option value="">-- Select Course --</option>
-                                    <c:forEach items="${courses}" var="course">
-                                        <option value="${course.courseId}">${course.code} - ${course.name} (${course.credits} cr)</option>
+                                <label>Select Task <span class="required">*</span></label>
+                                <select name="assignmentId" class="form-control" id="taskSelect" required onchange="showTaskInfo(this)">
+                                    <option value="">-- Select Task --</option>
+                                    <c:forEach items="${tasks}" var="task">
+                                        <option value="${task.assignmentId}" 
+                                                data-course-id="${task.courseId}"
+                                                data-course-code="${task.courseCode}"
+                                                data-course-name="${task.courseName}"
+                                                data-semester="${task.semester}"
+                                                data-academic-year="${task.academicYear}">
+                                            ${task.courseCode} - ${task.courseName} (${task.semester} ${task.academicYear})
+                                        </option>
                                     </c:forEach>
                                 </select>
-                                <div class="form-text">Select the course this syllabus belongs to</div>
+                                <div class="form-text">Select the task assigned to you by Academic Office</div>
+                            </div>
+
+                            <!-- ===== HIỂN THỊ THÔNG TIN TASK ===== -->
+                            <div class="task-info-box" id="taskInfoBox">
+                                <div class="task-info-grid">
+                                    <div>
+                                        <div class="task-label">Course Code</div>
+                                        <div class="task-value" id="displayCourseCode">-</div>
+                                    </div>
+                                    <div>
+                                        <div class="task-label">Course Name</div>
+                                        <div class="task-value" id="displayCourseName">-</div>
+                                    </div>
+                                    <div>
+                                        <div class="task-label">Semester</div>
+                                        <div class="task-value" id="displaySemester">-</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ===== BƯỚC 2: THÔNG TIN SYLLABUS ===== -->
+                            <div class="form-section-title">
+                                <i class="fas fa-info-circle"></i> Syllabus Information
+                                <span class="badge-count">Required</span>
                             </div>
 
                             <div class="form-group">
-                                <label>Syllabus Title <span class="required">*</span></label>
-                                <input type="text" name="title" class="form-control" placeholder="Enter syllabus title" required>
-                                <div class="form-text">Example: Introduction to Programming - Syllabus</div>
+                                <label>Syllabus Name <span class="required">*</span></label>
+                                <input type="text" name="syllabusName" class="form-control" placeholder="e.g., Software Development Project" required>
+                                <div class="form-text">Full name of the syllabus</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Syllabus English Name</label>
+                                <input type="text" name="syllabusEnglish" class="form-control" placeholder="e.g., Software Development Project">
+                                <div class="form-text">English version of the syllabus name</div>
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label>Change Type</label>
-                                    <select name="changeType" class="form-control">
-                                        <option value="NEW">NEW - New Syllabus</option>
-                                        <option value="MINOR">MINOR - Minor Updates</option>
-                                        <option value="MAJOR">MAJOR - Major Changes</option>
-                                    </select>
+                                    <label>No. Credits <span class="required">*</span></label>
+                                    <input type="number" name="noCredit" class="form-control" value="3" min="1" max="10" required>
                                 </div>
                                 <div class="form-group">
-                                    <label>Initial Version</label>
-                                    <input type="text" name="versionNumber" class="form-control" value="v1.0" readonly disabled style="background:#f5f5f5;">
-                                    <div class="form-text">First version is always v1.0</div>
+                                    <label>Degree Level</label>
+                                    <select name="degreeLevel" class="form-control">
+                                        <option value="Bachelor">Bachelor</option>
+                                        <option value="Master">Master</option>
+                                        <option value="Doctor">Doctor</option>
+                                    </select>
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <label>Description of Changes</label>
-                                <textarea name="description" class="form-control" rows="3" placeholder="Describe the content of this syllabus...">Initial version</textarea>
+                                <label>Time Allocation <span class="required">*</span></label>
+                                <input type="text" name="timeAllocation" class="form-control" placeholder="e.g., Study hour (150h) = 45h contact + 1h Project + 104h self-study" required>
+                                <div class="form-text">Total study hours and how they are allocated</div>
                             </div>
 
+                            <div class="form-group">
+                                <label>Pre-Requisite</label>
+                                <input type="text" name="preRequisite" class="form-control" placeholder="e.g., PRJ301, SWE201c or SWE202c, pass LAB211">
+                                <div class="form-text">Comma separated list of prerequisite courses</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Description <span class="required">*</span></label>
+                                <textarea name="description" class="form-control" rows="4" placeholder="Describe the course content and objectives" required></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Student Tasks</label>
+                                <textarea name="studentTasks" class="form-control" rows="3" placeholder="List of student tasks"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Tools</label>
+                                <textarea name="tools" class="form-control" rows="3" placeholder="List of tools used in the course"></textarea>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Scoring Scale</label>
+                                    <select name="scoringScale" class="form-control">
+                                        <option value="10">10</option>
+                                        <option value="4">4</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Min Avg Mark to Pass</label>
+                                    <input type="number" name="minAvgMarkToPass" class="form-control" value="5" min="0" step="0.5">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Decision No</label>
+                                <input type="text" name="decisionNo" class="form-control" placeholder="e.g., 377/QĐ-ĐHFPT dated 04/09/2026">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Note</label>
+                                <textarea name="note" class="form-control" rows="2" placeholder="Additional notes"></textarea>
+                            </div>
+
+                            <!-- ===== BƯỚC 3: LEARNING OUTCOMES ===== -->
+                            <div class="form-section-title">
+                                <i class="fas fa-bullseye"></i> Learning Outcomes (CLOs)
+                                <span class="badge-count" id="loCount">0</span>
+                            </div>
+
+                            <div id="loContainer">
+                                <div class="lo-item">
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>CLO Code</label>
+                                        <input type="text" name="loCode[]" class="form-control" placeholder="e.g., CLO1" value="CLO1">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>CLO Details</label>
+                                        <input type="text" name="loDetails[]" class="form-control" placeholder="Description of CLO">
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-sm add-btn" onclick="addLO()">
+                                <i class="fas fa-plus"></i> Add Learning Outcome
+                            </button>
+
+                            <!-- ===== BƯỚC 4: MATERIALS ===== -->
+                            <div class="form-section-title">
+                                <i class="fas fa-book"></i> Learning Materials
+                                <span class="badge-count" id="materialCount">0</span>
+                            </div>
+
+                            <div id="materialContainer">
+                                <div class="material-item">
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>Title</label>
+                                        <input type="text" name="materialTitle[]" class="form-control" placeholder="Material title">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>Author</label>
+                                        <input type="text" name="materialAuthor[]" class="form-control" placeholder="Author name">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>Publisher</label>
+                                        <input type="text" name="materialPublisher[]" class="form-control" placeholder="Publisher">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>URL</label>
+                                        <input type="url" name="materialUrl[]" class="form-control" placeholder="https://...">
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-sm add-btn" onclick="addMaterial()">
+                                <i class="fas fa-plus"></i> Add Material
+                            </button>
+
+                            <!-- ===== BƯỚC 5: SESSIONS ===== -->
+                            <div class="form-section-title">
+                                <i class="fas fa-calendar-alt"></i> Sessions
+                                <span class="badge-count" id="sessionCount">0</span>
+                            </div>
+
+                            <div id="sessionContainer">
+                                <div class="session-item">
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>Session</label>
+                                        <input type="number" name="sessionNumber[]" class="form-control" placeholder="1" value="1">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>Topic</label>
+                                        <input type="text" name="sessionTopic[]" class="form-control" placeholder="Topic name">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>Type</label>
+                                        <input type="text" name="sessionType[]" class="form-control" placeholder="Lecture, Lab...">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>LO</label>
+                                        <input type="text" name="sessionLO[]" class="form-control" placeholder="CLO1, CLO2">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>ITU</label>
+                                        <input type="text" name="sessionITU[]" class="form-control" placeholder="AI literacy...">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>Materials</label>
+                                        <input type="text" name="sessionMaterials[]" class="form-control" placeholder="Materials">
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-sm add-btn" onclick="addSession()">
+                                <i class="fas fa-plus"></i> Add Session
+                            </button>
+
+                            <!-- ===== BƯỚC 6: ASSESSMENTS ===== -->
+                            <div class="form-section-title">
+                                <i class="fas fa-clipboard-list"></i> Assessments
+                                <span class="badge-count" id="assessmentCount">0</span>
+                            </div>
+
+                            <div id="assessmentContainer">
+                                <div class="assessment-item">
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>Assessment Name</label>
+                                        <input type="text" name="assessmentName[]" class="form-control" placeholder="Assessment name">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>Category</label>
+                                        <select name="assessmentCategory[]" class="form-control">
+                                            <option value="on-going">On-going</option>
+                                            <option value="final exam">Final Exam</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>Weight (%)</label>
+                                        <input type="number" name="assessmentWeight[]" class="form-control" placeholder="e.g., 15">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>CLO</label>
+                                        <input type="text" name="assessmentCLO[]" class="form-control" placeholder="CLO1, CLO2">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>Duration</label>
+                                        <input type="text" name="assessmentDuration[]" class="form-control" placeholder="20'/group">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>Type</label>
+                                        <input type="text" name="assessmentType[]" class="form-control" placeholder="Presentation, Q&A...">
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-sm add-btn" onclick="addAssessment()">
+                                <i class="fas fa-plus"></i> Add Assessment
+                            </button>
+
+                            <!-- ===== FORM ACTIONS ===== -->
                             <div class="form-actions">
                                 <a href="${pageContext.request.contextPath}/syllabus/create?action=list" class="btn btn-secondary">Cancel</a>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save"></i> Create Syllabus
+                                <button type="submit" name="action" value="saveDraft" class="btn btn-warning">
+                                    <i class="fas fa-save"></i> Save Draft
+                                </button>
+                                <button type="submit" name="action" value="create" class="btn btn-primary">
+                                    <i class="fas fa-check"></i> Create & Continue
                                 </button>
                             </div>
                         </form>
                     </c:when>
 
-                    <%-- EDIT MODE --%>
+                    <%-- ==================== EDIT MODE ==================== --%>
                     <c:when test="${mode == 'edit' && not empty syllabus}">
                         <form action="${pageContext.request.contextPath}/syllabus/create" method="post">
                             <input type="hidden" name="action" value="edit">
@@ -296,7 +619,7 @@
                         </form>
                     </c:when>
 
-                    <%-- VIEW MODE --%>
+                    <%-- ==================== VIEW MODE ==================== --%>
                     <c:when test="${mode == 'view' && not empty syllabus}">
                         <div style="margin-bottom:1.5rem;">
                             <div class="form-row">
@@ -353,8 +676,157 @@
 </div>
 
 <script>
+    // ===== SHOW TASK INFO =====
+    function showTaskInfo(select) {
+        var box = document.getElementById('taskInfoBox');
+        var selected = select.options[select.selectedIndex];
+        
+        if (select.value && select.value !== '') {
+            document.getElementById('displayCourseCode').textContent = selected.dataset.courseCode || '-';
+            document.getElementById('displayCourseName').textContent = selected.dataset.courseName || '-';
+            document.getElementById('displaySemester').textContent = (selected.dataset.semester || '') + ' ' + (selected.dataset.academicYear || '');
+            box.classList.add('show');
+        } else {
+            box.classList.remove('show');
+        }
+    }
+
+    // ===== ADD LEARNING OUTCOME =====
+    function addLO() {
+        var container = document.getElementById('loContainer');
+        var count = container.children.length + 1;
+        var div = document.createElement('div');
+        div.className = 'lo-item';
+        div.innerHTML = `
+            <div class="form-group" style="margin-bottom:0;display:flex;gap:0.5rem;">
+                <input type="text" name="loCode[]" class="form-control" placeholder="e.g., CLO${count}" value="CLO${count}" style="flex:1;">
+                <button type="button" class="btn-remove" onclick="this.closest('.lo-item').remove(); updateCounts();" title="Remove">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <input type="text" name="loDetails[]" class="form-control" placeholder="Description of CLO">
+            </div>
+        `;
+        container.appendChild(div);
+        updateCounts();
+    }
+
+    // ===== ADD MATERIAL =====
+    function addMaterial() {
+        var container = document.getElementById('materialContainer');
+        var div = document.createElement('div');
+        div.className = 'material-item';
+        div.innerHTML = `
+            <div class="form-group" style="margin-bottom:0;display:flex;gap:0.5rem;">
+                <input type="text" name="materialTitle[]" class="form-control" placeholder="Material title" style="flex:1;">
+                <button type="button" class="btn-remove" onclick="this.closest('.material-item').remove(); updateCounts();" title="Remove">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <input type="text" name="materialAuthor[]" class="form-control" placeholder="Author">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <input type="text" name="materialPublisher[]" class="form-control" placeholder="Publisher">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <input type="url" name="materialUrl[]" class="form-control" placeholder="https://...">
+            </div>
+        `;
+        container.appendChild(div);
+        updateCounts();
+    }
+
+    // ===== ADD SESSION =====
+    function addSession() {
+        var container = document.getElementById('sessionContainer');
+        var count = container.children.length + 1;
+        var div = document.createElement('div');
+        div.className = 'session-item';
+        div.innerHTML = `
+            <div class="form-group" style="margin-bottom:0;display:flex;gap:0.5rem;">
+                <input type="number" name="sessionNumber[]" class="form-control" placeholder="${count}" value="${count}" style="width:60px;">
+                <button type="button" class="btn-remove" onclick="this.closest('.session-item').remove(); updateCounts();" title="Remove">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <input type="text" name="sessionTopic[]" class="form-control" placeholder="Topic name">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <input type="text" name="sessionType[]" class="form-control" placeholder="Lecture, Lab...">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <input type="text" name="sessionLO[]" class="form-control" placeholder="CLO1, CLO2">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <input type="text" name="sessionITU[]" class="form-control" placeholder="AI literacy...">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <input type="text" name="sessionMaterials[]" class="form-control" placeholder="Materials">
+            </div>
+        `;
+        container.appendChild(div);
+        updateCounts();
+    }
+
+    // ===== ADD ASSESSMENT =====
+    function addAssessment() {
+        var container = document.getElementById('assessmentContainer');
+        var div = document.createElement('div');
+        div.className = 'assessment-item';
+        div.innerHTML = `
+            <div class="form-group" style="margin-bottom:0;display:flex;gap:0.5rem;">
+                <input type="text" name="assessmentName[]" class="form-control" placeholder="Assessment name" style="flex:1;">
+                <button type="button" class="btn-remove" onclick="this.closest('.assessment-item').remove(); updateCounts();" title="Remove">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <select name="assessmentCategory[]" class="form-control">
+                    <option value="on-going">On-going</option>
+                    <option value="final exam">Final Exam</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <input type="number" name="assessmentWeight[]" class="form-control" placeholder="Weight">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <input type="text" name="assessmentCLO[]" class="form-control" placeholder="CLO1, CLO2">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <input type="text" name="assessmentDuration[]" class="form-control" placeholder="20'/group">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <input type="text" name="assessmentType[]" class="form-control" placeholder="Presentation, Q&A...">
+            </div>
+        `;
+        container.appendChild(div);
+        updateCounts();
+    }
+
+    // ===== UPDATE COUNTS =====
+    function updateCounts() {
+        var loCount = document.querySelectorAll('#loContainer .lo-item').length;
+        var materialCount = document.querySelectorAll('#materialContainer .material-item').length;
+        var sessionCount = document.querySelectorAll('#sessionContainer .session-item').length;
+        var assessmentCount = document.querySelectorAll('#assessmentContainer .assessment-item').length;
+        
+        document.getElementById('loCount').textContent = loCount;
+        document.getElementById('materialCount').textContent = materialCount;
+        document.getElementById('sessionCount').textContent = sessionCount;
+        document.getElementById('assessmentCount').textContent = assessmentCount;
+    }
+
+    // ===== AUTO CLOSE ALERTS =====
     document.querySelectorAll('.alert').forEach(function(alert) {
         setTimeout(function() { alert.style.display = 'none'; }, 5000);
+    });
+
+    // ===== INIT COUNTS =====
+    document.addEventListener('DOMContentLoaded', function() {
+        updateCounts();
     });
 </script>
 </body>
