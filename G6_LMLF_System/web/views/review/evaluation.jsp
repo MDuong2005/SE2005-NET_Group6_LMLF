@@ -5,10 +5,13 @@
 <%
     Map<String, Object> versionDetail =
             (Map<String, Object>) request.getAttribute("versionDetail");
+
     List<Map<String, Object>> criteriaList =
             (List<Map<String, Object>>) request.getAttribute("criteriaList");
+
     Map<String, String> sectionContentMap =
             (Map<String, String>) request.getAttribute("sectionContentMap");
+
     String error = request.getParameter("error");
 
     String userInitials = "RV";
@@ -69,6 +72,7 @@
 
             .sidebar {
                 width: 280px;
+                min-width: 280px;
                 background: #FFFFFF;
                 border-right: 1px solid var(--border);
                 display: flex;
@@ -76,35 +80,49 @@
             }
 
             .sidebar-header {
-                padding: 24px;
+                padding: 20px 18px;
                 border-bottom: 1px solid #F1F5F9;
-                display: flex;
-                align-items: center;
-                gap: 14px;
+                background: #FFFFFF;
             }
 
-            .sidebar-logo {
-                width: 42px;
-                height: 42px;
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .brand-icon {
+                width: 52px;
+                height: 52px;
+                min-width: 52px;
+                border-radius: 15px;
                 background: var(--primary);
                 color: #FFFFFF;
-                border-radius: 10px;
+                font-size: 22px;
+                font-weight: 900;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-weight: 800;
             }
 
-            .sidebar-title h1 {
-                font-size: 20px;
+            .brand-text {
+                min-width: 0;
+                line-height: 1.15;
+            }
+
+            .brand-title {
+                font-size: 26px;
+                font-weight: 900;
                 color: var(--primary);
             }
 
-            .sidebar-title p {
-                font-size: 12px;
+            .brand-subtitle {
+                margin-top: 3px;
+                font-size: 11px;
+                font-weight: 800;
                 color: var(--text-muted);
-                font-weight: 700;
                 text-transform: uppercase;
+                letter-spacing: 0.4px;
             }
 
             .sidebar-nav {
@@ -222,7 +240,7 @@
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                height: 42px;
+                min-height: 42px;
                 padding: 0 18px;
                 border-radius: 10px;
                 background: #FFFFFF;
@@ -271,6 +289,7 @@
             .detail-value {
                 font-weight: 700;
                 line-height: 1.5;
+                word-break: break-word;
             }
 
             .badge {
@@ -281,6 +300,7 @@
                 color: var(--primary);
                 font-size: 12px;
                 font-weight: 800;
+                word-break: break-word;
             }
 
             .alert-error {
@@ -297,7 +317,7 @@
                 border: 1px solid var(--border);
                 border-radius: 16px;
                 background: #FFFFFF;
-                margin-bottom: 18px;
+                margin-bottom: 22px;
                 overflow: hidden;
             }
 
@@ -308,8 +328,9 @@
             }
 
             .criteria-head h3 {
-                font-size: 17px;
+                font-size: 20px;
                 margin-bottom: 6px;
+                font-weight: 800;
             }
 
             .criteria-head p {
@@ -330,8 +351,51 @@
                 color: #334155;
                 margin-bottom: 18px;
                 line-height: 1.6;
+                max-width: 100%;
+                overflow: hidden;
             }
 
+            .section-content-box {
+                margin-top: 12px;
+                background: #FFFFFF;
+                border: 1px solid #CBD5E1;
+                border-radius: 12px;
+                padding: 14px;
+                max-height: 500px;
+                overflow: auto;
+                max-width: 100%;
+            }
+
+            .excel-table-wrapper {
+                width: 100%;
+                overflow-x: auto;
+                overflow-y: auto;
+            }
+
+            .excel-table {
+                border-collapse: collapse;
+                background: #FFFFFF;
+                font-size: 14px;
+                table-layout: fixed;
+            }
+
+            .excel-table td {
+                border: 1px solid #D8E0EA;
+                padding: 9px 10px;
+                vertical-align: top;
+                text-align: left;
+                white-space: pre-wrap;
+                line-height: 1.5;
+                color: #1E293B;
+                background: #FFFFFF;
+                word-break: normal;
+                overflow-wrap: break-word;
+                font-weight: 400;
+            }
+
+            .excel-table tr:nth-child(even) td {
+                background: #F8FAFC;
+            }
             .decision-row {
                 display: flex;
                 gap: 18px;
@@ -404,6 +468,7 @@
 
                 .sidebar {
                     width: 100%;
+                    min-width: 0;
                 }
 
                 main {
@@ -425,10 +490,12 @@
         <div class="layout">
             <aside class="sidebar">
                 <div class="sidebar-header">
-                    <div class="sidebar-logo">LM</div>
-                    <div class="sidebar-title">
-                        <h1>LMLF</h1>
-                        <p>Reviewer Portal</p>
+                    <div class="brand">
+                        <div class="brand-icon">LM</div>
+                        <div class="brand-text">
+                            <div class="brand-title">LMLF</div>
+                            <div class="brand-subtitle">Reviewer Portal</div>
+                        </div>
                     </div>
                 </div>
 
@@ -571,6 +638,7 @@
                                     if (criteriaList != null && !criteriaList.isEmpty()) {
                                         for (Map<String, Object> criteria : criteriaList) {
                                             Object criteriaId = criteria.get("criteria_id");
+
                                             String criteriaCode = criteria.get("criteria_code") == null
                                                     ? ""
                                                     : criteria.get("criteria_code").toString();
@@ -597,15 +665,19 @@
                                     </div>
 
                                     <div class="criteria-body">
-                                        <pre style="white-space: pre-wrap; font-family: inherit; margin-top: 10px;"><%= sectionContent %></pre>
-                                            <strong>Imported Section Content:</strong><br>
+                                        <div class="content-preview">
+                                            <strong>Imported Section Content:</strong>
 
                                             <% if (sectionContent == null || sectionContent.trim().isEmpty()) { %>
+                                            <div class="section-content-box">
                                                 <em>No imported content found for this section.</em>
-                                            <% } else { %>
-                                                <pre style="white-space: pre-wrap; font-family: inherit; margin-top: 10px;"><%= sectionContent %></pre><pre style="white-space: pre-wrap; font-family: inherit; margin-top: 10px;"><%= sectionContent %></pre><pre style="white-space: pre-wrap; font-family: inherit; margin-top: 10px;"><%= sectionContent %></pre>
-                                            <% } %>
                                             </div>
+                                            <% } else { %>
+                                            <div class="section-content-box">
+                                                <%= sectionContent %>
+                                            </div>
+                                            <% } %>
+                                        </div>
 
                                         <div class="decision-row">
                                             <label class="decision-option approve">
