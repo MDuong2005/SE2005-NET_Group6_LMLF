@@ -2,9 +2,9 @@ package controller;
 
 import dao.ReviewAssignmentDAO;
 import dao.ReviewCriteriaDAO;
-import dao.SyllabusDAO;
+import dao.ReviewerSyllabusDAO;
 import dao.SyllabusReviewDAO;
-import dao.SyllabusVersionDAO;
+import dao.ReviewerVersionDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -16,19 +16,19 @@ import model.User;
 @WebServlet(name = "ReviewServlet", urlPatterns = {"/review"})
 public class ReviewServlet extends HttpServlet {
 
-    private SyllabusVersionDAO versionDAO;
+    private ReviewerVersionDAO versionDAO;
     private SyllabusReviewDAO reviewDAO;
     private ReviewCriteriaDAO criteriaDAO;
     private ReviewAssignmentDAO assignmentDAO;
-    private SyllabusDAO syllabusDAO;
+    private ReviewerSyllabusDAO syllabusDAO;
 
     @Override
     public void init() {
-        versionDAO = new SyllabusVersionDAO();
+        versionDAO = new ReviewerVersionDAO();
         reviewDAO = new SyllabusReviewDAO();
         criteriaDAO = new ReviewCriteriaDAO();
         assignmentDAO = new ReviewAssignmentDAO();
-        syllabusDAO = new SyllabusDAO();
+        syllabusDAO = new ReviewerSyllabusDAO();
     }
 
     @Override

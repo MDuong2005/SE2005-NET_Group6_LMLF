@@ -3,436 +3,382 @@
 <%@page import="java.util.Map"%>
 
 <%
-List<Map<String, Object>> reviewHistory =
-(List<Map<String, Object>>) request.getAttribute("reviewHistory");
+    List<Map<String, Object>> reviewHistory =
+            (List<Map<String, Object>>) request.getAttribute("reviewHistory");
 
+    Map<Long, List<Map<String, Object>>> sectionReviewsMap =
+            (Map<Long, List<Map<String, Object>>>) request.getAttribute("sectionReviewsMap");
 
-int historyCount = reviewHistory == null ? 0 : reviewHistory.size();
+    int historyCount = reviewHistory == null ? 0 : reviewHistory.size();
 
-String userInitials = "RV";
-String userEmail = "";
-model.User user = (model.User) session.getAttribute("user");
+    String userInitials = "RV";
+    String userEmail = "";
+    model.User user = (model.User) session.getAttribute("user");
 
-if (user != null && user.getEmail() != null) {
-    userEmail = user.getEmail();
+    if (user != null && user.getEmail() != null) {
+        userEmail = user.getEmail();
 
-    if (userEmail.length() >= 2) {
-        userInitials = userEmail.substring(0, 2).toUpperCase();
-    } else {
-        userInitials = userEmail.toUpperCase();
+        if (userEmail.length() >= 2) {
+            userInitials = userEmail.substring(0, 2).toUpperCase();
+        } else {
+            userInitials = userEmail.toUpperCase();
+        }
     }
-}
-
-
 %>
 
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Review History - LMLF</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <style>
+        :root {
+            --primary: #FF6B00;
+            --primary-light: #FFF0E6;
+            --bg-main: #F8FAFC;
+            --bg-card: #FFFFFF;
+            --border: #E2E8F0;
+            --text-dark: #1E293B;
+            --text-muted: #64748B;
+            --success: #16A34A;
+            --danger: #EF4444;
+            --warning: #D97706;
+        }
 
-<style>
-    :root {
-        --primary: #FF6B00;
-        --primary-hover: #E05E00;
-        --primary-light: #FFF0E6;
-        --bg-main: #F8FAFC;
-        --bg-card: #FFFFFF;
-        --border-color: #E2E8F0;
-        --text-dark: #1E293B;
-        --text-muted: #64748B;
-        --danger: #EF4444;
-        --danger-hover: #DC2626;
-        --success: #16A34A;
-        --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-    }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-    }
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-dark);
+        }
 
-    body {
-        font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-        background-color: var(--bg-main);
-        color: var(--text-dark);
-        min-height: 100vh;
-    }
+        a {
+            text-decoration: none;
+        }
 
-    a {
-        text-decoration: none;
-    }
-
-    .layout {
-        display: flex;
-        min-height: 100vh;
-    }
-
-    .sidebar {
-        width: 280px;
-        background-color: #FFFFFF;
-        border-right: 1px solid var(--border-color);
-        display: flex;
-        flex-direction: column;
-        flex-shrink: 0;
-    }
-
-    .sidebar-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid #F1F5F9;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .sidebar-logo {
-        width: 42px;
-        height: 42px;
-        background-color: var(--primary);
-        color: #FFFFFF;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        font-size: 16px;
-    }
-
-    .sidebar-title h1 {
-        font-size: 1.25rem;
-        font-weight: 800;
-        color: var(--primary);
-        margin: 0;
-    }
-
-    .sidebar-title p {
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: #94A3B8;
-        text-transform: uppercase;
-        margin-top: 2px;
-    }
-
-    .sidebar-nav {
-        flex: 1;
-        padding: 1.5rem;
-    }
-
-    .nav-section-title {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 0.75rem;
-    }
-
-    .nav-menu {
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .nav-item {
-        display: flex;
-        align-items: center;
-        padding: 0.85rem 1rem;
-        border-radius: 0.75rem;
-        color: var(--text-muted);
-        font-weight: 700;
-        font-size: 0.95rem;
-        transition: all 0.2s;
-    }
-
-    .nav-item:hover {
-        background-color: #F8FAFC;
-        color: var(--text-dark);
-    }
-
-    .nav-item.active {
-        background-color: var(--primary-light);
-        color: var(--primary);
-        border: 1px solid #FBD6C4;
-    }
-
-    .sidebar-footer {
-        padding: 1.5rem;
-        border-top: 1px solid #F1F5F9;
-    }
-
-    .logout-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: var(--danger);
-        font-size: 0.9rem;
-        font-weight: 700;
-        padding: 0.85rem 1rem;
-        border-radius: 0.75rem;
-        transition: all 0.2s;
-    }
-
-    .logout-btn svg {
-        width: 20px;
-        height: 20px;
-    }
-
-    .logout-btn:hover {
-        color: var(--danger-hover);
-        background-color: #FEF2F2;
-    }
-
-    .main-wrapper {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-    }
-
-    .top-header {
-        height: 70px;
-        background-color: #FFFFFF;
-        border-bottom: 1px solid var(--border-color);
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        padding: 0 2.5rem;
-        flex-shrink: 0;
-    }
-
-    .profile-menu {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .avatar {
-        width: 42px;
-        height: 42px;
-        background-color: var(--primary);
-        color: #FFFFFF;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        font-size: 14px;
-    }
-
-    .profile-info {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .profile-email {
-        font-size: 0.9rem;
-        font-weight: 800;
-        color: var(--text-dark);
-    }
-
-    .profile-role {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        margin-top: 2px;
-    }
-
-    main {
-        flex: 1;
-        padding: 2.5rem;
-        overflow-y: auto;
-    }
-
-    .content-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-
-    .content-header h2 {
-        font-size: 1.9rem;
-        font-weight: 800;
-        color: var(--text-dark);
-        margin: 0;
-    }
-
-    .content-header p {
-        font-size: 0.95rem;
-        color: var(--text-muted);
-        margin-top: 0.35rem;
-    }
-
-    .btn-secondary {
-        background-color: #FFFFFF;
-        color: var(--text-muted);
-        border: 1px solid var(--border-color);
-        min-height: 42px;
-        padding: 0 1rem;
-        border-radius: 0.75rem;
-        font-weight: 700;
-        font-size: 0.9rem;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-    }
-
-    .btn-secondary:hover {
-        background-color: #F8FAFC;
-        color: var(--text-dark);
-    }
-
-    .stat-card {
-        background-color: #FFFFFF;
-        border: 1px solid var(--border-color);
-        border-radius: 1.5rem;
-        padding: 1.5rem;
-        box-shadow: var(--shadow-sm);
-        margin-bottom: 1.5rem;
-        max-width: 340px;
-    }
-
-    .stat-label {
-        font-size: 0.75rem;
-        color: #94A3B8;
-        font-weight: 800;
-        text-transform: uppercase;
-    }
-
-    .stat-value {
-        font-size: 2rem;
-        font-weight: 800;
-        color: var(--text-dark);
-        margin-top: 0.4rem;
-    }
-
-    .panel {
-        background-color: #FFFFFF;
-        border: 1px solid var(--border-color);
-        border-radius: 1.5rem;
-        overflow: hidden;
-        box-shadow: var(--shadow-sm);
-        margin-bottom: 1.5rem;
-    }
-
-    .panel-header {
-        padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #F1F5F9;
-    }
-
-    .panel-title {
-        font-size: 1.1rem;
-        font-weight: 800;
-        color: var(--text-dark);
-    }
-
-    .table-scroll {
-        overflow-x: auto;
-    }
-
-    .review-table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 850px;
-    }
-
-    .review-table th {
-        text-align: left;
-        padding: 1rem;
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        border-bottom: 1px solid var(--border-color);
-        background-color: #F8FAFC;
-        white-space: nowrap;
-    }
-
-    .review-table td {
-        padding: 1rem;
-        border-bottom: 1px solid #F1F5F9;
-        color: #334155;
-        font-size: 0.875rem;
-        vertical-align: top;
-    }
-
-    .badge-orange {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.35rem 0.65rem;
-        border-radius: 0.5rem;
-        background-color: var(--primary-light);
-        color: var(--primary);
-        border: 1px solid #FBD6C4;
-        font-size: 0.75rem;
-        font-weight: 800;
-        white-space: nowrap;
-    }
-
-    .badge-approved {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.35rem 0.65rem;
-        border-radius: 999px;
-        background-color: #DCFCE7;
-        color: #166534;
-        font-size: 0.75rem;
-        font-weight: 800;
-    }
-
-    .badge-rejected {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.35rem 0.65rem;
-        border-radius: 999px;
-        background-color: #FEE2E2;
-        color: #991B1B;
-        font-size: 0.75rem;
-        font-weight: 800;
-    }
-
-    .empty-state {
-        padding: 4rem 1rem;
-        text-align: center;
-        color: var(--text-muted);
-    }
-
-    .empty-state h3 {
-        color: var(--text-dark);
-        font-size: 1.25rem;
-        margin-bottom: 0.5rem;
-    }
-
-    @media (max-width: 900px) {
         .layout {
-            flex-direction: column;
+            display: flex;
+            min-height: 100vh;
         }
 
         .sidebar {
-            width: 100%;
+            width: 280px;
+            background: #FFFFFF;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid #F1F5F9;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .sidebar-logo {
+            width: 42px;
+            height: 42px;
+            background: var(--primary);
+            color: #FFFFFF;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+        }
+
+        .sidebar-title h1 {
+            font-size: 20px;
+            color: var(--primary);
+        }
+
+        .sidebar-title p {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 24px;
+        }
+
+        .nav-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-menu li {
+            margin-bottom: 8px;
+        }
+
+        .nav-menu a {
+            display: block;
+            padding: 13px 14px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .nav-menu a.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1px solid #FBD6C4;
+        }
+
+        .sidebar-footer {
+            padding: 24px;
+            border-top: 1px solid #F1F5F9;
+        }
+
+        .logout-btn {
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        .main-wrapper {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .top-header {
+            height: 70px;
+            background: #FFFFFF;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 36px;
+        }
+
+        .profile-menu {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 42px;
+            height: 42px;
+            background: var(--primary);
+            color: #FFFFFF;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+        }
+
+        .profile-email {
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        .profile-role {
+            color: var(--text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
         }
 
         main {
-            padding: 1.5rem;
+            padding: 36px 42px;
         }
 
         .content-header {
-            flex-direction: column;
+            display: flex;
+            justify-content: space-between;
             align-items: flex-start;
+            margin-bottom: 24px;
+            gap: 20px;
         }
-    }
-</style>
 
+        .content-header h2 {
+            font-size: 30px;
+            font-weight: 800;
+        }
 
+        .content-header p {
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 42px;
+            padding: 0 18px;
+            border-radius: 10px;
+            background: #FFFFFF;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            font-weight: 700;
+        }
+
+        .stat-card {
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 22px;
+            width: 300px;
+            margin-bottom: 24px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 800;
+            margin-top: 6px;
+        }
+
+        .history-card {
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            margin-bottom: 22px;
+            overflow: hidden;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+        }
+
+        .history-head {
+            padding: 20px 24px;
+            background: #F8FAFC;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+        }
+
+        .history-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .history-meta {
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .history-body {
+            padding: 22px 24px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .badge-approved {
+            background: #DCFCE7;
+            color: #166534;
+        }
+
+        .badge-comment {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .badge-rejected {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .summary-box {
+            padding: 14px;
+            background: #F8FAFC;
+            border: 1px dashed #CBD5E1;
+            border-radius: 12px;
+            margin-bottom: 18px;
+            color: #334155;
+            line-height: 1.6;
+        }
+
+        .section-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .section-table th {
+            text-align: left;
+            padding: 12px;
+            background: #F8FAFC;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .section-table td {
+            padding: 12px;
+            border-bottom: 1px solid #F1F5F9;
+            vertical-align: top;
+            font-size: 14px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            color: var(--text-muted);
+        }
+
+        .empty-state h3 {
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 900px) {
+            .layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            main {
+                padding: 24px;
+            }
+
+            .content-header {
+                flex-direction: column;
+            }
+
+            .history-head {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -441,164 +387,195 @@ if (user != null && user.getEmail() != null) {
         <div class="sidebar-header">
             <div class="sidebar-logo">LM</div>
 
-
-        <div class="sidebar-title">
-            <h1>LMLF</h1>
-            <p>Reviewer Portal</p>
-        </div>
-    </div>
-
-    <div class="sidebar-nav">
-        <div class="nav-section-title">Review Workflow</div>
-
-        <ul class="nav-menu">
-            <li>
-                <a class="nav-item" href="${pageContext.request.contextPath}/review?action=pending">
-                    Pending Reviews
-                </a>
-            </li>
-
-            <li>
-                <a class="nav-item active" href="${pageContext.request.contextPath}/review-history">
-                    Review History
-                </a>
-            </li>
-        </ul>
-    </div>
-
-    <div class="sidebar-footer">
-        <a class="logout-btn" href="${pageContext.request.contextPath}/logout">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
-            </svg>
-            Logout
-        </a>
-    </div>
-</aside>
-
-<div class="main-wrapper">
-    <header class="top-header">
-        <div class="profile-menu">
-            <div class="avatar"><%= userInitials %></div>
-
-            <div class="profile-info">
-                <span class="profile-email">
-                    <%= userEmail.isEmpty() ? "reviewer@test.com" : userEmail %>
-                </span>
-                <span class="profile-role">Reviewer</span>
+            <div class="sidebar-title">
+                <h1>LMLF</h1>
+                <p>Reviewer Portal</p>
             </div>
         </div>
-    </header>
 
-    <main>
-        <div class="content-header">
-            <div>
-                <h2>Review History</h2>
-                <p>Review decisions and comments you have submitted.</p>
-            </div>
+        <div class="sidebar-nav">
+            <div class="nav-title">Review Workflow</div>
 
-            <a href="${pageContext.request.contextPath}/review?action=pending" class="btn-secondary">
-                Back to Pending Reviews
+            <ul class="nav-menu">
+                <li>
+                    <a href="${pageContext.request.contextPath}/review?action=pending">
+                        Pending Reviews
+                    </a>
+                </li>
+
+                <li>
+                    <a class="active" href="${pageContext.request.contextPath}/review-history">
+                        Review History
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-footer">
+            <a class="logout-btn" href="${pageContext.request.contextPath}/logout">
+                Logout
             </a>
         </div>
+    </aside>
 
-        <div class="stat-card">
-            <div class="stat-label">Total Reviews</div>
-            <div class="stat-value"><%= historyCount %></div>
-        </div>
+    <div class="main-wrapper">
+        <header class="top-header">
+            <div class="profile-menu">
+                <div class="avatar"><%= userInitials %></div>
 
-        <div class="panel">
-            <div class="panel-header">
-                <h3 class="panel-title">Review History</h3>
+                <div>
+                    <div class="profile-email">
+                        <%= userEmail.isEmpty() ? "reviewer@test.com" : userEmail %>
+                    </div>
+                    <div class="profile-role">Reviewer</div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="content-header">
+                <div>
+                    <h2>Review History</h2>
+                    <p>View your completed syllabus reviews and section comments.</p>
+                </div>
+
+                <a href="${pageContext.request.contextPath}/review?action=pending" class="btn-secondary">
+                    Back to Pending Reviews
+                </a>
             </div>
 
-            <div class="table-scroll">
-                <% if (reviewHistory != null && !reviewHistory.isEmpty()) { %>
+            <div class="stat-card">
+                <div class="stat-label">Total Reviews</div>
+                <div class="stat-value"><%= historyCount %></div>
+            </div>
 
-                <table class="review-table">
-                    <thead>
-                    <tr>
-                        <th>Course</th>
-                        <th>Syllabus</th>
-                        <th>Version</th>
-                        <th>Decision</th>
-                        <th>Comment</th>
-                        <th>Reviewed At</th>
-                    </tr>
-                    </thead>
+            <% if (reviewHistory != null && !reviewHistory.isEmpty()) { %>
 
-                    <tbody>
-                    <%
-                        for (Map<String, Object> row : reviewHistory) {
-                            String decision = row.get("decision") == null
-                                    ? ""
-                                    : row.get("decision").toString();
-                    %>
+                <%
+                    for (Map<String, Object> review : reviewHistory) {
+                        Long reviewId = ((Number) review.get("review_id")).longValue();
 
-                    <tr>
-                        <td>
-                            <span class="badge-orange">
-                                <%= row.get("course_code") == null ? "-" : row.get("course_code") %>
-                            </span>
-                            <div style="margin-top: 0.5rem; color:#64748b;">
-                                <%= row.get("course_name") == null ? "-" : row.get("course_name") %>
+                        String decision = review.get("decision") == null
+                                ? ""
+                                : review.get("decision").toString();
+
+                        List<Map<String, Object>> sectionList = null;
+
+                        if (sectionReviewsMap != null) {
+                            sectionList = sectionReviewsMap.get(reviewId);
+                        }
+                %>
+
+                <div class="history-card">
+                    <div class="history-head">
+                        <div>
+                            <div class="history-title">
+                                <%= review.get("syllabus_title") == null ? "-" : review.get("syllabus_title") %>
                             </div>
-                        </td>
 
-                        <td>
-                            <strong><%= row.get("syllabus_title") == null ? "-" : row.get("syllabus_title") %></strong>
-                        </td>
+                            <div class="history-meta">
+                                Course:
+                                <strong><%= review.get("course_code") == null ? "-" : review.get("course_code") %></strong>
+                                -
+                                <%= review.get("course_name") == null ? "-" : review.get("course_name") %>
+                                <br>
+                                Version:
+                                <strong>v<%= review.get("version_number") == null ? "-" : review.get("version_number") %></strong>
+                                |
+                                Reviewed At:
+                                <%= review.get("reviewed_at") == null ? "-" : review.get("reviewed_at") %>
+                            </div>
+                        </div>
 
-                        <td>
-                            <span class="badge-orange">
-                                v<%= row.get("version_number") == null ? "-" : row.get("version_number") %>
-                            </span>
-                        </td>
-
-                        <td>
+                        <div>
                             <% if ("APPROVED".equalsIgnoreCase(decision)) { %>
-                            <span class="badge-approved">APPROVED</span>
+                                <span class="badge badge-approved">APPROVED</span>
+                            <% } else if ("APPROVED_WITH_COMMENT".equalsIgnoreCase(decision)) { %>
+                                <span class="badge badge-comment">APPROVED WITH COMMENT</span>
                             <% } else if ("REJECTED".equalsIgnoreCase(decision)) { %>
-                            <span class="badge-rejected">REJECTED</span>
+                                <span class="badge badge-rejected">REJECTED</span>
                             <% } else { %>
-                            <span class="badge-orange">
-                                <%= decision.isEmpty() ? "-" : decision %>
-                            </span>
+                                <span class="badge badge-comment"><%= decision %></span>
                             <% } %>
-                        </td>
+                        </div>
+                    </div>
 
-                        <td>
-                            <%= row.get("comment") == null || row.get("comment").toString().trim().isEmpty()
+                    <div class="history-body">
+                        <div class="summary-box">
+                            <strong>Summary Comment:</strong><br>
+                            <%= review.get("summary_comment") == null
+                                    || review.get("summary_comment").toString().trim().isEmpty()
                                     ? "-"
-                                    : row.get("comment") %>
-                        </td>
+                                    : review.get("summary_comment") %>
+                        </div>
 
-                        <td>
-                            <%= row.get("reviewed_at") == null ? "-" : row.get("reviewed_at") %>
-                        </td>
-                    </tr>
+                        <table class="section-table">
+                            <thead>
+                            <tr>
+                                <th>Section</th>
+                                <th>Decision</th>
+                                <th>Comment</th>
+                            </tr>
+                            </thead>
 
-                    <% } %>
-                    </tbody>
-                </table>
+                            <tbody>
+                            <% if (sectionList != null && !sectionList.isEmpty()) { %>
 
-                <% } else { %>
+                                <% for (Map<String, Object> section : sectionList) {
+                                    String sectionDecision = section.get("decision") == null
+                                            ? ""
+                                            : section.get("decision").toString();
+                                %>
 
-                <div class="empty-state">
-                    <h3>No Review History</h3>
-                    <p>You have not approved or rejected any syllabus yet.</p>
+                                <tr>
+                                    <td>
+                                        <strong>
+                                            <%= section.get("criteria_name") == null ? "-" : section.get("criteria_name") %>
+                                        </strong>
+                                    </td>
+
+                                    <td>
+                                        <% if ("APPROVED".equalsIgnoreCase(sectionDecision)) { %>
+                                            <span class="badge badge-approved">APPROVED</span>
+                                        <% } else { %>
+                                            <span class="badge badge-rejected">REJECTED</span>
+                                        <% } %>
+                                    </td>
+
+                                    <td>
+                                        <%= section.get("comment") == null
+                                                || section.get("comment").toString().trim().isEmpty()
+                                                ? "-"
+                                                : section.get("comment") %>
+                                    </td>
+                                </tr>
+
+                                <% } %>
+
+                            <% } else { %>
+
+                                <tr>
+                                    <td colspan="3">No section review details found.</td>
+                                </tr>
+
+                            <% } %>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <% } %>
-            </div>
-        </div>
-    </main>
-</div>
 
+            <% } else { %>
 
+                <div class="empty-state">
+                    <h3>No Review History</h3>
+                    <p>You have not completed any syllabus review yet.</p>
+                </div>
+
+            <% } %>
+        </main>
+    </div>
 </div>
 </body>
 </html>

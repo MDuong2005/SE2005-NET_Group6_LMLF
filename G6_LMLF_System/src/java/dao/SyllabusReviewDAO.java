@@ -221,4 +221,102 @@ public class SyllabusReviewDAO extends DBContext {
 
         return 0;
     }
+
+    public java.util.List<java.util.Map<String, Object>> getReviewHistoryByReviewer(Long reviewerId) {
+        java.util.List<java.util.Map<String, Object>> list = new java.util.ArrayList<>();
+
+        String sql
+                = "SELECT "
+                + "    sr.review_id, "
+                + "    sr.version_id, "
+                + "    sr.reviewer_id, "
+                + "    sr.decision, "
+                + "    sr.comment AS summary_comment, "
+                + "    sr.reviewed_at, "
+                + "    sv.version_number, "
+                + "    sv.status AS version_status, "
+                + "    s.title AS syllabus_title, "
+                + "    c.code AS course_code, "
+                + "    c.name AS course_name "
+                + "FROM syllabus_reviews sr "
+                + "JOIN syllabus_versions sv ON sr.version_id = sv.version_id "
+                + "JOIN syllabuses s ON sv.syllabus_id = s.syllabus_id "
+                + "JOIN courses c ON s.course_id = c.course_id "
+                + "WHERE sr.reviewer_id = ? "
+                + "ORDER BY sr.reviewed_at DESC";
+
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setLong(1, reviewerId);
+
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                java.util.Map<String, Object> row = new java.util.HashMap<>();
+
+                row.put("review_id", rs.getLong("review_id"));
+                row.put("version_id", rs.getLong("version_id"));
+                row.put("reviewer_id", rs.getLong("reviewer_id"));
+                row.put("decision", rs.getString("decision"));
+                row.put("summary_comment", rs.getString("summary_comment"));
+                row.put("reviewed_at", rs.getTimestamp("reviewed_at"));
+                row.put("version_number", rs.getString("version_number"));
+                row.put("version_status", rs.getString("version_status"));
+                row.put("syllabus_title", rs.getString("syllabus_title"));
+                row.put("course_code", rs.getString("course_code"));
+                row.put("course_name", rs.getString("course_name"));
+
+                list.add(row);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+
+    public java.util.Map<Long, java.util.List<java.util.Map<String, Object>>> getSectionReviewsByReviewer(Long reviewerId) {
+        java.util.Map<Long, java.util.List<java.util.Map<String, Object>>> map = new java.util.HashMap<>();
+
+        String sql
+                = "SELECT "
+                + "    sr.review_id, "
+                + "    rc.criteria_name, "
+                + "    rc.display_order, "
+                + "    srs.decision, "
+                + "    srs.comment "
+                + "FROM syllabus_reviews sr "
+                + "JOIN syllabus_review_sections srs ON sr.review_id = srs.review_id "
+                + "JOIN review_criteria rc ON srs.criteria_id = rc.criteria_id "
+                + "WHERE sr.reviewer_id = ? "
+                + "ORDER BY sr.reviewed_at DESC, rc.display_order ASC";
+
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setLong(1, reviewerId);
+
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                Long reviewId = rs.getLong("review_id");
+
+                java.util.Map<String, Object> row = new java.util.HashMap<>();
+                row.put("criteria_name", rs.getString("criteria_name"));
+                row.put("decision", rs.getString("decision"));
+                row.put("comment", rs.getString("comment"));
+
+                if (!map.containsKey(reviewId)) {
+                    map.put(reviewId, new java.util.ArrayList<>());
+                }
+
+                map.get(reviewId).add(row);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return map;
+    }
 }
