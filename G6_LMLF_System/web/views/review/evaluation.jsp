@@ -1,511 +1,424 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page import="java.util.List"%>
 <%@page import="java.util.Map"%>
 
 <%
-Map<String, Object> versionDetail =
-(Map<String, Object>) request.getAttribute("versionDetail");
+    Map<String, Object> versionDetail =
+            (Map<String, Object>) request.getAttribute("versionDetail");
 
-String error = request.getParameter("error");
+    List<Map<String, Object>> criteriaList =
+            (List<Map<String, Object>>) request.getAttribute("criteriaList");
 
-String userInitials = "RV";
-String userEmail = "";
-model.User user = (model.User) session.getAttribute("user");
+    String error = request.getParameter("error");
 
-if (user != null && user.getEmail() != null) {
-    userEmail = user.getEmail();
+    String userInitials = "RV";
+    String userEmail = "";
+    model.User user = (model.User) session.getAttribute("user");
 
-    if (userEmail.length() >= 2) {
-        userInitials = userEmail.substring(0, 2).toUpperCase();
-    } else {
-        userInitials = userEmail.toUpperCase();
+    if (user != null && user.getEmail() != null) {
+        userEmail = user.getEmail();
+
+        if (userEmail.length() >= 2) {
+            userInitials = userEmail.substring(0, 2).toUpperCase();
+        } else {
+            userInitials = userEmail.toUpperCase();
+        }
     }
-}
-
 %>
 
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Syllabus Evaluation - LMLF</title>
+    <title>Syllabus Section Evaluation - LMLF</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
-    :root {
-        --primary: #FF6B00;
-        --primary-hover: #E05E00;
-        --primary-light: #FFF0E6;
-        --bg-main: #F8FAFC;
-        --bg-card: #FFFFFF;
-        --border-color: #E2E8F0;
-        --text-dark: #1E293B;
-        --text-muted: #64748B;
-        --success: #16A34A;
-        --success-hover: #15803D;
-        --danger: #EF4444;
-        --danger-hover: #DC2626;
-        --warning-bg: #FEF3C7;
-        --warning-text: #92400E;
-        --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-    }
+    <style>
+        :root {
+            --primary: #FF6B00;
+            --primary-light: #FFF0E6;
+            --bg-main: #F8FAFC;
+            --bg-card: #FFFFFF;
+            --border: #E2E8F0;
+            --text-dark: #1E293B;
+            --text-muted: #64748B;
+            --success: #16A34A;
+            --danger: #EF4444;
+        }
 
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-    }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    body {
-        font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-        background-color: var(--bg-main);
-        color: var(--text-dark);
-        min-height: 100vh;
-    }
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-dark);
+        }
 
-    a {
-        text-decoration: none;
-    }
+        a {
+            text-decoration: none;
+        }
 
-    button {
-        cursor: pointer;
-        border: none;
-    }
-
-    .layout {
-        display: flex;
-        min-height: 100vh;
-    }
-
-    .sidebar {
-        width: 280px;
-        background-color: #FFFFFF;
-        border-right: 1px solid var(--border-color);
-        display: flex;
-        flex-direction: column;
-        flex-shrink: 0;
-    }
-
-    .sidebar-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid #F1F5F9;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .sidebar-logo {
-        width: 42px;
-        height: 42px;
-        background-color: var(--primary);
-        color: #FFFFFF;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        font-size: 16px;
-    }
-
-    .sidebar-title h1 {
-        font-size: 1.25rem;
-        font-weight: 800;
-        color: var(--primary);
-        margin: 0;
-    }
-
-    .sidebar-title p {
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: #94A3B8;
-        text-transform: uppercase;
-        margin-top: 2px;
-    }
-
-    .sidebar-nav {
-        flex: 1;
-        padding: 1.5rem;
-    }
-
-    .nav-section-title {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 0.75rem;
-    }
-
-    .nav-menu {
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .nav-item {
-        display: flex;
-        align-items: center;
-        padding: 0.85rem 1rem;
-        border-radius: 0.75rem;
-        color: var(--text-muted);
-        font-weight: 700;
-        font-size: 0.95rem;
-        transition: all 0.2s;
-    }
-
-    .nav-item:hover {
-        background-color: #F8FAFC;
-        color: var(--text-dark);
-    }
-
-    .nav-item.active {
-        background-color: var(--primary-light);
-        color: var(--primary);
-        border: 1px solid #FBD6C4;
-    }
-
-    .sidebar-footer {
-        padding: 1.5rem;
-        border-top: 1px solid #F1F5F9;
-    }
-
-    .logout-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: var(--danger);
-        font-size: 0.9rem;
-        font-weight: 700;
-        padding: 0.85rem 1rem;
-        border-radius: 0.75rem;
-        transition: all 0.2s;
-    }
-
-    .logout-btn svg {
-        width: 20px;
-        height: 20px;
-    }
-
-    .logout-btn:hover {
-        color: var(--danger-hover);
-        background-color: #FEF2F2;
-    }
-
-    .main-wrapper {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-    }
-
-    .top-header {
-        height: 70px;
-        background-color: #FFFFFF;
-        border-bottom: 1px solid var(--border-color);
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        padding: 0 2.5rem;
-        flex-shrink: 0;
-    }
-
-    .profile-menu {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .avatar {
-        width: 42px;
-        height: 42px;
-        background-color: var(--primary);
-        color: #FFFFFF;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        font-size: 14px;
-    }
-
-    .profile-info {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .profile-email {
-        font-size: 0.9rem;
-        font-weight: 800;
-        color: var(--text-dark);
-    }
-
-    .profile-role {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        margin-top: 2px;
-    }
-
-    main {
-        flex: 1;
-        padding: 2.5rem;
-        overflow-y: auto;
-    }
-
-    .content-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-
-    .content-header h2 {
-        font-size: 1.9rem;
-        font-weight: 800;
-        color: var(--text-dark);
-        margin: 0;
-    }
-
-    .content-header p {
-        font-size: 0.95rem;
-        color: var(--text-muted);
-        margin-top: 0.35rem;
-    }
-
-    .header-actions {
-        display: flex;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-    }
-
-    .btn-secondary {
-        background-color: #FFFFFF;
-        color: var(--text-muted);
-        border: 1px solid var(--border-color);
-        min-height: 42px;
-        padding: 0 1rem;
-        border-radius: 0.75rem;
-        font-weight: 700;
-        font-size: 0.9rem;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-    }
-
-    .btn-secondary:hover {
-        background-color: #F8FAFC;
-        color: var(--text-dark);
-    }
-
-    .panel {
-        background-color: #FFFFFF;
-        border: 1px solid var(--border-color);
-        border-radius: 1.5rem;
-        overflow: hidden;
-        box-shadow: var(--shadow-sm);
-        margin-bottom: 1.5rem;
-    }
-
-    .panel-header {
-        padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #F1F5F9;
-    }
-
-    .panel-title {
-        font-size: 1.1rem;
-        font-weight: 800;
-        color: var(--text-dark);
-    }
-
-    .panel-body {
-        padding: 1.5rem;
-    }
-
-    .alert-error {
-        background-color: #FEF2F2;
-        border: 1px solid #FCA5A5;
-        color: var(--danger);
-        padding: 1rem;
-        border-radius: 0.75rem;
-        margin-bottom: 1.5rem;
-        font-weight: 700;
-    }
-
-    .detail-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 1.25rem 2rem;
-    }
-
-    .detail-item {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-    }
-
-    .detail-label {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .detail-value {
-        font-size: 0.95rem;
-        color: var(--text-dark);
-        font-weight: 600;
-        line-height: 1.5;
-    }
-
-    .description-box {
-        margin-top: 1.5rem;
-        background-color: #F8FAFC;
-        border: 1px solid var(--border-color);
-        border-radius: 1rem;
-        padding: 1rem;
-    }
-
-    .badge-orange {
-        display: inline-flex;
-        width: fit-content;
-        align-items: center;
-        padding: 0.35rem 0.65rem;
-        border-radius: 0.5rem;
-        background-color: var(--primary-light);
-        color: var(--primary);
-        border: 1px solid #FBD6C4;
-        font-size: 0.75rem;
-        font-weight: 800;
-    }
-
-    .badge-status {
-        display: inline-flex;
-        width: fit-content;
-        align-items: center;
-        padding: 0.35rem 0.65rem;
-        border-radius: 999px;
-        background-color: var(--warning-bg);
-        color: var(--warning-text);
-        font-size: 0.75rem;
-        font-weight: 800;
-    }
-
-    .decision-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.5rem;
-    }
-
-    .decision-card {
-        border: 1px solid var(--border-color);
-        border-radius: 1rem;
-        padding: 1.25rem;
-        background-color: #FFFFFF;
-    }
-
-    .decision-card h4 {
-        font-size: 1rem;
-        margin-bottom: 0.5rem;
-        color: var(--text-dark);
-    }
-
-    .decision-card p {
-        color: var(--text-muted);
-        font-size: 0.875rem;
-        line-height: 1.6;
-        margin-bottom: 1rem;
-    }
-
-    .review-textarea {
-        width: 100%;
-        min-height: 120px;
-        border: 1px solid #CBD5E1;
-        border-radius: 0.75rem;
-        padding: 0.85rem;
-        font-family: inherit;
-        resize: vertical;
-        outline: none;
-    }
-
-    .review-textarea:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 4px var(--primary-light);
-    }
-
-    .btn-approve {
-        margin-top: 1rem;
-        width: 100%;
-        background-color: var(--success);
-        color: #FFFFFF;
-        border: none;
-        padding: 0.75rem 1rem;
-        border-radius: 0.75rem;
-        font-weight: 800;
-    }
-
-    .btn-approve:hover {
-        background-color: var(--success-hover);
-    }
-
-    .btn-reject {
-        margin-top: 1rem;
-        width: 100%;
-        background-color: var(--danger);
-        color: #FFFFFF;
-        border: none;
-        padding: 0.75rem 1rem;
-        border-radius: 0.75rem;
-        font-weight: 800;
-    }
-
-    .btn-reject:hover {
-        background-color: var(--danger-hover);
-    }
-
-    .empty-state {
-        padding: 4rem 1rem;
-        text-align: center;
-        color: var(--text-muted);
-    }
-
-    .empty-state h3 {
-        color: var(--text-dark);
-        font-size: 1.25rem;
-        margin-bottom: 0.5rem;
-    }
-
-    @media (max-width: 900px) {
         .layout {
-            flex-direction: column;
+            display: flex;
+            min-height: 100vh;
         }
 
         .sidebar {
-            width: 100%;
+            width: 280px;
+            background: #FFFFFF;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid #F1F5F9;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .sidebar-logo {
+            width: 42px;
+            height: 42px;
+            background: var(--primary);
+            color: #FFFFFF;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+        }
+
+        .sidebar-title h1 {
+            font-size: 20px;
+            color: var(--primary);
+        }
+
+        .sidebar-title p {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 24px;
+        }
+
+        .nav-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-menu li {
+            margin-bottom: 8px;
+        }
+
+        .nav-menu a {
+            display: block;
+            padding: 13px 14px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .nav-menu a.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1px solid #FBD6C4;
+        }
+
+        .sidebar-footer {
+            padding: 24px;
+            border-top: 1px solid #F1F5F9;
+        }
+
+        .logout-btn {
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        .main-wrapper {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .top-header {
+            height: 70px;
+            background: #FFFFFF;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 36px;
+        }
+
+        .profile-menu {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 42px;
+            height: 42px;
+            background: var(--primary);
+            color: #FFFFFF;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+        }
+
+        .profile-email {
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        .profile-role {
+            color: var(--text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
         }
 
         main {
-            padding: 1.5rem;
-        }
-
-        .content-header,
-        .decision-grid,
-        .detail-grid {
-            grid-template-columns: 1fr;
+            padding: 36px 42px;
         }
 
         .content-header {
-            flex-direction: column;
+            display: flex;
+            justify-content: space-between;
             align-items: flex-start;
+            margin-bottom: 24px;
+            gap: 20px;
         }
-    }
-</style>
 
+        .content-header h2 {
+            font-size: 30px;
+            font-weight: 800;
+        }
 
+        .content-header p {
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 42px;
+            padding: 0 18px;
+            border-radius: 10px;
+            background: #FFFFFF;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            font-weight: 700;
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            margin-bottom: 24px;
+            overflow: hidden;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+        }
+
+        .panel-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .panel-body {
+            padding: 24px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px 28px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-weight: 700;
+            line-height: 1.5;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .alert-error {
+            background: #FEF2F2;
+            border: 1px solid #FCA5A5;
+            color: #B91C1C;
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .criteria-card {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: #FFFFFF;
+            margin-bottom: 18px;
+            overflow: hidden;
+        }
+
+        .criteria-head {
+            padding: 18px 20px;
+            background: #F8FAFC;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .criteria-head h3 {
+            font-size: 17px;
+            margin-bottom: 6px;
+        }
+
+        .criteria-head p {
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .criteria-body {
+            padding: 20px;
+        }
+
+        .content-preview {
+            background: #F8FAFC;
+            border: 1px dashed #CBD5E1;
+            padding: 14px;
+            border-radius: 12px;
+            color: #334155;
+            margin-bottom: 18px;
+            line-height: 1.6;
+        }
+
+        .decision-row {
+            display: flex;
+            gap: 18px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .decision-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+        }
+
+        .decision-option.approve {
+            color: var(--success);
+        }
+
+        .decision-option.reject {
+            color: var(--danger);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 90px;
+            border: 1px solid #CBD5E1;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-light);
+        }
+
+        .summary-box {
+            margin-top: 20px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            height: 48px;
+            border: none;
+            border-radius: 12px;
+            background: var(--primary);
+            color: #FFFFFF;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .submit-btn:hover {
+            background: #E05E00;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 900px) {
+            .layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            main {
+                padding: 24px;
+            }
+
+            .content-header {
+                flex-direction: column;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -513,226 +426,233 @@ if (user != null && user.getEmail() != null) {
     <aside class="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-logo">LM</div>
-
-
-        <div class="sidebar-title">
-            <h1>LMLF</h1>
-            <p>Reviewer Portal</p>
-        </div>
-    </div>
-
-    <div class="sidebar-nav">
-        <div class="nav-section-title">Review Workflow</div>
-
-        <ul class="nav-menu">
-            <li>
-                <a class="nav-item" href="${pageContext.request.contextPath}/review?action=pending">
-                    Pending Reviews
-                </a>
-            </li>
-
-            <li>
-                <a class="nav-item active" href="#">
-                    Evaluation Screen
-                </a>
-            </li>
-
-            <li>
-                <a class="nav-item" href="${pageContext.request.contextPath}/review-history">
-                    Review History
-                </a>
-            </li>
-        </ul>
-    </div>
-
-    <div class="sidebar-footer">
-        <a class="logout-btn" href="${pageContext.request.contextPath}/logout">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
-            </svg>
-            Logout
-        </a>
-    </div>
-</aside>
-
-<div class="main-wrapper">
-    <header class="top-header">
-        <div class="profile-menu">
-            <div class="avatar"><%= userInitials %></div>
-
-            <div class="profile-info">
-                <span class="profile-email">
-                    <%= userEmail.isEmpty() ? "reviewer@test.com" : userEmail %>
-                </span>
-                <span class="profile-role">Reviewer</span>
+            <div class="sidebar-title">
+                <h1>LMLF</h1>
+                <p>Reviewer Portal</p>
             </div>
         </div>
-    </header>
 
-    <main>
-        <div class="content-header">
-            <div>
-                <h2>Syllabus Evaluation</h2>
-                <p>Review the submitted syllabus version and make your decision.</p>
+        <div class="sidebar-nav">
+            <div class="nav-title">Review Workflow</div>
+            <ul class="nav-menu">
+                <li>
+                    <a href="${pageContext.request.contextPath}/review?action=pending">
+                        Pending Reviews
+                    </a>
+                </li>
+                <li>
+                    <a class="active" href="#">
+                        Evaluation Screen
+                    </a>
+                </li>
+                <li>
+                    <a href="${pageContext.request.contextPath}/review-history">
+                        Review History
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-footer">
+            <a class="logout-btn" href="${pageContext.request.contextPath}/logout">
+                Logout
+            </a>
+        </div>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="top-header">
+            <div class="profile-menu">
+                <div class="avatar"><%= userInitials %></div>
+                <div>
+                    <div class="profile-email">
+                        <%= userEmail.isEmpty() ? "reviewer@test.com" : userEmail %>
+                    </div>
+                    <div class="profile-role">Reviewer</div>
+                </div>
             </div>
+        </header>
 
-            <div class="header-actions">
-                <a href="${pageContext.request.contextPath}/review?action=pending" class="btn-secondary">
+        <main>
+            <div class="content-header">
+                <div>
+                    <h2>Section Evaluation</h2>
+                    <p>Review each syllabus section and provide comments where needed.</p>
+                </div>
+
+                <a class="btn-secondary" href="${pageContext.request.contextPath}/review?action=pending">
                     Back to Pending Reviews
                 </a>
-
-                <a href="${pageContext.request.contextPath}/review-history" class="btn-secondary">
-                    Review History
-                </a>
-            </div>
-        </div>
-
-        <% if ("comment_required".equals(error)) { %>
-        <div class="alert-error">
-            Reject comment is required. Please enter a reason before rejecting this syllabus.
-        </div>
-        <% } %>
-
-        <% if (versionDetail != null && !versionDetail.isEmpty()) { %>
-
-        <div class="panel">
-            <div class="panel-header">
-                <h3 class="panel-title">Syllabus Version Information</h3>
             </div>
 
-            <div class="panel-body">
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <div class="detail-label">Course Code</div>
-                        <div class="detail-value">
-                            <span class="badge-orange">
-                                <%= versionDetail.get("course_code") == null ? "-" : versionDetail.get("course_code") %>
-                            </span>
-                        </div>
-                    </div>
+            <% if ("missing_decision".equals(error)) { %>
+                <div class="alert-error">Please select Approve or Reject for every section.</div>
+            <% } else if ("reject_comment_required".equals(error)) { %>
+                <div class="alert-error">Reject comment is required for rejected sections.</div>
+            <% } else if ("save_failed".equals(error)) { %>
+                <div class="alert-error">Failed to save review. Please try again.</div>
+            <% } %>
 
-                    <div class="detail-item">
-                        <div class="detail-label">Course Name</div>
-                        <div class="detail-value">
-                            <%= versionDetail.get("course_name") == null ? "-" : versionDetail.get("course_name") %>
-                        </div>
-                    </div>
+            <% if (versionDetail != null) { %>
 
-                    <div class="detail-item">
-                        <div class="detail-label">Syllabus Title</div>
-                        <div class="detail-value">
-                            <%= versionDetail.get("syllabus_title") == null ? "-" : versionDetail.get("syllabus_title") %>
-                        </div>
-                    </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">Syllabus Version Information</h3>
+                </div>
 
-                    <div class="detail-item">
-                        <div class="detail-label">Version</div>
-                        <div class="detail-value">
-                            <span class="badge-orange">
-                                v<%= versionDetail.get("version_number") == null ? "-" : versionDetail.get("version_number") %>
-                            </span>
+                <div class="panel-body">
+                    <div class="detail-grid">
+                        <div>
+                            <div class="detail-label">Course Code</div>
+                            <div class="detail-value">
+                                <span class="badge">
+                                    <%= versionDetail.get("course_code") == null ? "-" : versionDetail.get("course_code") %>
+                                </span>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="detail-item">
-                        <div class="detail-label">Change Type</div>
-                        <div class="detail-value">
-                            <span class="badge-orange">
+                        <div>
+                            <div class="detail-label">Course Name</div>
+                            <div class="detail-value">
+                                <%= versionDetail.get("course_name") == null ? "-" : versionDetail.get("course_name") %>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="detail-label">Syllabus Title</div>
+                            <div class="detail-value">
+                                <%= versionDetail.get("syllabus_title") == null ? "-" : versionDetail.get("syllabus_title") %>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="detail-label">Version</div>
+                            <div class="detail-value">
+                                <span class="badge">
+                                    v<%= versionDetail.get("version_number") == null ? "-" : versionDetail.get("version_number") %>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="detail-label">Change Type</div>
+                            <div class="detail-value">
                                 <%= versionDetail.get("change_type") == null ? "-" : versionDetail.get("change_type") %>
-                            </span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="detail-label">Submitted At</div>
+                            <div class="detail-value">
+                                <%= versionDetail.get("submitted_at") == null ? "-" : versionDetail.get("submitted_at") %>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="detail-item">
-                        <div class="detail-label">Status</div>
+                    <div style="margin-top: 20px;">
+                        <div class="detail-label">Description of Changes</div>
                         <div class="detail-value">
-                            <span class="badge-status">
-                                <%= versionDetail.get("status") == null ? "-" : versionDetail.get("status") %>
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="detail-item">
-                        <div class="detail-label">Submitted At</div>
-                        <div class="detail-value">
-                            <%= versionDetail.get("submitted_at") == null ? "-" : versionDetail.get("submitted_at") %>
-                        </div>
-                    </div>
-
-                    <div class="detail-item">
-                        <div class="detail-label">Current Syllabus Version</div>
-                        <div class="detail-value">
-                            <%= versionDetail.get("current_version") == null ? "-" : versionDetail.get("current_version") %>
+                            <%= versionDetail.get("description_of_changes") == null ? "-" : versionDetail.get("description_of_changes") %>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="description-box">
-                    <div class="detail-label">Description of Changes</div>
-                    <div class="detail-value" style="margin-top: 0.5rem;">
-                        <%= versionDetail.get("description_of_changes") == null ? "-" : versionDetail.get("description_of_changes") %>
+            <form action="${pageContext.request.contextPath}/review?action=submitEvaluation" method="post">
+                <input type="hidden" name="versionId" value="<%= versionDetail.get("version_id") %>">
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 class="panel-title">Review Sections</h3>
+                    </div>
+
+                    <div class="panel-body">
+                        <%
+                            if (criteriaList != null && !criteriaList.isEmpty()) {
+                                for (Map<String, Object> criteria : criteriaList) {
+                                    Object criteriaId = criteria.get("criteria_id");
+                                    String criteriaName = criteria.get("criteria_name") == null
+                                            ? "-"
+                                            : criteria.get("criteria_name").toString();
+                                    String description = criteria.get("description") == null
+                                            ? ""
+                                            : criteria.get("description").toString();
+                        %>
+
+                        <div class="criteria-card">
+                            <div class="criteria-head">
+                                <h3><%= criteriaName %></h3>
+                                <p><%= description %></p>
+                            </div>
+
+                            <div class="criteria-body">
+                                <div class="content-preview">
+                                    <strong>Section content preview:</strong><br>
+                                    This area will display imported or web-entered syllabus content for
+                                    <strong><%= criteriaName %></strong>.
+                                    <br>
+                                    For now, Reviewer evaluates this section based on the submitted syllabus version information.
+                                </div>
+
+                                <div class="decision-row">
+                                    <label class="decision-option approve">
+                                        <input type="radio"
+                                               name="decision_<%= criteriaId %>"
+                                               value="APPROVED"
+                                               required>
+                                        Approve
+                                    </label>
+
+                                    <label class="decision-option reject">
+                                        <input type="radio"
+                                               name="decision_<%= criteriaId %>"
+                                               value="REJECTED"
+                                               required>
+                                        Reject
+                                    </label>
+                                </div>
+
+                                <textarea name="comment_<%= criteriaId %>"
+                                          placeholder="Enter comment for this section. Required if rejected."></textarea>
+                            </div>
+                        </div>
+
+                        <%
+                                }
+                            } else {
+                        %>
+
+                        <div class="empty-state">
+                            No review criteria found. Please check review_criteria table.
+                        </div>
+
+                        <% } %>
+
+                        <div class="summary-box">
+                            <div class="detail-label">Summary Comment</div>
+                            <textarea name="summaryComment"
+                                      placeholder="Enter overall comment for this syllabus version..."></textarea>
+                        </div>
+
+                        <button type="submit" class="submit-btn">
+                            Submit Evaluation
+                        </button>
                     </div>
                 </div>
-            </div>
-        </div>
+            </form>
 
-        <div class="panel">
-            <div class="panel-header">
-                <h3 class="panel-title">Review Decision</h3>
-            </div>
+            <% } else { %>
 
-            <div class="panel-body">
-                <div class="decision-grid">
-                    <div class="decision-card">
-                        <h4>Approve Syllabus</h4>
-                        <p>Approve this syllabus version if its content is acceptable and ready for the next step.</p>
-
-                        <form action="${pageContext.request.contextPath}/review?action=approve" method="post">
-                            <input type="hidden" name="versionId" value="<%= versionDetail.get("version_id") %>">
-
-                            <textarea class="review-textarea" name="comment" placeholder="Enter approval comment...">Looks good</textarea>
-
-                            <button type="submit" class="btn-approve">
-                                Approve
-                            </button>
-                        </form>
-                    </div>
-
-                    <div class="decision-card">
-                        <h4>Reject Syllabus</h4>
-                        <p>Reject this syllabus version if it needs revision. A reject comment is required.</p>
-
-                        <form action="${pageContext.request.contextPath}/review?action=reject" method="post">
-                            <input type="hidden" name="versionId" value="<%= versionDetail.get("version_id") %>">
-
-                            <textarea class="review-textarea" name="comment" required placeholder="Enter reason for rejection..."></textarea>
-
-                            <button type="submit" class="btn-reject">
-                                Reject
-                            </button>
-                        </form>
-                    </div>
+            <div class="panel">
+                <div class="empty-state">
+                    <h3>No Version Detail Found</h3>
+                    <p>This syllabus version does not exist or cannot be loaded.</p>
                 </div>
             </div>
-        </div>
 
-        <% } else { %>
-
-        <div class="panel">
-            <div class="empty-state">
-                <h3>No Version Detail Found</h3>
-                <p>This syllabus version does not exist or cannot be loaded.</p>
-            </div>
-        </div>
-
-        <% } %>
-    </main>
-</div>
-
-
+            <% } %>
+        </main>
+    </div>
 </div>
 </body>
 </html>

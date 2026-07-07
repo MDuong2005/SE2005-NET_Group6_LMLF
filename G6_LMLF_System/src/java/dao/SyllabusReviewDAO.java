@@ -100,4 +100,125 @@ public class SyllabusReviewDAO extends DBContext {
 
         return list;
     }
+
+    public Long insertReviewAndReturnId(Long versionId, Long reviewerId, String decision, String comment) {
+        String sql
+                = "INSERT INTO syllabus_reviews(version_id, reviewer_id, decision, comment, reviewed_at) "
+                + "VALUES (?, ?, ?, ?, GETDATE())";
+
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS);
+
+            ps.setLong(1, versionId);
+            ps.setLong(2, reviewerId);
+            ps.setString(3, decision);
+            ps.setString(4, comment);
+
+            int affectedRows = ps.executeUpdate();
+
+            if (affectedRows > 0) {
+                ResultSet rs = ps.getGeneratedKeys();
+
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    public boolean insertSectionReview(Long reviewId, Long criteriaId, String decision, String comment) {
+        String sql
+                = "INSERT INTO syllabus_review_sections(review_id, criteria_id, decision, comment) "
+                + "VALUES (?, ?, ?, ?)";
+
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+
+            ps.setLong(1, reviewId);
+            ps.setLong(2, criteriaId);
+            ps.setString(3, decision);
+            ps.setString(4, comment);
+
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    public boolean hasReviewerReviewed(Long versionId, Long reviewerId) {
+        String sql
+                = "SELECT 1 "
+                + "FROM syllabus_reviews "
+                + "WHERE version_id = ? AND reviewer_id = ?";
+
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setLong(1, versionId);
+            ps.setLong(2, reviewerId);
+
+            ResultSet rs = ps.executeQuery();
+            return rs.next();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    public int countApprovedReviews(Long versionId) {
+        String sql
+                = "SELECT COUNT(*) AS total "
+                + "FROM syllabus_reviews "
+                + "WHERE version_id = ? "
+                + "AND decision IN ('APPROVED', 'APPROVED_WITH_COMMENT')";
+
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setLong(1, versionId);
+
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return rs.getInt("total");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    public int countRejectedReviews(Long versionId) {
+        String sql
+                = "SELECT COUNT(*) AS total "
+                + "FROM syllabus_reviews "
+                + "WHERE version_id = ? "
+                + "AND decision = 'REJECTED'";
+
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setLong(1, versionId);
+
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return rs.getInt("total");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
 }

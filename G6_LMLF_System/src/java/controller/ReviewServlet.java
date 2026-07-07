@@ -1,32 +1,43 @@
 package controller;
 
-import dao.SyllabusVersionDAO;
+import dao.ReviewAssignmentDAO;
+import dao.ReviewCriteriaDAO;
+import dao.SyllabusDAO;
 import dao.SyllabusReviewDAO;
+import dao.SyllabusVersionDAO;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import model.User;
 
 @WebServlet(name = "ReviewServlet", urlPatterns = {"/review"})
 public class ReviewServlet extends HttpServlet {
 
-    private final SyllabusVersionDAO versionDAO = new SyllabusVersionDAO();
-    private final SyllabusReviewDAO reviewDAO = new SyllabusReviewDAO();
+    private SyllabusVersionDAO versionDAO;
+    private SyllabusReviewDAO reviewDAO;
+    private ReviewCriteriaDAO criteriaDAO;
+    private ReviewAssignmentDAO assignmentDAO;
+    private SyllabusDAO syllabusDAO;
 
     @Override
-    protected void doGet(HttpServletRequest request,
-                         HttpServletResponse response)
+    public void init() {
+        versionDAO = new SyllabusVersionDAO();
+        reviewDAO = new SyllabusReviewDAO();
+        criteriaDAO = new ReviewCriteriaDAO();
+        assignmentDAO = new ReviewAssignmentDAO();
+        syllabusDAO = new SyllabusDAO();
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         String action = request.getParameter("action");
 
-        if (action == null) {
+        if (action == null || action.trim().isEmpty()) {
             action = "pending";
         }
 
@@ -46,49 +57,46 @@ public class ReviewServlet extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request,
-                          HttpServletResponse response)
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         String action = request.getParameter("action");
 
-        if ("approve".equals(action)) {
-            approveSyllabus(request, response);
-        } else if ("reject".equals(action)) {
-            rejectSyllabus(request, response);
+        if ("submitEvaluation".equals(action)) {
+            submitEvaluation(request, response);
         } else {
             response.sendRedirect(request.getContextPath() + "/review?action=pending");
         }
     }
 
-    private User getCurrentUser(HttpServletRequest request,
-                                HttpServletResponse response)
-            throws IOException {
-
+    private Long getCurrentUserId(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
 
-        if (session == null || session.getAttribute("user") == null) {
-            response.sendRedirect(request.getContextPath() + "/login");
+        if (session == null) {
             return null;
         }
 
-        return (User) session.getAttribute("user");
-    }
-
-    private void showPendingReviews(HttpServletRequest request,
-                                    HttpServletResponse response)
-            throws ServletException, IOException {
-
-        User user = getCurrentUser(request, response);
+        User user = (User) session.getAttribute("user");
 
         if (user == null) {
+            return null;
+        }
+
+        return user.getUserId();
+    }
+
+    private void showPendingReviews(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        Long reviewerId = getCurrentUserId(request);
+
+        if (reviewerId == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
-        long reviewerId = user.getUserId();
-
         List<Map<String, Object>> pendingReviews =
-                versionDAO.getPendingReviewsByReviewer(reviewerId);
+                versionDAO.getPendingReviewsByAssignedReviewer(reviewerId);
 
         request.setAttribute("pendingReviews", pendingReviews);
 
@@ -96,93 +104,166 @@ public class ReviewServlet extends HttpServlet {
                 .forward(request, response);
     }
 
-    private void showEvaluationScreen(HttpServletRequest request,
-                                      HttpServletResponse response)
+    private void showEvaluationScreen(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String versionIdRaw = request.getParameter("versionId");
+        Long reviewerId = getCurrentUserId(request);
 
-        if (versionIdRaw == null || versionIdRaw.trim().isEmpty()) {
-            response.sendRedirect(request.getContextPath() + "/review?action=pending");
+        if (reviewerId == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
-        long versionId = Long.parseLong(versionIdRaw);
+        String versionIdStr = request.getParameter("versionId");
 
-        Map<String, Object> versionDetail =
-                versionDAO.getReviewDetailByVersionId(versionId);
+        if (versionIdStr == null || versionIdStr.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/review?action=pending&error=missing_version");
+            return;
+        }
 
-        request.setAttribute("versionDetail", versionDetail);
+        try {
+            Long versionId = Long.parseLong(versionIdStr);
 
-        request.getRequestDispatcher("/views/review/evaluation.jsp")
-                .forward(request, response);
+            if (!assignmentDAO.isReviewerAssigned(versionId, reviewerId)) {
+                response.sendRedirect(request.getContextPath() + "/review?action=pending&error=not_assigned");
+                return;
+            }
+
+            if (reviewDAO.hasReviewerReviewed(versionId, reviewerId)) {
+                response.sendRedirect(request.getContextPath() + "/review-history");
+                return;
+            }
+
+            Map<String, Object> versionDetail = versionDAO.getReviewDetailByVersionId(versionId);
+            List<Map<String, Object>> criteriaList = criteriaDAO.getActiveCriteria();
+
+            request.setAttribute("versionDetail", versionDetail);
+            request.setAttribute("criteriaList", criteriaList);
+
+            request.getRequestDispatcher("/views/review/evaluation.jsp")
+                    .forward(request, response);
+
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/review?action=pending&error=invalid_version");
+        }
     }
 
-    private void approveSyllabus(HttpServletRequest request,
-                                 HttpServletResponse response)
-            throws IOException {
+    private void submitEvaluation(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
 
-        User user = getCurrentUser(request, response);
+        Long reviewerId = getCurrentUserId(request);
 
-        if (user == null) {
+        if (reviewerId == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
-        long reviewerId = user.getUserId();
-        long versionId = Long.parseLong(request.getParameter("versionId"));
+        String versionIdStr = request.getParameter("versionId");
+        String summaryComment = request.getParameter("summaryComment");
 
-        String comment = request.getParameter("comment");
+        if (versionIdStr == null || versionIdStr.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/review?action=pending&error=missing_version");
+            return;
+        }
 
-        boolean updated = versionDAO.approveVersion(versionId, reviewerId);
+        try {
+            Long versionId = Long.parseLong(versionIdStr);
 
-        if (updated) {
-            reviewDAO.insertReview(
+            if (!assignmentDAO.isReviewerAssigned(versionId, reviewerId)) {
+                response.sendRedirect(request.getContextPath() + "/review?action=pending&error=not_assigned");
+                return;
+            }
+
+            if (reviewDAO.hasReviewerReviewed(versionId, reviewerId)) {
+                response.sendRedirect(request.getContextPath() + "/review-history");
+                return;
+            }
+
+            List<Map<String, Object>> criteriaList = criteriaDAO.getActiveCriteria();
+
+            boolean hasReject = false;
+            boolean hasComment = false;
+
+            for (Map<String, Object> criteria : criteriaList) {
+                Long criteriaId = ((Number) criteria.get("criteria_id")).longValue();
+
+                String decision = request.getParameter("decision_" + criteriaId);
+                String comment = request.getParameter("comment_" + criteriaId);
+
+                if (decision == null || decision.trim().isEmpty()) {
+                    response.sendRedirect(request.getContextPath()
+                            + "/review?action=evaluate&versionId=" + versionId
+                            + "&error=missing_decision");
+                    return;
+                }
+
+                if ("REJECTED".equalsIgnoreCase(decision)) {
+                    hasReject = true;
+
+                    if (comment == null || comment.trim().isEmpty()) {
+                        response.sendRedirect(request.getContextPath()
+                                + "/review?action=evaluate&versionId=" + versionId
+                                + "&error=reject_comment_required");
+                        return;
+                    }
+                }
+
+                if (comment != null && !comment.trim().isEmpty()) {
+                    hasComment = true;
+                }
+            }
+
+            String finalDecision;
+
+            if (hasReject) {
+                finalDecision = "REJECTED";
+            } else if (hasComment) {
+                finalDecision = "APPROVED_WITH_COMMENT";
+            } else {
+                finalDecision = "APPROVED";
+            }
+
+            Long reviewId = reviewDAO.insertReviewAndReturnId(
                     versionId,
                     reviewerId,
-                    "APPROVED",
-                    comment
+                    finalDecision,
+                    summaryComment
             );
+
+            if (reviewId == null) {
+                response.sendRedirect(request.getContextPath()
+                        + "/review?action=evaluate&versionId=" + versionId
+                        + "&error=save_failed");
+                return;
+            }
+
+            for (Map<String, Object> criteria : criteriaList) {
+                Long criteriaId = ((Number) criteria.get("criteria_id")).longValue();
+
+                String decision = request.getParameter("decision_" + criteriaId);
+                String comment = request.getParameter("comment_" + criteriaId);
+
+                reviewDAO.insertSectionReview(reviewId, criteriaId, decision, comment);
+            }
+
+            assignmentDAO.markCompleted(versionId, reviewerId);
+
+            int assignedCount = assignmentDAO.countAssignedReviewers(versionId);
+            int approvedCount = reviewDAO.countApprovedReviews(versionId);
+            int rejectedCount = reviewDAO.countRejectedReviews(versionId);
+
+            if (rejectedCount > 0) {
+                versionDAO.updateStatus(versionId, "REJECTED");
+                syllabusDAO.markRevisionRequiredByVersionId(versionId);
+            } else if (assignedCount >= 2 && approvedCount == assignedCount) {
+                versionDAO.updateStatus(versionId, "APPROVED");
+                syllabusDAO.publishByVersionId(versionId);
+            }
+
+            response.sendRedirect(request.getContextPath() + "/review-history");
+
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/review?action=pending&error=invalid_version");
         }
-
-        response.sendRedirect(request.getContextPath() + "/review?action=pending");
-    }
-
-    private void rejectSyllabus(HttpServletRequest request,
-                                HttpServletResponse response)
-            throws IOException {
-
-        User user = getCurrentUser(request, response);
-
-        if (user == null) {
-            return;
-        }
-
-        long reviewerId = user.getUserId();
-        long versionId = Long.parseLong(request.getParameter("versionId"));
-
-        String comment = request.getParameter("comment");
-
-        if (comment == null || comment.trim().isEmpty()) {
-            response.sendRedirect(
-                    request.getContextPath()
-                    + "/review?action=evaluate&versionId="
-                    + versionId
-                    + "&error=comment_required"
-            );
-            return;
-        }
-
-        boolean updated = versionDAO.rejectVersion(versionId, reviewerId);
-
-        if (updated) {
-            reviewDAO.insertReview(
-                    versionId,
-                    reviewerId,
-                    "REJECTED",
-                    comment
-            );
-        }
-
-        response.sendRedirect(request.getContextPath() + "/review?action=pending");
     }
 }
