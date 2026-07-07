@@ -5,12 +5,14 @@ import dao.ReviewCriteriaDAO;
 import dao.ReviewerSyllabusDAO;
 import dao.SyllabusReviewDAO;
 import dao.ReviewerVersionDAO;
+import dao.ReviewerSectionDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+
 import model.User;
 
 @WebServlet(name = "ReviewServlet", urlPatterns = {"/review"})
@@ -21,6 +23,7 @@ public class ReviewServlet extends HttpServlet {
     private ReviewCriteriaDAO criteriaDAO;
     private ReviewAssignmentDAO assignmentDAO;
     private ReviewerSyllabusDAO syllabusDAO;
+    private ReviewerSectionDAO sectionDAO;
 
     @Override
     public void init() {
@@ -29,6 +32,7 @@ public class ReviewServlet extends HttpServlet {
         criteriaDAO = new ReviewCriteriaDAO();
         assignmentDAO = new ReviewAssignmentDAO();
         syllabusDAO = new ReviewerSyllabusDAO();
+        sectionDAO = new ReviewerSectionDAO();
     }
 
     @Override
@@ -95,8 +99,8 @@ public class ReviewServlet extends HttpServlet {
             return;
         }
 
-        List<Map<String, Object>> pendingReviews =
-                versionDAO.getPendingReviewsByAssignedReviewer(reviewerId);
+        List<Map<String, Object>> pendingReviews
+                = versionDAO.getPendingReviewsByAssignedReviewer(reviewerId);
 
         request.setAttribute("pendingReviews", pendingReviews);
 
@@ -136,9 +140,11 @@ public class ReviewServlet extends HttpServlet {
 
             Map<String, Object> versionDetail = versionDAO.getReviewDetailByVersionId(versionId);
             List<Map<String, Object>> criteriaList = criteriaDAO.getActiveCriteria();
+            Map<String, String> sectionContentMap = sectionDAO.getSectionContentMap(versionId);
 
             request.setAttribute("versionDetail", versionDetail);
             request.setAttribute("criteriaList", criteriaList);
+            request.setAttribute("sectionContentMap", sectionContentMap);
 
             request.getRequestDispatcher("/views/review/evaluation.jsp")
                     .forward(request, response);
