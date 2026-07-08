@@ -470,4 +470,30 @@ public class UserDAO extends DBContext {
         }
         return 0;
     }
+
+    public int getActiveUsersCount() {
+        String sql = "SELECT COUNT(*) FROM users WHERE status = 'ACTIVE' AND deleted_at IS NULL";
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public int getBannedUsersCount() {
+        String sql = "SELECT COUNT(*) FROM users WHERE status = 'BANNED' AND deleted_at IS NULL";
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
 }

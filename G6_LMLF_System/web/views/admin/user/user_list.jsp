@@ -20,40 +20,49 @@
         </div>
         
         <style>
-            .tabs {
+            .filter-group {
                 display: flex;
                 gap: 10px;
-                margin-bottom: 20px;
-                border-bottom: 2px solid #ecf0f1;
-                padding-bottom: 10px;
+                padding: 10px 30px;
                 flex-wrap: wrap;
+                background-color: #fff;
+                align-items: center;
+            }
+            .filter-group.first { padding-top: 20px; }
+            .filter-group.last { padding-bottom: 20px; border-bottom: 1px solid #ecf0f1; }
+            .filter-label {
+                font-size: 0.85rem; color: #7f8c8d; font-weight: 600; min-width: 50px;
             }
             .tab-btn {
-                padding: 8px 16px;
+                padding: 6px 14px;
                 border: none;
                 background: #f8f9fa;
                 border-radius: 4px;
                 cursor: pointer;
                 font-weight: 600;
+                font-size: 0.85rem;
                 color: #7f8c8d;
                 transition: all 0.3s;
             }
-            .tab-btn:hover {
-                background: #e2e6ea;
-            }
-            .tab-btn.active {
-                background: #e67e22;
-                color: white;
-            }
+            .tab-btn:hover { background: #e2e6ea; }
+            .tab-btn.active.role-btn { background: #e67e22; color: white; }
+            .tab-btn.active.status-btn { background: #2980b9; color: white; }
         </style>
 
-        <div class="tabs">
-            <button class="tab-btn active" onclick="filterRole('ALL', this)">All Users</button>
+        <div class="filter-group first">
+            <div class="filter-label">Role:</div>
+            <button class="tab-btn role-btn active" onclick="filterData('role', 'ALL', this)">All Roles</button>
             <c:forEach var="role" items="${roles}">
                 <c:if test="${role.roleName != 'REVIEWER' && role.roleName != 'DESIGNER'}">
-                    <button class="tab-btn" onclick="filterRole('${role.roleName}', this)">${role.roleName}</button>
+                    <button class="tab-btn role-btn" onclick="filterData('role', '${role.roleName}', this)">${role.roleName}</button>
                 </c:if>
             </c:forEach>
+        </div>
+        <div class="filter-group last">
+            <div class="filter-label">Status:</div>
+            <button class="tab-btn status-btn active" onclick="filterData('status', 'ALL', this)">All Status</button>
+            <button class="tab-btn status-btn" onclick="filterData('status', 'ACTIVE', this)">Active</button>
+            <button class="tab-btn status-btn" onclick="filterData('status', 'BANNED', this)">Banned</button>
         </div>
 
         <div class="table-container">
@@ -70,7 +79,7 @@
                 </thead>
                 <tbody>
                     <c:forEach var="user" items="${users}">
-                        <tr class="user-row" data-role="${not empty user.roles ? user.roles[0].roleName : 'NONE'}">
+                        <tr class="user-row" data-role="${not empty user.roles ? user.roles[0].roleName : 'NONE'}" data-status="${user.status == 'ACTIVE' ? 'ACTIVE' : 'BANNED'}">
                             <td style="color: #95a5a6;">#${user.userId}</td>
                             <td>
                                 <div class="user-col">${user.firstName} ${user.lastName}</div>
@@ -124,14 +133,26 @@
     </div>
 
     <script>
-        function filterRole(role, btnElement) {
-            // Update active tab button UI
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        let currentRole = 'ALL';
+        let currentStatus = 'ALL';
+
+        function filterData(type, value, btnElement) {
+            // Update active button UI
+            if (type === 'role') {
+                currentRole = value;
+                document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+            } else if (type === 'status') {
+                currentStatus = value;
+                document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active'));
+            }
             btnElement.classList.add('active');
 
-            // Filter rows
+            // Apply filters to rows
             document.querySelectorAll('.user-row').forEach(row => {
-                if (role === 'ALL' || row.dataset.role === role) {
+                const matchRole = currentRole === 'ALL' || row.dataset.role === currentRole;
+                const matchStatus = currentStatus === 'ALL' || row.dataset.status === currentStatus;
+                
+                if (matchRole && matchStatus) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';

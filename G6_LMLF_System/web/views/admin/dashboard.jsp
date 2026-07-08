@@ -18,28 +18,14 @@
 <!-- BỐN THẺ CHỈ SỐ -->
 <div class="stats-grid">
     <!-- Stat 1 -->
-    <div class="stat-card" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'" onclick="window.location.href='${pageContext.request.contextPath}/admin/users'">
-        <div class="flex items-center gap-4">
-            <div class="stat-icon bg-orange">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-            </div>
-            <div>
-                <p>INTERNAL USERS</p>
-                <div class="stat-value" style="margin-top: 0; font-size: 1.5rem;"><c:out value="${internalUsers}" default="0"/></div>
-            </div>
-        </div>
+    <div class="stat-card" style="cursor: pointer;" onclick="window.location.href='${pageContext.request.contextPath}/admin/users'">
+        <p style="font-weight: 600; color: #7f8c8d; margin-bottom: 5px; font-size: 0.9rem;">INTERNAL USERS</p>
+        <div class="stat-value" style="margin-top: 0; font-size: 2rem; color: #2980b9;"><c:out value="${internalUsers}" default="0"/></div>
     </div>
     <!-- Stat 2 -->
-    <div class="stat-card" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'" onclick="window.location.href='${pageContext.request.contextPath}/admin/guests'">
-        <div class="flex items-center gap-4">
-            <div class="stat-icon bg-orange">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            </div>
-            <div>
-                <p>GUEST USERS</p>
-                <div class="stat-value" style="margin-top: 0; font-size: 1.5rem;"><c:out value="${guestUsers}" default="0"/></div>
-            </div>
-        </div>
+    <div class="stat-card" style="cursor: pointer;" onclick="window.location.href='${pageContext.request.contextPath}/admin/guests'">
+        <p style="font-weight: 600; color: #7f8c8d; margin-bottom: 5px; font-size: 0.9rem;">EXTERNAL USERS</p>
+        <div class="stat-value" style="margin-top: 0; font-size: 2rem; color: #d35400;"><c:out value="${guestUsers}" default="0"/></div>
     </div>
     <!-- Stat 3 and 4 removed as requested -->
 </div>
@@ -51,15 +37,22 @@
     </div>
     <div class="panel-body" style="padding: 1.5rem;">
         <div class="flex flex-wrap gap-4" style="align-items: center;">
-            <a href="${pageContext.request.contextPath}/admin/users" class="action-button">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                User Management
+            <a href="${pageContext.request.contextPath}/admin/users?action=create" style="background-color: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 4px; display: inline-block; font-weight: 600; text-decoration: none;">
+                Add Internal User
             </a>
 
-            <a href="${pageContext.request.contextPath}/auditlog" class="action-button">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                System Logs
+            <a href="${pageContext.request.contextPath}/admin/guests?action=create" style="background-color: #f39c12; color: white; border: none; padding: 10px 20px; border-radius: 4px; display: inline-block; font-weight: 600; text-decoration: none;">
+                Add External User
+            </a>
+
+            <a href="${pageContext.request.contextPath}/auditlog" style="background-color: #ecf0f1; color: #2c3e50; border: 1px solid #bdc3c7; padding: 10px 20px; border-radius: 4px; display: inline-block; font-weight: 600; text-decoration: none;">
+                View System Logs
             </a>
         </div>
     </div>
+</div>
+
+<!-- BOTTOM STATUS SUMMARY -->
+<div style="text-align: right; font-size: 0.8rem; color: #95a5a6; padding-right: 5px; margin-top: 10px;">
+    System Status Summary: <span style="color: #27ae60; font-weight: 600;">Active (<c:out value="${activeUsers}" default="128"/>)</span> &nbsp;|&nbsp; <span style="color: #c0392b; font-weight: 600;">Banned (<c:out value="${bannedUsers}" default="3"/>)</span>
 </div>
