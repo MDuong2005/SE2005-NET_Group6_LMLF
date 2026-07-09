@@ -84,13 +84,17 @@ public class UserManagementServlet extends HttpServlet {
         List<Role> roles = roleDAO.getAllRoles();
         request.setAttribute("users", users);
         request.setAttribute("roles", roles);
-        request.getRequestDispatcher("/views/admin/user/user_list.jsp").forward(request, response);
+        request.setAttribute("contentPage", "admin/user/user_list.jsp");
+        request.setAttribute("cssFile", "admin/admin.css");
+        request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
     }
 
     private void showCreateForm(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         List<Role> roles = roleDAO.getAllRoles();
         request.setAttribute("roles", roles);
-        request.getRequestDispatcher("/views/admin/user/create_user.jsp").forward(request, response);
+        request.setAttribute("contentPage", "admin/user/create_user.jsp");
+        request.setAttribute("cssFile", "admin/admin.css");
+        request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
     }
 
     private void showEditForm(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -110,7 +114,9 @@ public class UserManagementServlet extends HttpServlet {
             
             request.setAttribute("editUser", user);
             request.setAttribute("roles", roles);
-            request.getRequestDispatcher("/views/admin/user/edit_user.jsp").forward(request, response);
+            request.setAttribute("contentPage", "admin/user/edit_user.jsp");
+            request.setAttribute("cssFile", "admin/admin.css");
+            request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/admin/users");
         }

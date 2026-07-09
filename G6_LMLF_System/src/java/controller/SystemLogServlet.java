@@ -30,6 +30,8 @@ public class SystemLogServlet extends HttpServlet {
         List<SystemLog> logs = logDAO.getAllLogs();
         
         request.setAttribute("logs", logs);
-        request.getRequestDispatcher("/views/admin/system_logs.jsp").forward(request, response);
+        request.setAttribute("contentPage", "admin/system_logs.jsp");
+        request.setAttribute("cssFile", "admin/admin.css");
+        request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
     }
 }

@@ -78,7 +78,9 @@ public class GuestManagementServlet extends HttpServlet {
         List<User> guests = userDAO.getExternalUsersWithRoles();
         request.setAttribute("guests", guests);
         request.setAttribute("roles", roleDAO.getAllRoles());
-        request.getRequestDispatcher("/views/admin/user/guest_list.jsp").forward(request, response);
+        request.setAttribute("contentPage", "admin/user/guest_list.jsp");
+        request.setAttribute("cssFile", "admin/admin.css");
+        request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
     }
 
     private void showCreateForm(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -91,7 +93,9 @@ public class GuestManagementServlet extends HttpServlet {
             }
         }
         request.setAttribute("roles", guestRoles);
-        request.getRequestDispatcher("/views/admin/user/create_guest.jsp").forward(request, response);
+        request.setAttribute("contentPage", "admin/user/create_guest.jsp");
+        request.setAttribute("cssFile", "admin/admin.css");
+        request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
     }
 
     private void createGuest(HttpServletRequest request, HttpServletResponse response) throws IOException {
