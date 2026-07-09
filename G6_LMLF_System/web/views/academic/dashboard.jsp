@@ -274,10 +274,10 @@
 
 <!-- BOTTOM ROW: TABLES -->
 <div class="mb-6">
-    <!-- Recent Role Assignments -->
+    <!-- Recent Syllabus Assignments -->
     <div class="panel" style="box-shadow: 0 4px 20px rgba(0,0,0,0.03); border-radius: 1.25rem; border: none; overflow: hidden;">
         <div class="panel-header" style="border-bottom: 1px dashed #e2e8f0; padding: 1.5rem 1.5rem 1rem 1.5rem;">
-            <h3 class="panel-title" style="color: #0f172a; font-size: 1.15rem;">Recent Role Assignments</h3>
+            <h3 class="panel-title" style="color: #0f172a; font-size: 1.15rem;">Recent Syllabus Assignments</h3>
         </div>
         <div class="panel-body">
             <div class="data-table-container">
@@ -314,14 +314,14 @@
                         } else {
                         %>
                         <tr>
-                            <td colspan="4" style="text-align: center; color: #64748b;">No recent role assignments found.</td>
+                            <td colspan="4" style="text-align: center; color: #64748b;">No recent syllabus assignments found.</td>
                         </tr>
                         <% } %>
                     </tbody>
                 </table>
             </div>
             <div class="table-panel-footer">
-                <a href="${pageContext.request.contextPath}/role-assignment">View all role assignments</a>
+                <a href="${pageContext.request.contextPath}/role-assignment">View all syllabus assignments</a>
             </div>
         </div>
     </div>

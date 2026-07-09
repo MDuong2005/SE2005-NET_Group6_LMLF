@@ -54,7 +54,7 @@ public class CourseServlet extends HttpServlet {
         }
         
         req.setAttribute("courseList", courseList);
-        req.getRequestDispatcher("/views/curriculum/course.jsp").forward(req, resp);
+        req.getRequestDispatcher("/views/academic/course.jsp").forward(req, resp);
     }
     
     @Override
@@ -267,6 +267,6 @@ public class CourseServlet extends HttpServlet {
         // Lấy lại danh sách courses
         List<Course> courseList = courseDAO.listAll();
         req.setAttribute("courseList", courseList);
-        req.getRequestDispatcher("/views/curriculum/course.jsp").forward(req, resp);
+        req.getRequestDispatcher("/views/academic/course.jsp").forward(req, resp);
     }
 }
