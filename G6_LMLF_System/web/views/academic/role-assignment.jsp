@@ -1348,6 +1348,12 @@
                                                                     <!-- Step 3 Indicator -->
                                                                     <div class="step-item" id="stepIndicator3">
                                                                         <div class="step-circle">3</div>
+                                                                        <span class="step-title">Select Deadline</span>
+                                                                    </div>
+
+                                                                    <!-- Step 4 Indicator -->
+                                                                    <div class="step-item" id="stepIndicator4">
+                                                                        <div class="step-circle">4</div>
                                                                         <span class="step-title">Import Template</span>
                                                                     </div>
                                                                 </div>
@@ -1500,8 +1506,19 @@
                                                                     </div>
                                                                 </div>
 
-                                                                <!-- Step 3 Content -->
+                                                                <!-- Step 3 Content (Select Deadline) -->
                                                                 <div id="stepContent3" class="step-content"
+                                                                    style="display: none;">
+                                                                    <div class="form-group"
+                                                                        style="margin-bottom: 16px;">
+                                                                        <label for="createDueDate">Deadline (Due Date) *</label>
+                                                                        <input type="datetime-local" id="createDueDate"
+                                                                            name="dueDate" class="form-input" required />
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Step 4 Content -->
+                                                                <div id="stepContent4" class="step-content"
                                                                     style="display: none;">
                                                                     <div id="dropZone" class="dropzone-container">
                                                                         <input type="file" id="templateFileInput"
@@ -1672,6 +1689,19 @@
                                                                         </select>
                                                                     </div>
 
+                                                                    <!-- Deadline (Due Date) -->
+                                                                    <div class="form-group" style="margin-bottom: 16px;">
+                                                                        <label for="editDueDate">Deadline (Due Date) *</label>
+                                                                        <%
+                                                                        String editDueDateStr = "";
+                                                                        if (editAssignment.getDueDate() != null) {
+                                                                            editDueDateStr = editAssignment.getDueDate().toString().substring(0, 16).replace(" ", "T");
+                                                                        }
+                                                                        %>
+                                                                        <input type="datetime-local" id="editDueDate"
+                                                                            name="dueDate" class="form-input" 
+                                                                            value="<%= editDueDateStr %>" required />
+                                                                    </div>
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn-secondary"
@@ -1823,7 +1853,7 @@
                                                                 </div>
 
                                                                 <div
-                                                                    style="border-top: 1px solid var(--border-color); padding-top: 16px; display: grid; grid-template-columns: 1fr; gap: 20px;">
+                                                                    style="border-top: 1px solid var(--border-color); padding-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                                                                     <div>
                                                                         <strong
                                                                             style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; display: block; margin-bottom: 4px;">Assigned
@@ -1834,6 +1864,18 @@
                                                                                 ?
                                                                                 sdf.format(detailAssignment.getAssignedAt())
                                                                                 : "N/A" %>
+                                                                        </span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <strong
+                                                                            style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; display: block; margin-bottom: 4px;">Deadline
+                                                                            (Due Date)</strong>
+                                                                        <span
+                                                                            style="font-weight: 600; color: #DC2626;">
+                                                                            <%= detailAssignment.getDueDate() !=null
+                                                                                ?
+                                                                                sdf.format(detailAssignment.getDueDate())
+                                                                                : "No Deadline" %>
                                                                         </span>
                                                                     </div>
                                                                 </div>
@@ -1965,12 +2007,13 @@
                                                     let currentStep = 1;
 
                                                     function goToStep(step) {
-                                                        if (step < 1 || step > 3) return;
+                                                        if (step < 1 || step > 4) return;
 
                                                         // Hide all step contents
                                                         document.getElementById('stepContent1').style.display = 'none';
                                                         document.getElementById('stepContent2').style.display = 'none';
                                                         document.getElementById('stepContent3').style.display = 'none';
+                                                        document.getElementById('stepContent4').style.display = 'none';
 
                                                         // Show current step content
                                                         document.getElementById('stepContent' + step).style.display = 'block';
@@ -1978,11 +2021,12 @@
                                                         // Update active line width
                                                         const line = document.getElementById('stepProgressActiveLine');
                                                         if (step === 1) line.style.width = '0%';
-                                                        else if (step === 2) line.style.width = '50%';
-                                                        else if (step === 3) line.style.width = '100%';
+                                                        else if (step === 2) line.style.width = '33.33%';
+                                                        else if (step === 3) line.style.width = '66.67%';
+                                                        else if (step === 4) line.style.width = '100%';
 
                                                         // Update step Indicators css
-                                                        for (let i = 1; i <= 3; i++) {
+                                                        for (let i = 1; i <= 4; i++) {
                                                             const indicator = document.getElementById('stepIndicator' + i);
                                                             const circle = indicator.querySelector('.step-circle');
                                                             const title = indicator.querySelector('.step-title');
@@ -2026,6 +2070,11 @@
                                                         } else if (currentStep === 3) {
                                                             document.getElementById('btnStepPrev').style.display = 'block';
                                                             document.getElementById('btnCancelModal').style.display = 'none';
+                                                            document.getElementById('btnStepNext').style.display = 'block';
+                                                            document.getElementById('btnSubmitForm').style.display = 'none';
+                                                        } else if (currentStep === 4) {
+                                                            document.getElementById('btnStepPrev').style.display = 'block';
+                                                            document.getElementById('btnCancelModal').style.display = 'none';
                                                             document.getElementById('btnStepNext').style.display = 'none';
                                                             document.getElementById('btnSubmitForm').style.display = 'block';
                                                         }
@@ -2062,6 +2111,14 @@
                                                                 return;
                                                             }
                                                             goToStep(3);
+                                                        } else if (currentStep === 3) {
+                                                            // Validate Step 3
+                                                            const dueDate = document.getElementById('createDueDate').value;
+                                                            if (!dueDate) {
+                                                                showToast("Please select a deadline.", false);
+                                                                return;
+                                                            }
+                                                            goToStep(4);
                                                         }
                                                     }
 

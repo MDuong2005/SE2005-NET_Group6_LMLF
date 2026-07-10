@@ -1,11 +1,13 @@
 package controller;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.Part;
 import model.Course;
 import model.SyllabusAssignment;
 import model.User;
@@ -17,6 +19,11 @@ import java.io.IOException;
 import java.util.List;
 
 @WebServlet("/role-assignment")
+@MultipartConfig(
+    fileSizeThreshold = 1024 * 1024 * 2,  // 2MB
+    maxFileSize = 1024 * 1024 * 10,       // 10MB
+    maxRequestSize = 1024 * 1024 * 50     // 50MB
+)
 public class RoleAssignmentServlet extends HttpServlet {
 
     private CourseDAO courseDAO;
@@ -59,6 +66,21 @@ public class RoleAssignmentServlet extends HttpServlet {
                     SyllabusAssignment sa = assignmentDAO.getById(id);
                     req.setAttribute("assignment", sa);
                     req.setAttribute("action", "edit");
+                } catch (NumberFormatException e) {
+                    req.setAttribute("errorMessage", "Invalid assignment ID");
+                }
+            }
+        }
+
+        // Load specific assignment if action is detail
+        if ("detail".equals(action)) {
+            String idStr = req.getParameter("id");
+            if (idStr != null && !idStr.isEmpty()) {
+                try {
+                    Long id = Long.parseLong(idStr);
+                    SyllabusAssignment sa = assignmentDAO.getById(id);
+                    req.setAttribute("detailAssignment", sa);
+                    req.setAttribute("action", "detail");
                 } catch (NumberFormatException e) {
                     req.setAttribute("errorMessage", "Invalid assignment ID");
                 }
@@ -142,6 +164,7 @@ public class RoleAssignmentServlet extends HttpServlet {
         String semester = req.getParameter("semester");
         String yearStr = req.getParameter("academicYear");
         String status = req.getParameter("status");
+        String dueDateStr = req.getParameter("dueDate");
 
         req.setAttribute("action", "create");
         req.setAttribute("tempCourseId", courseIdStr);
@@ -165,11 +188,61 @@ public class RoleAssignmentServlet extends HttpServlet {
             Long designerId = Long.parseLong(designerIdStr.trim());
             int academicYear = Integer.parseInt(yearStr.trim());
 
+            java.sql.Timestamp dueDate = null;
+            if (dueDateStr != null && !dueDateStr.trim().isEmpty()) {
+                try {
+                    String formattedDate = dueDateStr.trim().replace("T", " ");
+                    if (formattedDate.length() == 16) {
+                        formattedDate += ":00";
+                    }
+                    dueDate = java.sql.Timestamp.valueOf(formattedDate);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
             boolean hasSuccess = false;
             boolean hasDuplicate = false;
             HttpSession session = req.getSession();
             User loggedInUser = (User) session.getAttribute("user");
             String ipAddress = req.getRemoteAddr();
+
+            // Handle file upload
+            Part filePart = req.getPart("templateFile");
+            Long fileId = null;
+            if (filePart != null && filePart.getSize() > 0) {
+                String originalFileName = java.nio.file.Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
+                String mimeType = filePart.getContentType();
+                long fileSize = filePart.getSize();
+                
+                String storedFileName = System.currentTimeMillis() + "_" + originalFileName;
+                String relativeStoredPath = "uploads/templates/" + storedFileName;
+                
+                String uploadsDirPath = req.getServletContext().getRealPath("/uploads/templates");
+                java.io.File uploadDir = new java.io.File(uploadsDirPath);
+                if (!uploadDir.exists()) {
+                    uploadDir.mkdirs();
+                }
+                
+                String absoluteFilePath = uploadsDirPath + java.io.File.separator + storedFileName;
+                filePart.write(absoluteFilePath);
+                
+                model.SyllabusVersionFile svFile = new model.SyllabusVersionFile();
+                svFile.setFileType("TEMPLATE");
+                svFile.setOriginalFileName(originalFileName);
+                svFile.setStoredFilePath(relativeStoredPath);
+                svFile.setFileSize(fileSize);
+                svFile.setMimeType(mimeType);
+                if (loggedInUser != null) {
+                    svFile.setUploadedBy(loggedInUser.getUserId());
+                }
+                
+                dao.SyllabusVersionFileDAO fileDAO = new dao.SyllabusVersionFileDAO();
+                long insertedFileId = fileDAO.insert(svFile);
+                if (insertedFileId > 0) {
+                    fileId = insertedFileId;
+                }
+            }
 
             for (String revIdStr : reviewerIds) {
                 if (revIdStr == null || revIdStr.trim().isEmpty()) {
@@ -193,10 +266,18 @@ public class RoleAssignmentServlet extends HttpServlet {
                 sa.setSemester(semester);
                 sa.setAcademicYear(academicYear);
                 sa.setAssignmentStatus((status != null && !status.trim().isEmpty()) ? status : "PENDING");
+                sa.setTemplateFileId(fileId);
+                sa.setDueDate(dueDate);
 
                 boolean result = assignmentDAO.create(sa);
                 if (result) {
                     assignmentDAO.saveAssignment(sa, loggedInUser.getUserId(), ipAddress);
+                    
+                    // Assign DESIGNER and REVIEWER roles to user in database
+                    dao.RoleDAO roleDAO = new dao.RoleDAO();
+                    roleDAO.assignRoleToUser(designerId, "DESIGNER");
+                    roleDAO.assignRoleToUser(reviewerId, "REVIEWER");
+                    
                     hasSuccess = true;
                 }
             }
@@ -265,10 +346,24 @@ public class RoleAssignmentServlet extends HttpServlet {
                 return;
             }
 
-            if (assignmentDAO.isDuplicate(courseId, semester, academicYear, assignmentId)) {
-                req.setAttribute("errorMessage", "An assignment for this course, semester and academic year already exists.");
+            if (assignmentDAO.isDuplicateForReviewer(courseId, semester, academicYear, reviewerId, assignmentId)) {
+                req.setAttribute("errorMessage", "An assignment for this course, reviewer, semester and academic year already exists.");
                 forwardToList(req, resp);
                 return;
+            }
+
+            String dueDateStr = req.getParameter("dueDate");
+            java.sql.Timestamp dueDate = null;
+            if (dueDateStr != null && !dueDateStr.trim().isEmpty()) {
+                try {
+                    String formattedDate = dueDateStr.trim().replace("T", " ");
+                    if (formattedDate.length() == 16) {
+                        formattedDate += ":00";
+                    }
+                    dueDate = java.sql.Timestamp.valueOf(formattedDate);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
 
             existing.setCourseId(courseId);
@@ -276,7 +371,8 @@ public class RoleAssignmentServlet extends HttpServlet {
             existing.setReviewerId(reviewerId);
             existing.setSemester(semester);
             existing.setAcademicYear(academicYear);
-            existing.setAssignmentStatus((status != null && !status.trim().isEmpty()) ? status : "PENDING");
+            existing.setAssignmentStatus((status != null && !status.trim().isEmpty()) ? status : existing.getAssignmentStatus());
+            existing.setDueDate(dueDate);
 
             boolean result = assignmentDAO.update(existing);
 
@@ -285,6 +381,11 @@ public class RoleAssignmentServlet extends HttpServlet {
                 User loggedInUser = (User) session.getAttribute("user");
                 String ipAddress = req.getRemoteAddr();
                 assignmentDAO.saveAssignment(existing, loggedInUser.getUserId(), ipAddress);
+                
+                // Assign DESIGNER and REVIEWER roles to user in database
+                dao.RoleDAO roleDAO = new dao.RoleDAO();
+                roleDAO.assignRoleToUser(designerId, "DESIGNER");
+                roleDAO.assignRoleToUser(reviewerId, "REVIEWER");
                 
                 req.getSession().setAttribute("successMessage", "Updated syllabus role assignment successfully!");
                 resp.sendRedirect(req.getContextPath() + "/role-assignment");
