@@ -779,12 +779,12 @@
 
     <div class="dashboard-wrapper">
         <!-- ================= SIDEBAR ================= -->
-        <jsp:include page="../layout/sidebar.jsp" />
+        <jsp:include page="../../layout/sidebar.jsp" />
 
         <!-- ================= MAIN CONTENT AREA ================= -->
         <main class="dashboard-main">
             <!-- ================= TOP HEADER ================= -->
-            <jsp:include page="../layout/header.jsp" />
+            <jsp:include page="../../layout/header.jsp" />
 
             <!-- ================= DYNAMIC WORKSPACE ================= -->
             <div class="dashboard-content">

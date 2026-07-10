@@ -388,12 +388,12 @@
     <!-- SIDEBAR AND HEADER LAYOUT -->
     <div class="dashboard-wrapper">
         <!-- Sidebar -->
-        <jsp:include page="../layout/sidebar.jsp" />
+        <jsp:include page="../../layout/sidebar.jsp" />
         
         <!-- Main Panel -->
         <main class="dashboard-main">
             <!-- Header -->
-            <jsp:include page="../layout/header.jsp" />
+            <jsp:include page="../../layout/header.jsp" />
             
             <!-- Details content -->
             <div class="dashboard-content">
