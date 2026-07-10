@@ -144,15 +144,15 @@ public class ReviewServlet extends HttpServlet {
             Map<String, Object> versionDetail = versionDAO.getReviewDetailByVersionId(versionId);
             List<Map<String, Object>> criteriaList = criteriaDAO.getActiveCriteria();
             Map<String, String> sectionContentMap = sectionDAO.getSectionContentMap(versionId);
-
+            List<Map<String, Object>> allImportedSections = sectionDAO.getAllSectionsByVersionId(versionId);
             request.setAttribute("versionDetail", versionDetail);
             request.setAttribute("criteriaList", criteriaList);
             request.setAttribute("sectionContentMap", sectionContentMap);
-
+            request.setAttribute("allImportedSections", allImportedSections);
             request.getRequestDispatcher("/views/review/evaluation.jsp")
                     .forward(request, response);
-            List<Map<String, Object>> allImportedSections = sectionDAO.getAllSectionsByVersionId(versionId);
-            request.setAttribute("allImportedSections", allImportedSections);
+            
+            
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/review?action=pending&error=invalid_version");
         }

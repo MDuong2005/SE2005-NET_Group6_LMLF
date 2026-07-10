@@ -4,17 +4,15 @@
 <%
     List<Map<String, Object>> allImportedSections =
             (List<Map<String, Object>>) request.getAttribute("allImportedSections");
-%>
-<%
     Map<String, Object> versionDetail =
             (Map<String, Object>) request.getAttribute("versionDetail");
-
+    
     List<Map<String, Object>> criteriaList =
             (List<Map<String, Object>>) request.getAttribute("criteriaList");
 
     Map<String, String> sectionContentMap =
             (Map<String, String>) request.getAttribute("sectionContentMap");
-
+    
     String error = request.getParameter("error");
 
     String userInitials = "RV";
