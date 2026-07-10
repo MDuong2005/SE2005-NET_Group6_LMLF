@@ -1,7 +1,10 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="java.util.List"%>
 <%@page import="java.util.Map"%>
-
+<%
+    List<Map<String, Object>> allImportedSections =
+            (List<Map<String, Object>>) request.getAttribute("allImportedSections");
+%>
 <%
     Map<String, Object> versionDetail =
             (Map<String, Object>) request.getAttribute("versionDetail");
@@ -482,6 +485,46 @@
                 .detail-grid {
                     grid-template-columns: 1fr;
                 }
+                .reference-card {
+                    border: 1px solid #E2E8F0;
+                    border-radius: 16px;
+                    background: #FFFFFF;
+                    margin-bottom: 22px;
+                    overflow: hidden;
+                }
+
+                .reference-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background: #F8FAFC;
+                    border-bottom: 1px solid #E2E8F0;
+                    padding: 18px;
+                }
+
+                .reference-header h3 {
+                    margin: 0;
+                    color: #0F172A;
+                    font-size: 20px;
+                    font-weight: 800;
+                }
+
+                .reference-header span {
+                    display: inline-block;
+                    margin-top: 5px;
+                    color: #64748B;
+                    font-size: 13px;
+                    font-weight: 700;
+                }
+
+                .reference-badge {
+                    padding: 6px 12px;
+                    border-radius: 999px;
+                    background: #DBEAFE;
+                    color: #1D4ED8;
+                    font-size: 12px;
+                    font-weight: 800;
+                }
             }
         </style>
     </head>
@@ -627,7 +670,70 @@
 
                     <form action="${pageContext.request.contextPath}/review?action=submitEvaluation" method="post">
                         <input type="hidden" name="versionId" value="<%= versionDetail.get("version_id") %>">
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h2>Reference Information</h2>
+                                <p>These imported sheets are for reference only. Reviewer does not need to approve or reject them.</p>
+                            </div>
 
+                            <div class="panel-body">
+                                <%
+                                    if (allImportedSections == null || allImportedSections.isEmpty()) {
+                                %>
+                                <div class="section-content-box">
+                                    <em>No imported reference content found.</em>
+                                </div>
+                                <%
+                                    } else {
+                                        for (Map<String, Object> section : allImportedSections) {
+                                            String sectionCode = String.valueOf(section.get("section_code"));
+                                            String sectionName = String.valueOf(section.get("section_name"));
+                                            String contentText = (String) section.get("content_text");
+
+                                            boolean isReviewSection =
+                                                    "LEARNING_OUTCOMES".equals(sectionCode)
+                                                    || "STUDENT_TASKS".equals(sectionCode)
+                                                    || "LEARNING_MATERIALS".equals(sectionCode)
+                                                    || "COURSE_SCHEDULE".equals(sectionCode)
+                                                    || "COURSE_ASSESSMENT".equals(sectionCode);
+
+                                            if (!isReviewSection) {
+                                %>
+
+                                <div class="reference-card">
+                                    <div class="reference-header">
+                                        <div>
+                                            <h3><%= sectionName %></h3>
+                                            <span><%= sectionCode %></span>
+                                        </div>
+
+                                        <div class="reference-badge">
+                                            View Only
+                                        </div>
+                                    </div>
+
+                                    <div class="section-content-box">
+                                        <%
+                                            if (contentText == null || contentText.trim().isEmpty()) {
+                                        %>
+                                        <em>No imported content found for this sheet.</em>
+                                        <%
+                                            } else {
+                                        %>
+                                        <%= contentText %>
+                                        <%
+                                            }
+                                        %>
+                                    </div>
+                                </div>
+
+                                <%
+                                            }
+                                        }
+                                    }
+                                %>
+                            </div>
+                        </div>
                         <div class="panel">
                             <div class="panel-header">
                                 <h3 class="panel-title">Review Sections</h3>

@@ -3,64 +3,50 @@ package model;
 import java.sql.Timestamp;
 
 public class DesignerReviewResult {
-    private Long reviewId;
-    private Long versionId;
-    private String versionNumber;
-    private String syllabusTitle;
-    private String courseCode;
-    private String courseName;
+
+    private long reviewId;
+    private long versionId;
+    private String versionStatus;
+    private long reviewerId;
     private String reviewerName;
     private String reviewerEmail;
-    private String decision;
-    private String comment;
+
+    private String overallDecision;
+    private String overallComment;
     private Timestamp reviewedAt;
 
-    public Long getReviewId() {
+    private long criteriaId;
+    private String criteriaCode;
+    private String criteriaName;
+
+    private String sectionDecision;
+    private String sectionComment;
+
+    public DesignerReviewResult() {
+    }
+
+    public long getReviewId() {
         return reviewId;
     }
 
-    public void setReviewId(Long reviewId) {
+    public void setReviewId(long reviewId) {
         this.reviewId = reviewId;
     }
 
-    public Long getVersionId() {
+    public long getVersionId() {
         return versionId;
     }
 
-    public void setVersionId(Long versionId) {
+    public void setVersionId(long versionId) {
         this.versionId = versionId;
     }
 
-    public String getVersionNumber() {
-        return versionNumber;
+    public long getReviewerId() {
+        return reviewerId;
     }
 
-    public void setVersionNumber(String versionNumber) {
-        this.versionNumber = versionNumber;
-    }
-
-    public String getSyllabusTitle() {
-        return syllabusTitle;
-    }
-
-    public void setSyllabusTitle(String syllabusTitle) {
-        this.syllabusTitle = syllabusTitle;
-    }
-
-    public String getCourseCode() {
-        return courseCode;
-    }
-
-    public void setCourseCode(String courseCode) {
-        this.courseCode = courseCode;
-    }
-
-    public String getCourseName() {
-        return courseName;
-    }
-
-    public void setCourseName(String courseName) {
-        this.courseName = courseName;
+    public void setReviewerId(long reviewerId) {
+        this.reviewerId = reviewerId;
     }
 
     public String getReviewerName() {
@@ -79,20 +65,20 @@ public class DesignerReviewResult {
         this.reviewerEmail = reviewerEmail;
     }
 
-    public String getDecision() {
-        return decision;
+    public String getOverallDecision() {
+        return overallDecision;
     }
 
-    public void setDecision(String decision) {
-        this.decision = decision;
+    public void setOverallDecision(String overallDecision) {
+        this.overallDecision = overallDecision;
     }
 
-    public String getComment() {
-        return comment;
+    public String getOverallComment() {
+        return overallComment;
     }
 
-    public void setComment(String comment) {
-        this.comment = comment;
+    public void setOverallComment(String overallComment) {
+        this.overallComment = overallComment;
     }
 
     public Timestamp getReviewedAt() {
@@ -101,5 +87,53 @@ public class DesignerReviewResult {
 
     public void setReviewedAt(Timestamp reviewedAt) {
         this.reviewedAt = reviewedAt;
+    }
+
+    public long getCriteriaId() {
+        return criteriaId;
+    }
+
+    public void setCriteriaId(long criteriaId) {
+        this.criteriaId = criteriaId;
+    }
+
+    public String getCriteriaCode() {
+        return criteriaCode;
+    }
+
+    public void setCriteriaCode(String criteriaCode) {
+        this.criteriaCode = criteriaCode;
+    }
+
+    public String getCriteriaName() {
+        return criteriaName;
+    }
+
+    public void setCriteriaName(String criteriaName) {
+        this.criteriaName = criteriaName;
+    }
+
+    public String getSectionDecision() {
+        return sectionDecision;
+    }
+
+    public void setSectionDecision(String sectionDecision) {
+        this.sectionDecision = sectionDecision;
+    }
+
+    public String getSectionComment() {
+        return sectionComment;
+    }
+
+    public void setSectionComment(String sectionComment) {
+        this.sectionComment = sectionComment;
+    }
+
+    public String getVersionStatus() {
+        return versionStatus;
+    }
+
+    public void setVersionStatus(String versionStatus) {
+        this.versionStatus = versionStatus;
     }
 }

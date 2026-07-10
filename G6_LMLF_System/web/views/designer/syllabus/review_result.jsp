@@ -3,144 +3,331 @@
 
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>Review Result - LMLF Designer</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/designer/designer.css">
+    <head>
+        <meta charset="UTF-8">
+        <title>Review Result - LMLF Designer</title>
 
-    <style>
-        .panel {
-            background: #fff;
-            border: 1px solid #e8ecf1;
-            border-radius: 1rem;
-            padding: 1.25rem;
-            box-shadow: var(--card-shadow);
-            margin-bottom: 1rem;
-        }
+        <style>
+            body {
+                margin: 0;
+                font-family: Arial, sans-serif;
+                background: #F8FAFC;
+                color: #0F172A;
+            }
 
-        .review {
-            border: 1px solid #e5e7eb;
-            border-radius: .9rem;
-            padding: 1rem;
-            margin-top: 1rem;
-        }
+            .main-content {
+                padding: 32px;
+            }
 
-        .badge {
-            display: inline-flex;
-            padding: .25rem .55rem;
-            border-radius: 999px;
-            font-size: .75rem;
-            font-weight: 800;
-            background: #e5e7eb;
-        }
+            .back-link {
+                display: inline-block;
+                margin-bottom: 20px;
+                color: #0F172A;
+                text-decoration: none;
+                font-weight: 600;
+            }
 
-        .badge.APPROVED {
-            background: #dcfce7;
-            color: #166534;
-        }
+            .page-card {
+                background: #FFFFFF;
+                border: 1px solid #E2E8F0;
+                border-radius: 18px;
+                padding: 28px;
+                box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+            }
 
-        .badge.REJECTED,
-        .badge.REVISION_NEEDED {
-            background: #fee2e2;
-            color: #991b1b;
-        }
+            .page-title {
+                font-size: 32px;
+                font-weight: 800;
+                margin-bottom: 6px;
+            }
 
-        .comment {
-            background: #f8fafc;
-            border-left: 4px solid #f26f21;
-            padding: .85rem;
-            margin-top: .75rem;
-            border-radius: .5rem;
-            white-space: pre-wrap;
-        }
+            .version-id {
+                color: #64748B;
+                margin-bottom: 24px;
+                font-size: 16px;
+            }
 
-        .empty {
-            padding: 2rem;
-            text-align: center;
-            color: #64748b;
-        }
+            .final-box {
+                background: #FFF7ED;
+                border: 1px solid #FED7AA;
+                border-radius: 16px;
+                padding: 18px;
+                margin-bottom: 24px;
+            }
 
-        .alert-success {
-            padding: .8rem 1rem;
-            border-radius: .75rem;
-            margin-bottom: 1rem;
-            background: #dcfce7;
-            color: #166534;
-        }
-    </style>
-</head>
+            .final-title {
+                color: #C2410C;
+                font-size: 18px;
+                font-weight: 800;
+                margin-bottom: 10px;
+            }
 
-<body>
-<div class="dashboard-wrapper">
-    <%@ include file="/views/designer/layout_designer/sidebar_designer.jsp" %>
+            .final-note {
+                margin-top: 10px;
+                color: #475569;
+                line-height: 1.5;
+            }
 
-    <main class="dashboard-main">
-        <div class="top-header">
-            <a href="${pageContext.request.contextPath}/designer/tasks">← Back to tasks</a>
-            <div>Review</div>
-        </div>
+            .reviewer-card {
+                border: 1px solid #E2E8F0;
+                border-radius: 16px;
+                margin-bottom: 24px;
+                overflow: hidden;
+                background: #FFFFFF;
+            }
 
-        <section class="dashboard-content">
-            <c:if test="${param.success == 'submitted'}">
-                <div class="alert-success">
-                    Submit thành công. Đang chờ Reviewer đánh giá.
-                </div>
-            </c:if>
+            .reviewer-header {
+                display: grid;
+                grid-template-columns: 1.3fr 1fr 2fr 1.3fr;
+                gap: 18px;
+                padding: 18px;
+                background: #F8FAFC;
+                border-bottom: 1px solid #E2E8F0;
+                align-items: start;
+            }
 
-            <div class="panel">
-                <h1>Review Result</h1>
-                <p style="color:#64748b">Version ID: ${versionId}</p>
+            .reviewer-name {
+                font-weight: 800;
+                font-size: 17px;
+            }
+
+            .reviewer-email {
+                color: #64748B;
+                margin-top: 4px;
+            }
+
+            .overall-label {
+                font-size: 12px;
+                font-weight: 800;
+                color: #64748B;
+                text-transform: uppercase;
+                margin-bottom: 6px;
+            }
+
+            .overall-comment {
+                color: #334155;
+                line-height: 1.5;
+            }
+
+            .reviewed-at {
+                color: #334155;
+            }
+
+            .review-table {
+                width: 100%;
+                border-collapse: collapse;
+                background: #FFFFFF;
+            }
+
+            .review-table th {
+                background: #FFF7ED;
+                color: #C2410C;
+                padding: 14px;
+                text-align: left;
+                font-weight: 800;
+                border-bottom: 1px solid #FED7AA;
+            }
+
+            .review-table td {
+                padding: 14px;
+                border-bottom: 1px solid #E2E8F0;
+                vertical-align: top;
+                color: #1E293B;
+            }
+
+            .review-table tr:last-child td {
+                border-bottom: none;
+            }
+
+            .badge {
+                display: inline-block;
+                padding: 5px 10px;
+                border-radius: 999px;
+                font-size: 12px;
+                font-weight: 800;
+            }
+
+            .badge.APPROVED {
+                background: #DCFCE7;
+                color: #15803D;
+            }
+
+            .badge.REJECTED {
+                background: #FEE2E2;
+                color: #B91C1C;
+            }
+
+            .badge.APPROVED_WITH_COMMENT {
+                background: #FEF3C7;
+                color: #B45309;
+            }
+
+            .badge.SUBMITTED {
+                background: #DBEAFE;
+                color: #1D4ED8;
+            }
+
+            .badge.DRAFT {
+                background: #E2E8F0;
+                color: #334155;
+            }
+
+            .comment-text {
+                white-space: pre-wrap;
+                line-height: 1.5;
+            }
+
+            .empty-box {
+                padding: 30px;
+                text-align: center;
+                color: #64748B;
+                background: #FFFFFF;
+                border: 1px solid #E2E8F0;
+                border-radius: 12px;
+            }
+
+            small {
+                color: #64748B;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="main-content">
+
+            <a class="back-link" href="${pageContext.request.contextPath}/designer/tasks">
+                ← Back to tasks
+            </a>
+
+            <div class="page-card">
+                <div class="page-title">Review Result</div>
+                <div class="version-id">Version ID: ${versionId}</div>
 
                 <c:choose>
                     <c:when test="${empty reviews}">
-                        <div class="empty">
+                        <div class="empty-box">
                             Chưa có kết quả review cho version này.
                         </div>
                     </c:when>
 
                     <c:otherwise>
-                        <c:forEach var="r" items="${reviews}">
-                            <div class="review">
-                                <h2>${r.courseCode} - ${r.courseName}</h2>
+                        <c:set var="first" value="${reviews[0]}" />
 
-                                <p>
-                                    <strong>Syllabus:</strong>
-                                    ${r.syllabusTitle}
-                                </p>
+                        <div class="final-box">
+                            <div class="final-title">Final Version Status</div>
 
-                                <p>
-                                    <strong>Version:</strong>
-                                    ${r.versionNumber}
-                                </p>
+                            <span class="badge ${first.versionStatus}">
+                                ${first.versionStatus}
+                            </span>
 
-                                <p>
-                                    <strong>Reviewer:</strong>
-                                    ${r.reviewerName} (${r.reviewerEmail})
-                                </p>
+                            <div class="final-note">
+                                <c:choose>
+                                    <c:when test="${first.versionStatus == 'REJECTED'}">
+                                        At least one reviewer rejected this syllabus. Designer needs to revise and resubmit.
+                                    </c:when>
+                                    <c:when test="${first.versionStatus == 'APPROVED'}">
+                                        All required reviewers approved this syllabus. Academic Office can process the next step.
+                                    </c:when>
+                                    <c:otherwise>
+                                        This syllabus is still waiting for reviewer decisions.
+                                    </c:otherwise>
+                                </c:choose>
+                            </div>
+                        </div>
 
-                                <p>
-                                    <strong>Decision:</strong>
-                                    <span class="badge ${r.decision}">
-                                        ${r.decision}
-                                    </span>
-                                </p>
+                        <c:set var="currentReviewId" value="-1" />
 
-                                <p>
-                                    <strong>Reviewed at:</strong>
-                                    ${r.reviewedAt}
-                                </p>
+                        <c:forEach var="r" items="${reviews}" varStatus="loop">
 
-                                <div class="comment">
-                                    <strong>Comment:</strong><br>
-                                    ${empty r.comment ? 'Không có comment.' : r.comment}
+                            <c:if test="${currentReviewId != r.reviewId}">
+                                <c:if test="${!loop.first}">
+                                    </tbody>
+                                    </table>
                                 </div>
                             </div>
-                        </c:forEach>
-                    </c:otherwise>
-                </c:choose>
-            </div>
-        </section>
-    </main>
+                        </c:if>
+
+                        <div class="reviewer-card">
+                            <div class="reviewer-header">
+                                <div>
+                                    <div class="reviewer-name">${r.reviewerName}</div>
+                                    <div class="reviewer-email">${r.reviewerEmail}</div>
+                                </div>
+
+                                <div class="overall-area">
+                                    <div class="overall-label">Overall Result</div>
+                                    <span class="badge ${r.overallDecision}">
+                                        ${r.overallDecision}
+                                    </span>
+                                </div>
+
+                                <div class="overall-comment-area">
+                                    <div class="overall-label">Overall Comment</div>
+                                    <c:choose>
+                                        <c:when test="${not empty r.overallComment}">
+                                            <div class="overall-comment">${r.overallComment}</div>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <em>No overall comment</em>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </div>
+
+                                <div>
+                                    <div class="overall-label">Reviewed At</div>
+                                    <div class="reviewed-at">${r.reviewedAt}</div>
+                                </div>
+                            </div>
+
+                            <div class="section-table-wrap">
+                                <table class="review-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Section</th>
+                                            <th>Section Result</th>
+                                            <th>Comment</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+
+                                        <c:set var="currentReviewId" value="${r.reviewId}" />
+                                    </c:if>
+
+                                    <tr>
+                                        <td>
+                                            <strong>${r.criteriaName}</strong><br>
+                                            <small>${r.criteriaCode}</small>
+                                        </td>
+
+                                        <td>
+                                            <span class="badge ${r.sectionDecision}">
+                                                ${r.sectionDecision}
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            <c:choose>
+                                                <c:when test="${not empty r.sectionComment}">
+                                                    <div class="comment-text">${r.sectionComment}</div>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <em>No comment</em>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </td>
+                                    </tr>
+
+                                    <c:if test="${loop.last}">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </c:if>
+
+                </c:forEach>
+            </c:otherwise>
+        </c:choose>
+    </div>
 </div>
 </body>
 </html>

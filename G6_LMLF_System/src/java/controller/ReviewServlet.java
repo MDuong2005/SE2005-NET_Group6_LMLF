@@ -6,6 +6,7 @@ import dao.ReviewerSyllabusDAO;
 import dao.SyllabusReviewDAO;
 import dao.ReviewerVersionDAO;
 import dao.ReviewerSectionDAO;
+import dao.ReviewerNotificationDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -24,6 +25,7 @@ public class ReviewServlet extends HttpServlet {
     private ReviewAssignmentDAO assignmentDAO;
     private ReviewerSyllabusDAO syllabusDAO;
     private ReviewerSectionDAO sectionDAO;
+    private ReviewerNotificationDAO reviewerNotificationDAO;
 
     @Override
     public void init() {
@@ -33,6 +35,7 @@ public class ReviewServlet extends HttpServlet {
         assignmentDAO = new ReviewAssignmentDAO();
         syllabusDAO = new ReviewerSyllabusDAO();
         sectionDAO = new ReviewerSectionDAO();
+        reviewerNotificationDAO = new ReviewerNotificationDAO();
     }
 
     @Override
@@ -148,7 +151,8 @@ public class ReviewServlet extends HttpServlet {
 
             request.getRequestDispatcher("/views/review/evaluation.jsp")
                     .forward(request, response);
-
+            List<Map<String, Object>> allImportedSections = sectionDAO.getAllSectionsByVersionId(versionId);
+            request.setAttribute("allImportedSections", allImportedSections);
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/review?action=pending&error=invalid_version");
         }
@@ -261,11 +265,33 @@ public class ReviewServlet extends HttpServlet {
             if (rejectedCount > 0) {
                 versionDAO.updateStatus(versionId, "REJECTED");
                 syllabusDAO.markRevisionRequiredByVersionId(versionId);
+
+                reviewerNotificationDAO.notifyDesignerAfterReview(
+                        versionId,
+                        reviewerId,
+                        finalDecision
+                );
+
             } else if (assignedCount >= 2 && approvedCount == assignedCount) {
                 versionDAO.updateStatus(versionId, "APPROVED");
-                syllabusDAO.publishByVersionId(versionId);
-            }
 
+                reviewerNotificationDAO.notifyAcademicWhenAllReviewersApproved(
+                        versionId,
+                        reviewerId
+                );
+
+            } else {
+                reviewerNotificationDAO.notifyDesignerAfterReview(
+                        versionId,
+                        reviewerId,
+                        finalDecision
+                );
+            }
+            reviewerNotificationDAO.createReviewCompletedNotification(
+                    versionId,
+                    reviewerId,
+                    finalDecision
+            );
             response.sendRedirect(request.getContextPath() + "/review-history");
 
         } catch (NumberFormatException e) {

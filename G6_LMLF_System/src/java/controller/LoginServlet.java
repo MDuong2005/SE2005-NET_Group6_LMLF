@@ -133,21 +133,29 @@ public class LoginServlet extends HttpServlet {
 
                 // Redirect to the dashboard
                 boolean isReviewer = false;
+boolean isDesigner = false;
 
-                if (user.getRoles() != null) {
-                    for (model.Role role : user.getRoles()) {
-                        if ("REVIEWER".equalsIgnoreCase(role.getRoleName())) {
-                            isReviewer = true;
-                            break;
-                        }
-                    }
-                }
+if (user.getRoles() != null) {
+    for (model.Role role : user.getRoles()) {
+        String roleName = role.getRoleName();
 
-                if (isReviewer) {
-                    response.sendRedirect(request.getContextPath() + "/review?action=pending");
-                } else {
-                    response.sendRedirect(request.getContextPath() + "/dashboard");
-                }
+        if ("REVIEWER".equalsIgnoreCase(roleName)) {
+            isReviewer = true;
+        }
+
+        if ("DESIGNER".equalsIgnoreCase(roleName)) {
+            isDesigner = true;
+        }
+    }
+}
+
+if (isReviewer) {
+    response.sendRedirect(request.getContextPath() + "/review?action=pending");
+} else if (isDesigner) {
+    response.sendRedirect(request.getContextPath() + "/designer/tasks");
+} else {
+    response.sendRedirect(request.getContextPath() + "/dashboard");
+}
             } else {
                 // Wrong password
                 request.setAttribute("errorMessage", "Invalid email or password. Please try again.");

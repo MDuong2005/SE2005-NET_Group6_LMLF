@@ -325,13 +325,17 @@ public class DesignerDAO extends DBContext {
                     : description.trim();
 
             long versionId = insertSyllabusVersion(
-        syllabusId,
-        versionNumber,
-        changeType,
-        finalDescription,
-        designerId
-);
-
+                    syllabusId,
+                    versionNumber,
+                    changeType,
+                    finalDescription,
+                    designerId
+            );
+            assignReviewerFromAssignment(
+                    assignmentId,
+                    versionId,
+                    designerId
+            );
             insertVersionFile(
                     assignmentId,
                     syllabusId,
@@ -449,61 +453,76 @@ public class DesignerDAO extends DBContext {
     public List<DesignerReviewResult> getReviewResults(long versionId, long designerId) {
         List<DesignerReviewResult> list = new ArrayList<>();
 
-        String sql = """
-                SELECT
-                    sr.review_id,
-                    sr.version_id,
-                    sv.version_number,
-                    s.title AS syllabus_title,
-                    c.code AS course_code,
-                    c.name AS course_name,
-                    CONCAT(u.first_name, ' ', u.last_name) AS reviewer_name,
-                    u.email AS reviewer_email,
-                    sr.decision,
-                    sr.comment,
-                    sr.reviewed_at
-                FROM syllabus_reviews sr
-                JOIN syllabus_versions sv ON sr.version_id = sv.version_id
-                JOIN syllabuses s ON sv.syllabus_id = s.syllabus_id
-                JOIN courses c ON s.course_id = c.course_id
-                JOIN users u ON sr.reviewer_id = u.user_id
-                WHERE sr.version_id = ?
-                  AND (
-                        sv.created_by = ?
-                        OR EXISTS (
-                            SELECT 1
-                            FROM syllabus_assignments sa
-                            WHERE sa.submitted_version_id = sv.version_id
-                              AND sa.designer_id = ?
-                        )
-                      )
-                ORDER BY sr.reviewed_at DESC
-                """;
+        String sql
+                = "SELECT "
+                + "    sr.review_id, "
+                + "    sr.version_id, "
+                + "    sv.status AS version_status, "
+                + "    sr.reviewer_id, "
+                + "    u.first_name + ' ' + u.last_name AS reviewer_name, "
+                + "    u.email AS reviewer_email, "
+                + "    sr.decision AS overall_decision, "
+                + "    sr.comment AS overall_comment, "
+                + "    sr.reviewed_at, "
+                + "    rc.criteria_id, "
+                + "    rc.criteria_code, "
+                + "    rc.criteria_name, "
+                + "    srs.decision AS section_decision, "
+                + "    srs.comment AS section_comment "
+                + "FROM syllabus_reviews sr "
+                + "JOIN syllabus_versions sv ON sr.version_id = sv.version_id "
+                + "JOIN users u ON sr.reviewer_id = u.user_id "
+                + "LEFT JOIN syllabus_review_sections srs ON sr.review_id = srs.review_id "
+                + "LEFT JOIN review_criteria rc ON srs.criteria_id = rc.criteria_id "
+                + "WHERE sr.version_id = ? "
+                + "  AND EXISTS ( "
+                + "      SELECT 1 "
+                + "      FROM syllabus_assignments sa "
+                + "      WHERE sa.syllabus_id = sv.syllabus_id "
+                + "        AND sa.designer_id = ? "
+                + "  ) "
+                + "ORDER BY sr.reviewed_at DESC, sr.review_id DESC, rc.display_order ASC";
 
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+
             ps.setLong(1, versionId);
             ps.setLong(2, designerId);
-            ps.setLong(3, designerId);
 
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    DesignerReviewResult review = new DesignerReviewResult();
+            ResultSet rs = ps.executeQuery();
 
-                    review.setReviewId(rs.getLong("review_id"));
-                    review.setVersionId(rs.getLong("version_id"));
-                    review.setVersionNumber(rs.getString("version_number"));
-                    review.setSyllabusTitle(rs.getString("syllabus_title"));
-                    review.setCourseCode(rs.getString("course_code"));
-                    review.setCourseName(rs.getString("course_name"));
-                    review.setReviewerName(rs.getString("reviewer_name"));
-                    review.setReviewerEmail(rs.getString("reviewer_email"));
-                    review.setDecision(rs.getString("decision"));
-                    review.setComment(rs.getString("comment"));
-                    review.setReviewedAt(rs.getTimestamp("reviewed_at"));
+            while (rs.next()) {
+                DesignerReviewResult result = new DesignerReviewResult();
 
-                    list.add(review);
+                result.setReviewId(rs.getLong("review_id"));
+                result.setVersionId(rs.getLong("version_id"));
+                result.setVersionStatus(rs.getString("version_status"));
+
+                result.setReviewerId(rs.getLong("reviewer_id"));
+                result.setReviewerName(rs.getString("reviewer_name"));
+                result.setReviewerEmail(rs.getString("reviewer_email"));
+
+                result.setOverallDecision(rs.getString("overall_decision"));
+                result.setOverallComment(rs.getString("overall_comment"));
+                result.setReviewedAt(rs.getTimestamp("reviewed_at"));
+
+                long criteriaId = rs.getLong("criteria_id");
+                if (rs.wasNull()) {
+                    criteriaId = 0;
                 }
+
+                result.setCriteriaId(criteriaId);
+                result.setCriteriaCode(rs.getString("criteria_code"));
+                result.setCriteriaName(rs.getString("criteria_name"));
+
+                result.setSectionDecision(rs.getString("section_decision"));
+                result.setSectionComment(rs.getString("section_comment"));
+
+                list.add(result);
             }
+
+            rs.close();
+            ps.close();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -645,14 +664,14 @@ public class DesignerDAO extends DBContext {
     }
 
     private long insertSyllabusVersion(
-        long syllabusId,
-        String versionNumber,
-        String changeType,
-        String description,
-        long designerId
-) throws SQLException {
+            long syllabusId,
+            String versionNumber,
+            String changeType,
+            String description,
+            long designerId
+    ) throws SQLException {
 
-    String sql = """
+        String sql = """
             INSERT INTO syllabus_versions (
                 syllabus_id,
                 version_number,
@@ -666,25 +685,25 @@ public class DesignerDAO extends DBContext {
             VALUES (?, ?, ?, ?, 'SUBMITTED', ?, ?, SYSDATETIME())
             """;
 
-    try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-        ps.setLong(1, syllabusId);
-        ps.setString(2, versionNumber);
-        ps.setString(3, changeType);
-        ps.setString(4, description);
-        ps.setLong(5, designerId);
-        ps.setLong(6, designerId);
+        try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setLong(1, syllabusId);
+            ps.setString(2, versionNumber);
+            ps.setString(3, changeType);
+            ps.setString(4, description);
+            ps.setLong(5, designerId);
+            ps.setLong(6, designerId);
 
-        ps.executeUpdate();
+            ps.executeUpdate();
 
-        try (ResultSet keys = ps.getGeneratedKeys()) {
-            if (keys.next()) {
-                return keys.getLong(1);
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) {
+                    return keys.getLong(1);
+                }
             }
         }
-    }
 
-    throw new SQLException("Cannot create syllabus version.");
-}
+        throw new SQLException("Cannot create syllabus version.");
+    }
 
     private void insertVersionFile(
             long assignmentId,
@@ -875,11 +894,52 @@ public class DesignerDAO extends DBContext {
     }
 
     private static class AssignmentRecord {
+
         long assignmentId;
         long courseId;
         Long syllabusId;
         String assignmentStatus;
         String courseCode;
         String courseName;
+    }
+
+    private void assignReviewerFromAssignment(long assignmentId, long versionId, long assignedBy) {
+        String sql
+                = "WITH reviewers AS ( "
+                + "    SELECT reviewer_id "
+                + "    FROM syllabus_assignment_reviewers "
+                + "    WHERE assignment_id = ? "
+                + "    UNION "
+                + "    SELECT reviewer_id "
+                + "    FROM syllabus_assignments "
+                + "    WHERE assignment_id = ? "
+                + "      AND reviewer_id IS NOT NULL "
+                + ") "
+                + "INSERT INTO syllabus_version_review_assignments "
+                + "(version_id, reviewer_id, assigned_by, status, assigned_at) "
+                + "SELECT ?, r.reviewer_id, ?, 'PENDING', SYSDATETIME() "
+                + "FROM reviewers r "
+                + "WHERE NOT EXISTS ( "
+                + "    SELECT 1 "
+                + "    FROM syllabus_version_review_assignments vra "
+                + "    WHERE vra.version_id = ? "
+                + "      AND vra.reviewer_id = r.reviewer_id "
+                + ")";
+
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+
+            ps.setLong(1, assignmentId);
+            ps.setLong(2, assignmentId);
+            ps.setLong(3, versionId);
+            ps.setLong(4, assignedBy);
+            ps.setLong(5, versionId);
+
+            ps.executeUpdate();
+            ps.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

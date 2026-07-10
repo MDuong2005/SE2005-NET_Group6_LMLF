@@ -1,5 +1,6 @@
 package controller;
 
+import utils.ReviewerExcelImportService;
 import constant.RoleConstants;
 import dao.DesignerDAO;
 import jakarta.servlet.ServletException;
@@ -210,8 +211,8 @@ public class DesignerServlet extends HttpServlet {
 
         response.sendRedirect(
                 request.getContextPath()
-                        + "/designer/design?assignmentId=" + assignmentId
-                        + (ok ? "&success=accepted" : "&error=accept_failed")
+                + "/designer/design?assignmentId=" + assignmentId
+                + (ok ? "&success=accepted" : "&error=accept_failed")
         );
     }
 
@@ -229,8 +230,8 @@ public class DesignerServlet extends HttpServlet {
 
         response.sendRedirect(
                 request.getContextPath()
-                        + "/designer/tasks"
-                        + (ok ? "?success=rejected" : "?error=reject_failed")
+                + "/designer/tasks"
+                + (ok ? "?success=rejected" : "?error=reject_failed")
         );
     }
 
@@ -249,8 +250,8 @@ public class DesignerServlet extends HttpServlet {
         if (part == null || part.getSize() == 0) {
             response.sendRedirect(
                     request.getContextPath()
-                            + "/designer/design?assignmentId=" + assignmentId
-                            + "&error=no_file"
+                    + "/designer/design?assignmentId=" + assignmentId
+                    + "&error=no_file"
             );
             return;
         }
@@ -260,8 +261,8 @@ public class DesignerServlet extends HttpServlet {
         if (!isExcelFile(originalFileName)) {
             response.sendRedirect(
                     request.getContextPath()
-                            + "/designer/design?assignmentId=" + assignmentId
-                            + "&error=invalid_file"
+                    + "/designer/design?assignmentId=" + assignmentId
+                    + "&error=invalid_file"
             );
             return;
         }
@@ -292,10 +293,27 @@ public class DesignerServlet extends HttpServlet {
                     request.getParameter("description")
             );
 
+            ReviewerExcelImportService importService = new ReviewerExcelImportService();
+
+            int importedCount;
+
+            try (InputStream excelInput = Files.newInputStream(storedPath)) {
+                importedCount = importService.importExcelToVersion(excelInput, versionId);
+            }
+
+            if (importedCount < 5) {
+                response.sendRedirect(
+                        request.getContextPath()
+                        + "/designer/design?assignmentId=" + assignmentId
+                        + "&error=excel_import_failed"
+                );
+                return;
+            }
+
             response.sendRedirect(
                     request.getContextPath()
-                            + "/designer/review-result?versionId=" + versionId
-                            + "&success=submitted"
+                    + "/designer/review-result?versionId=" + versionId
+                    + "&success=submitted"
             );
 
         } catch (Exception e) {

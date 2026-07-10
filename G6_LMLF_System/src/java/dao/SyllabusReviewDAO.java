@@ -179,12 +179,11 @@ public class SyllabusReviewDAO extends DBContext {
                 = "SELECT COUNT(*) AS total "
                 + "FROM syllabus_reviews "
                 + "WHERE version_id = ? "
-                + "AND decision IN ('APPROVED', 'APPROVED_WITH_COMMENT')";
+                + "  AND decision IN ('APPROVED', 'APPROVED_WITH_COMMENT')";
 
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
             ps.setLong(1, versionId);
-
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
