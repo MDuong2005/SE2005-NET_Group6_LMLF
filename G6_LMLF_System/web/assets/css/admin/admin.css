@@ -287,3 +287,53 @@
     padding: 50px 20px;
     color: #6c757d;
 }
+
+/* ===== IMPORT EXCEL ===== */
+.container .import-panel {
+    padding: 20px 30px;
+    background-color: var(--fpt-orange-light);
+    border-bottom: 1px solid var(--fpt-orange-border);
+}
+.container .import-hint {
+    font-size: 13px;
+    color: #5f6368;
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+.container .import-hint code {
+    background: #fff;
+    border: 1px solid var(--fpt-orange-border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 12px;
+}
+.container .import-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.container .import-banner {
+    margin: 16px 30px 0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    background-color: #e6f4ea;
+    border: 1px solid #b7e1c4;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+.container .import-banner.has-errors {
+    background-color: #fef7e0;
+    border-color: #f6d98a;
+}
+.container .import-errors {
+    width: 100%;
+    margin: 8px 0 0;
+    padding-left: 20px;
+    color: #7a4b00;
+    font-size: 13px;
+    line-height: 1.6;
+}

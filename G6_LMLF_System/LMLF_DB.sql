@@ -406,7 +406,28 @@ CREATE TABLE review_comments (
 );
 
 -- =======================================================
--- 20. INDEXES
+-- 20. ACCOUNT REQUESTS
+-- =======================================================
+CREATE TABLE account_requests (
+    request_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    email NVARCHAR(255) NOT NULL,
+    first_name NVARCHAR(100),
+    last_name NVARCHAR(100),
+    requested_by BIGINT NOT NULL,
+    status NVARCHAR(20) NOT NULL DEFAULT 'PENDING', 
+    requested_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    resolved_at DATETIME2 NULL,
+    resolved_by BIGINT NULL,
+    note NVARCHAR(MAX) NULL,
+
+    CONSTRAINT uq_account_requests_email UNIQUE(email, status),
+    CONSTRAINT chk_account_requests_status CHECK (status IN ('PENDING','APPROVED','REJECTED')),
+    CONSTRAINT fk_acc_req_requested_by FOREIGN KEY (requested_by) REFERENCES users(user_id),
+    CONSTRAINT fk_acc_req_resolved_by FOREIGN KEY (resolved_by) REFERENCES users(user_id)
+);
+
+-- =======================================================
+-- 21. INDEXES
 -- =======================================================
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_provider ON users(auth_provider);
@@ -429,7 +450,7 @@ CREATE INDEX idx_syllabuses_deleted ON syllabuses(deleted_at);
 GO
 
 -- =======================================================
--- 21. SEED DATA FOR SYSTEM ROLES
+-- 22. SEED DATA FOR SYSTEM ROLES
 -- =======================================================
 INSERT INTO roles(role_name, description)
 VALUES
@@ -439,7 +460,8 @@ VALUES
 ('DESIGNER', 'Syllabus Designer'),
 ('REVIEWER', 'Syllabus Reviewer'),
 ('STUDENT', 'Student'),
-('ALUMNI', 'Alumni');
+('ALUMNI', 'Alumni'),
+('EXTERNAL_EXPERT', 'External Reviewer or Expert');
 GO
 
 USE LMLF;

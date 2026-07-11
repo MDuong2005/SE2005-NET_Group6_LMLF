@@ -7,8 +7,66 @@
         <h2>User Management</h2>
         <div class="header-actions">
             <a href="${pageContext.request.contextPath}/admin/guests" class="btn btn-back">Manage Guests</a>
+            <button type="button" class="btn btn-back" onclick="toggleImport()">Import Excel</button>
             <a href="${pageContext.request.contextPath}/admin/users?action=create" class="btn btn-primary">+ Add User</a>
         </div>
+    </div>
+
+    <%-- ===== Error messages for import validation ===== --%>
+    <c:if test="${not empty param.error}">
+        <div class="import-banner has-errors" style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+            <c:choose>
+                <c:when test="${param.error == 'no_file'}">
+                    <strong>Error:</strong> Please select a file to upload.
+                </c:when>
+                <c:when test="${param.error == 'bad_format'}">
+                    <strong>Error:</strong> Invalid file format. Please upload an <strong>.xlsx</strong> file.
+                </c:when>
+                <c:when test="${param.error == 'parse_failed'}">
+                    <strong>Error:</strong> Failed to parse the Excel file. Please ensure it is not corrupted.
+                </c:when>
+                <c:otherwise>
+                    <strong>Error:</strong> An unknown error occurred.
+                </c:otherwise>
+            </c:choose>
+        </div>
+    </c:if>
+
+    <%-- ===== Import result banner ===== --%>
+    <c:if test="${not empty param.imported or not empty param.failed}">
+        <div class="import-banner ${param.failed != null and param.failed != '0' ? 'has-errors' : 'ok'}">
+            <strong>Import finished:</strong>
+            <span class="badge badge-active">${param.imported} created</span>
+            <c:if test="${param.failed != null and param.failed != '0'}">
+                <span class="badge badge-banned">${param.failed} failed</span>
+            </c:if>
+            <c:if test="${not empty sessionScope.importErrors}">
+                <ul class="import-errors">
+                    <c:forEach var="err" items="${sessionScope.importErrors}">
+                        <li>${err}</li>
+                    </c:forEach>
+                </ul>
+            </c:if>
+        </div>
+        <%-- show the error detail only once --%>
+        <c:remove var="importErrors" scope="session" />
+    </c:if>
+
+    <%-- ===== Import Excel form (hidden by default) ===== --%>
+    <div id="importPanel" class="import-panel" style="display: none;">
+        <form action="${pageContext.request.contextPath}/admin/users" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="action" value="importUsers">
+            <p class="import-hint">
+                Upload an <strong>.xlsx</strong> file. Row 1 is the header (skipped). Columns in order:
+                <code>username | first_name | last_name | email | role</code>.
+                Role must match a system role (e.g. LECTURER, ACADEMIC_OFFICE, STUDENT).
+            </p>
+            <div class="import-controls">
+                <input type="file" name="excelFile" accept=".xlsx" required>
+                <button type="submit" class="btn btn-primary">Upload &amp; Import</button>
+                <button type="button" class="btn btn-cancel" onclick="toggleImport()">Cancel</button>
+            </div>
+        </form>
     </div>
 
     <div class="filter-group first">
@@ -113,5 +171,10 @@
             const matchStatus = currentStatus === 'ALL' || row.dataset.status === currentStatus;
             row.style.display = (matchRole && matchStatus) ? '' : 'none';
         });
+    }
+
+    function toggleImport() {
+        const panel = document.getElementById('importPanel');
+        panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
     }
 </script>

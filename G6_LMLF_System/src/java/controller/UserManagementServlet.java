@@ -3,17 +3,34 @@ package controller;
 import dao.RoleDAO;
 import dao.UserDAO;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
 import model.Role;
 import model.User;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import utils.SessionUtil;
 
 @WebServlet(name = "UserManagementServlet", urlPatterns = {"/admin/users"})
+@MultipartConfig(
+        fileSizeThreshold = 1024 * 1024,      // 1 MB in memory before buffering to disk
+        maxFileSize = 5 * 1024 * 1024,        // 5 MB per file
+        maxRequestSize = 6 * 1024 * 1024      // 6 MB total request
+)
 public class UserManagementServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAO();
@@ -73,6 +90,9 @@ public class UserManagementServlet extends HttpServlet {
             case "unban":
                 toggleStatus(request, response, action);
                 break;
+            case "importUsers":
+                importUsers(request, response);
+                break;
             default:
                 response.sendRedirect(request.getContextPath() + "/admin/users");
                 break;
@@ -81,7 +101,7 @@ public class UserManagementServlet extends HttpServlet {
 
     private void listUsers(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         List<User> users = userDAO.getAllUsersWithRoles();
-        List<Role> roles = roleDAO.getAllRoles();
+        List<Role> roles = getSystemRoles();
         request.setAttribute("users", users);
         request.setAttribute("roles", roles);
         request.setAttribute("contentPage", "admin/user/user_list.jsp");
@@ -90,7 +110,7 @@ public class UserManagementServlet extends HttpServlet {
     }
 
     private void showCreateForm(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        List<Role> roles = roleDAO.getAllRoles();
+        List<Role> roles = getSystemRoles();
         request.setAttribute("roles", roles);
         request.setAttribute("contentPage", "admin/user/create_user.jsp");
         request.setAttribute("cssFile", "admin/admin.css");
@@ -106,7 +126,7 @@ public class UserManagementServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/admin/users");
                 return;
             }
-            List<Role> roles = roleDAO.getAllRoles();
+            List<Role> roles = getSystemRoles();
             List<Role> currentRoles = roleDAO.getRolesByUserId(userId);
             if (!currentRoles.isEmpty()) {
                 request.setAttribute("currentRoleId", currentRoles.get(0).getRoleId());
@@ -120,6 +140,17 @@ public class UserManagementServlet extends HttpServlet {
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/admin/users");
         }
+    }
+
+    private List<Role> getSystemRoles() {
+        List<Role> allRoles = roleDAO.getAllRoles();
+        List<Role> systemRoles = new ArrayList<>();
+        for (Role r : allRoles) {
+            if (!r.getRoleName().equalsIgnoreCase("DESIGNER") && !r.getRoleName().equalsIgnoreCase("REVIEWER")) {
+                systemRoles.add(r);
+            }
+        }
+        return systemRoles;
     }
 
     private void createUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -158,8 +189,155 @@ public class UserManagementServlet extends HttpServlet {
         if (generatedId > 0) {
             userDAO.assignRole(generatedId, roleId);
         }
-        
+
         response.sendRedirect(request.getContextPath() + "/admin/users");
+    }
+
+    /**
+     * Bulk-create internal users from an uploaded .xlsx file.
+     * Expected columns (row 1 is a header and is skipped):
+     *   A=username, B=first_name, C=last_name, D=email, E=role
+     * Each valid row becomes a GOOGLE-auth internal user (no password),
+     * mirroring {@link #createUser}. Invalid rows are skipped and reported.
+     */
+    private void importUsers(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String ctx = request.getContextPath();
+
+        Part filePart = request.getPart("excelFile");
+        if (filePart == null || filePart.getSize() == 0) {
+            response.sendRedirect(ctx + "/admin/users?error=no_file");
+            return;
+        }
+
+        String submitted = filePart.getSubmittedFileName();
+        if (submitted == null || !submitted.toLowerCase().endsWith(".xlsx")) {
+            response.sendRedirect(ctx + "/admin/users?error=bad_format");
+            return;
+        }
+
+        // Cache role name -> id once, so we don't query per row.
+        List<Role> allRoles = getSystemRoles();
+
+        List<User> toInsert = new ArrayList<>();
+        List<Long> roleIds = new ArrayList<>();
+        List<String> rowLabels = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+        Set<String> emailsInFile = new HashSet<>();
+
+        try (InputStream is = filePart.getInputStream();
+             Workbook workbook = new XSSFWorkbook(is)) {
+
+            Sheet sheet = workbook.getSheetAt(0);
+            DataFormatter fmt = new DataFormatter();
+
+            for (int r = 1; r <= sheet.getLastRowNum(); r++) {   // r=1 skips the header row
+                Row row = sheet.getRow(r);
+                if (row == null) {
+                    continue;
+                }
+
+                String username = utils.ValidationUtil.sanitize(cell(row, 0, fmt));
+                String firstName = utils.ValidationUtil.sanitize(cell(row, 1, fmt));
+                String lastName = utils.ValidationUtil.sanitize(cell(row, 2, fmt));
+                String email = utils.ValidationUtil.sanitize(cell(row, 3, fmt));
+                String roleName = cell(row, 4, fmt).trim();
+
+                // Skip fully blank rows silently.
+                if (username.isEmpty() && firstName.isEmpty() && lastName.isEmpty()
+                        && email.isEmpty() && roleName.isEmpty()) {
+                    continue;
+                }
+
+                int excelRow = r + 1;  // 1-based row number as seen in Excel
+                String label = "Row " + excelRow + " (" + (email.isEmpty() ? username : email) + ")";
+
+                if (!utils.ValidationUtil.isValidUsername(username)) {
+                    errors.add(label + ": invalid username (3-20 chars, letters/digits/underscore).");
+                    continue;
+                }
+                if (!utils.ValidationUtil.isValidEmail(email)) {
+                    errors.add(label + ": invalid email.");
+                    continue;
+                }
+                if (!utils.ValidationUtil.isNotEmpty(firstName) || !utils.ValidationUtil.isNotEmpty(lastName)) {
+                    errors.add(label + ": first name and last name are required.");
+                    continue;
+                }
+
+                Role role = findRole(allRoles, roleName);
+                if (role == null) {
+                    errors.add(label + ": unknown role '" + roleName + "'.");
+                    continue;
+                }
+
+                String emailKey = email.toLowerCase();
+                if (!emailsInFile.add(emailKey)) {
+                    errors.add(label + ": duplicate email within the file.");
+                    continue;
+                }
+                if (userDAO.existsByEmail(email)) {
+                    errors.add(label + ": email already exists in the system.");
+                    continue;
+                }
+
+                User u = new User();
+                u.setUsername(username);
+                u.setFirstName(firstName);
+                u.setLastName(lastName);
+                u.setEmail(email);
+                u.setPasswordHash(null);        // internal users sign in with Google
+                u.setAuthProvider("GOOGLE");
+                u.setExternal(false);
+                u.setMustChangePassword(false);
+                u.setStatus("ACTIVE");
+
+                toInsert.add(u);
+                roleIds.add(role.getRoleId());
+                rowLabels.add(label);
+            }
+
+        } catch (Exception e) {
+            System.err.println("UserManagementServlet - import parse error: " + e.getMessage());
+            response.sendRedirect(ctx + "/admin/users?error=parse_failed");
+            return;
+        }
+
+        int imported = 0;
+        int failed = errors.size();
+        if (!toInsert.isEmpty()) {
+            UserDAO.BatchResult result = userDAO.insertUsersBatch(toInsert, roleIds, rowLabels);
+            imported = result.imported;
+            failed += result.failed;
+            errors.addAll(result.errors);
+        }
+
+        if (!errors.isEmpty()) {
+            request.getSession().setAttribute("importErrors", errors);
+        }
+        response.sendRedirect(ctx + "/admin/users?imported=" + imported + "&failed=" + failed);
+    }
+
+    /** Read a cell as trimmed text, tolerating missing cells and numeric formats. */
+    private String cell(Row row, int index, DataFormatter fmt) {
+        Cell c = row.getCell(index);
+        if (c == null) {
+            return "";
+        }
+        return fmt.formatCellValue(c).trim();
+    }
+
+    /** Case-insensitive role lookup from a pre-loaded list (no per-row query). */
+    private Role findRole(List<Role> roles, String name) {
+        if (name == null || name.isEmpty()) {
+            return null;
+        }
+        for (Role r : roles) {
+            if (r.getRoleName() != null && r.getRoleName().equalsIgnoreCase(name)) {
+                return r;
+            }
+        }
+        return null;
     }
 
     private void updateUser(HttpServletRequest request, HttpServletResponse response) throws IOException {

@@ -496,4 +496,77 @@ public class UserDAO extends DBContext {
         }
         return 0;
     }
+
+    /**
+     * Result of a bulk import: how many rows were inserted, how many failed,
+     * and human-readable error lines (already labelled with the source row).
+     */
+    public static class BatchResult {
+        public int imported = 0;
+        public int failed = 0;
+        public final List<String> errors = new ArrayList<>();
+    }
+
+    /**
+     * Insert many users in one transaction, each with a single role.
+     * {@code users} and {@code roleIds} are parallel lists (same index = same row).
+     * Rows that were already validated by the caller are inserted; a row that
+     * still fails at the DB level (e.g. a duplicate that slipped through) is
+     * skipped and reported, without aborting the whole batch. A systemic
+     * SQLException rolls the whole run back.
+     *
+     * @param rowLabels optional labels (e.g. "Row 5 (john@x.com)") used in error
+     *                  messages; may be null.
+     */
+    public BatchResult insertUsersBatch(List<User> users, List<Long> roleIds, List<String> rowLabels) {
+        BatchResult result = new BatchResult();
+        if (connection == null) {
+            result.errors.add("No database connection.");
+            result.failed = (users == null) ? 0 : users.size();
+            return result;
+        }
+
+        boolean previousAutoCommit = true;
+        try {
+            previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+
+            for (int i = 0; i < users.size(); i++) {
+                String label = (rowLabels != null && i < rowLabels.size())
+                        ? rowLabels.get(i) : ("Row " + (i + 1));
+                try {
+                    long id = insertUser(users.get(i));
+                    if (id > 0) {
+                        assignRole(id, roleIds.get(i));
+                        result.imported++;
+                    } else {
+                        result.failed++;
+                        result.errors.add(label + ": could not be inserted (duplicate email/username?).");
+                    }
+                } catch (RuntimeException ex) {
+                    result.failed++;
+                    result.errors.add(label + ": " + ex.getMessage());
+                }
+            }
+
+            connection.commit();
+        } catch (SQLException e) {
+            try {
+                connection.rollback();
+            } catch (SQLException rb) {
+                System.err.println("UserDAO - rollback failed: " + rb.getMessage());
+            }
+            result.imported = 0;
+            result.failed = (users == null) ? 0 : users.size();
+            result.errors.clear();
+            result.errors.add("Import failed and was rolled back: " + e.getMessage());
+        } finally {
+            try {
+                connection.setAutoCommit(previousAutoCommit);
+            } catch (SQLException e) {
+                System.err.println("UserDAO - restore autocommit failed: " + e.getMessage());
+            }
+        }
+        return result;
+    }
 }
