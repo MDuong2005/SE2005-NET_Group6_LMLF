@@ -216,21 +216,23 @@ public class RoleAssignmentServlet extends HttpServlet {
                 long fileSize = filePart.getSize();
                 
                 String storedFileName = System.currentTimeMillis() + "_" + originalFileName;
-                String relativeStoredPath = "uploads/templates/" + storedFileName;
                 
-                String uploadsDirPath = req.getServletContext().getRealPath("/uploads/templates");
-                java.io.File uploadDir = new java.io.File(uploadsDirPath);
-                if (!uploadDir.exists()) {
-                    uploadDir.mkdirs();
+                java.nio.file.Path templateDir = java.nio.file.Paths.get(
+                        System.getProperty("user.home"),
+                        "lmlf_uploads",
+                        "templates"
+                );
+                java.nio.file.Files.createDirectories(templateDir);
+                java.nio.file.Path storedPath = templateDir.resolve(storedFileName);
+                
+                try (java.io.InputStream input = filePart.getInputStream()) {
+                    java.nio.file.Files.copy(input, storedPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                 }
-                
-                String absoluteFilePath = uploadsDirPath + java.io.File.separator + storedFileName;
-                filePart.write(absoluteFilePath);
                 
                 model.SyllabusVersionFile svFile = new model.SyllabusVersionFile();
                 svFile.setFileType("TEMPLATE");
                 svFile.setOriginalFileName(originalFileName);
-                svFile.setStoredFilePath(relativeStoredPath);
+                svFile.setStoredFilePath(storedPath.toAbsolutePath().toString());
                 svFile.setFileSize(fileSize);
                 svFile.setMimeType(mimeType);
                 if (loggedInUser != null) {
