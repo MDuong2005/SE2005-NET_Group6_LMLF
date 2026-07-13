@@ -121,21 +121,28 @@
             }
 
             .search-group {
-                position: relative;
                 flex: 2;
             }
 
-            .search-group .form-input {
-                padding-left: 44px;
+            .search-input-wrapper {
+                position: relative;
+                width: 100%;
             }
 
-            .search-group svg {
+            .search-input-wrapper .form-input {
+                padding-left: 44px;
+                width: 100%;
+            }
+
+            .search-input-wrapper svg {
                 position: absolute;
                 left: 14px;
-                top: 12px;
+                top: 50%;
+                transform: translateY(-50%);
                 width: 18px;
                 height: 18px;
                 fill: var(--text-muted);
+                pointer-events: none;
             }
 
             .btn-search {
@@ -230,30 +237,48 @@
                 align-items: center;
             }
 
-            .btn-link-edit {
+            .btn-action {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 36px;
+                height: 36px;
+                border-radius: var(--radius-md);
+                border: 1px solid var(--border-color);
+                background-color: #FFFFFF;
+                transition: var(--transition);
+                cursor: pointer;
+                text-decoration: none;
+            }
+
+            .btn-action-edit {
                 color: var(--primary);
-                text-decoration: none;
-                font-weight: 700;
-                font-size: 14px;
-                transition: var(--transition);
             }
 
-            .btn-link-edit:hover {
+            .btn-action-edit:hover {
+                background-color: var(--primary-light);
+                border-color: var(--primary);
                 color: var(--primary-hover);
-                text-decoration: underline;
             }
 
-            .btn-link-delete {
+            .btn-action-delete {
                 color: var(--text-muted);
-                text-decoration: none;
-                font-weight: 600;
-                font-size: 14px;
-                transition: var(--transition);
             }
 
-            .btn-link-delete:hover {
+            .btn-action-delete:hover {
+                background-color: #FEF2F2;
+                border-color: #FCA5A5;
                 color: var(--danger);
-                text-decoration: underline;
+            }
+
+            .btn-action svg {
+                width: 18px;
+                height: 18px;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 2;
+                stroke-linecap: round;
+                stroke-linejoin: round;
             }
 
             /* Empty State inside table */
@@ -573,22 +598,30 @@
 
                         <div class="form-group" style="max-width: 280px;">
                             <label for="selectCourse">Filter by Credits</label>
-                            <select id="selectCourse" name="creditsFilter" class="form-select">
-                                <option value="all">All Credits</option>
-                                <option value="1">1 Credit</option>
-                                <option value="2">2 Credits</option>
-                                <option value="3">3 Credits</option>
-                                <option value="4">4 Credits</option>
-                                <option value="5">5+ Credits</option>
+                            <%
+                                String currentFilter = (String) request.getAttribute("creditsFilter");
+                                if (currentFilter == null) {
+                                    currentFilter = "all";
+                                }
+                            %>
+                            <select id="selectCourse" name="creditsFilter" class="form-select" onchange="this.form.submit()">
+                                <option value="all" <%= "all".equals(currentFilter) ? "selected" : "" %>>All Credits</option>
+                                <option value="1" <%= "1".equals(currentFilter) ? "selected" : "" %>>1 Credit</option>
+                                <option value="2" <%= "2".equals(currentFilter) ? "selected" : "" %>>2 Credits</option>
+                                <option value="3" <%= "3".equals(currentFilter) ? "selected" : "" %>>3 Credits</option>
+                                <option value="4" <%= "4".equals(currentFilter) ? "selected" : "" %>>4 Credits</option>
+                                <option value="5" <%= "5".equals(currentFilter) ? "selected" : "" %>>5+ Credits</option>
                             </select>
                         </div>
 
                         <div class="form-group search-group">
                             <label for="searchKeyword">Search Course</label>
-                            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                            <input type="text" id="searchKeyword" name="keyword" class="form-input" 
-                                   placeholder="Enter course code or name..." 
-                                   value="<%= request.getAttribute("keyword") == null ? "" : request.getAttribute("keyword") %>">
+                            <div class="search-input-wrapper">
+                                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                                <input type="text" id="searchKeyword" name="keyword" class="form-input" 
+                                       placeholder="Enter course code or name..." 
+                                       value="<%= request.getAttribute("keyword") == null ? "" : request.getAttribute("keyword") %>">
+                            </div>
                         </div>
 
                         <button type="submit" class="btn-search">Search</button>
@@ -621,10 +654,22 @@
                                 <td style="text-align: center; font-size: 13px;"><%= courseItem.getCreatedAt() != null ? courseItem.getCreatedAt().toString().replace("T", " ") : "N/A" %></td>
                                 <td>
                                     <div class="actions-cell">
-                                        <a href="${pageContext.request.contextPath}/course?action=edit&id=<%= courseItem.getCourseId() %>" class="btn-link-edit">Edit</a>
+                                        <a href="${pageContext.request.contextPath}/course?action=edit&id=<%= courseItem.getCourseId() %>" 
+                                           class="btn-action btn-action-edit" title="Edit">
+                                            <svg viewBox="0 0 24 24">
+                                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                            </svg>
+                                        </a>
                                         <a href="${pageContext.request.contextPath}/course?action=delete&id=<%= courseItem.getCourseId() %>" 
-                                           class="btn-link-delete" 
-                                           onclick="return confirm('Delete this course?')">Delete</a>
+                                           class="btn-action btn-action-delete" title="Remove"
+                                           onclick="return confirm('Delete this course?')">
+                                            <svg viewBox="0 0 24 24">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                                            </svg>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>
@@ -813,8 +858,8 @@
                     });
 
                     // Update text indicators
-                    document.getElementById('pageIndicator').textContent = `Page ${page} of ${totalPages}`;
-                    document.getElementById('paginationInfo').innerHTML = `Showing <span>${start + 1}</span> to <span>${end}</span> of <span>${rows.length}</span> courses`;
+                    document.getElementById('pageIndicator').textContent = 'Page ' + page + ' of ' + totalPages;
+                    document.getElementById('paginationInfo').innerHTML = 'Showing <span>' + (start + 1) + '</span> to <span>' + end + '</span> of <span>' + rows.length + '</span> courses';
 
                     // Toggle state of buttons
                     document.getElementById('btnFirst').disabled = (page === 1);

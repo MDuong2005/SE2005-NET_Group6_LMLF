@@ -14,6 +14,26 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/academic/academic.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Custom scoped workspace variables mapped to FPT Academic theme */
+        :root {
+            --primary: var(--fpt-orange, #FF6B00);
+            --primary-hover: var(--fpt-orange-hover, #E05E00);
+            --primary-light: var(--fpt-orange-light, #FFF0E6);
+            --border-color: #E2E8F0;
+            --bg-card: #FFFFFF;
+            --text-dark: #1E293B;
+            --text-muted: #64748B;
+            --danger: #EF4444;
+            --danger-hover: #DC2626;
+            --radius-lg: 12px;
+            --radius-md: 8px;
+            --radius-sm: 6px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         .workspace-header {
             display: flex;
             align-items: center;
@@ -124,85 +144,223 @@
         }
 
         /* ===== Table ===== */
-        .table-container {
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .table-card {
+            padding: 0;
             overflow: hidden;
         }
+
         .table-wrapper {
             overflow-x: auto;
         }
-        table {
+
+        .data-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 14px;
-        }
-        table thead {
-            background: #f8f9fa;
-            border-bottom: 2px solid #e0e0e0;
-        }
-        table thead th {
-            padding: 14px 16px;
             text-align: left;
-            font-weight: 600;
-            color: #37474f;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
         }
-        table tbody td {
-            padding: 12px 16px;
-            border-bottom: 1px solid #f0f0f0;
-            vertical-align: middle;
-        }
-        table tbody tr:hover {
-            background: #f8f9fa;
-        }
-        .table-actions {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-        .table-actions .btn {
-            padding: 4px 10px;
-            font-size: 12px;
-            border-radius: 4px;
+
+        .data-table th {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            font-weight: 700;
+            font-size: 14px;
+            padding: 14px 24px;
+            letter-spacing: 0.5px;
             border: none;
-            cursor: pointer;
-            text-decoration: none;
+        }
+
+        .data-table td {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+            color: var(--text-dark);
+        }
+
+        .data-table tbody tr {
+            transition: var(--transition);
+        }
+
+        .data-table tbody tr:hover {
+            background-color: #F8FAFC;
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge-code {
+            display: inline-block;
+            background-color: var(--primary);
+            color: #FFFFFF;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-prereq-code {
+            display: inline-block;
+            background-color: #ECEFF1;
+            color: #455A64;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            border: 1px solid #CFD8DC;
+        }
+
+        .text-bold {
+            font-weight: 700;
+        }
+
+        .actions-cell {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-action {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            background-color: #FFFFFF;
+            transition: var(--transition);
+            cursor: pointer;
+            text-decoration: none;
         }
-        .btn-edit {
-            background: #e3f2fd;
-            color: #1565c0;
-        }
-        .btn-edit:hover {
-            background: #bbdefb;
-        }
-        .btn-delete {
-            background: #ffebee;
-            color: #c62828;
-        }
-        .btn-delete:hover {
-            background: #ffcdd2;
-        }
-        .btn-view {
-            background: #e8f5e9;
+
+        .btn-action-view {
             color: #2e7d32;
         }
-        .btn-view:hover {
-            background: #c8e6c9;
+
+        .btn-action-view:hover {
+            background-color: #e8f5e9;
+            border-color: #c8e6c9;
+            color: #1b5e20;
         }
-        .btn-restore {
-            background: #fff3e0;
-            color: #e65100;
+
+        .btn-action-delete {
+            color: var(--text-muted);
         }
-        .btn-restore:hover {
-            background: #ffe0b2;
+
+        .btn-action-delete:hover {
+            background-color: #FEF2F2;
+            border-color: #FCA5A5;
+            color: var(--danger);
         }
+
+        .btn-action svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Empty State */
+        .empty-state {
+            padding: 48px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .empty-state-icon {
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background-color: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .empty-state-text {
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 400px;
+        }
+
+        /* Pagination style */
+        .pagination-footer {
+            border-top: 1px solid var(--border-color);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #FFFFFF;
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .pagination-info span {
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-btn {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--border-color);
+            background-color: #FFFFFF;
+            color: var(--text-dark);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .page-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            color: var(--primary);
+            background-color: var(--primary-light);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .page-indicator {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin: 0 12px;
+        }
+
         .badge {
             padding: 3px 12px;
             border-radius: 12px;
@@ -523,9 +681,6 @@
                         <p>Manage curriculum structures for all majors</p>
                     </div>
                     <div class="header-actions">
-                        <span style="font-size:14px;color:#64748b;">
-                            <i class="fas fa-database"></i> Total: <%= request.getAttribute("totalCurriculums") != null ? request.getAttribute("totalCurriculums") : "0" %> curriculums
-                        </span>
                         <a href="${pageContext.request.contextPath}/curriculum?action=create" class="btn btn-primary">
                             <i class="fas fa-plus"></i> Create Curriculum
                         </a>
@@ -595,9 +750,9 @@
         <!-- ===== ALERTS ===== -->
 
         <!-- ===== TABLE ===== -->
-        <div class="table-container">
+        <div class="card table-card">
             <div class="table-wrapper">
-                <table>
+                <table class="data-table" id="curriculumTable">
                     <thead>
                         <tr>
                             <th style="width:50px;">#</th>
@@ -607,7 +762,7 @@
                             <th style="width:100px;">Status</th>
                             <th style="width:80px;">Semesters</th>
                             <th style="width:80px;">Courses</th>
-                            <th style="width:200px;">Actions</th>
+                            <th style="width:150px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -624,25 +779,33 @@
                         %>
                             <tr>
                                 <td><%= index++ %></td>
-                                <td><strong><%= curriculum.getCurriculumCode() != null ? curriculum.getCurriculumCode() : "N/A" %></strong></td>
+                                <td><span class="badge-code"><%= curriculum.getCurriculumCode() != null ? curriculum.getCurriculumCode() : "N/A" %></span></td>
                                 <td>
-                                    <strong><%= curriculum.getMajor() != null ? curriculum.getMajor().getCode() : "N/A" %></strong>
-                                    <br><small style="color:#78909c;"><%= curriculum.getMajor() != null ? curriculum.getMajor().getName() : "" %></small>
+                                    <span class="badge-prereq-code" style="margin-right: 8px;"><%= curriculum.getMajor() != null ? curriculum.getMajor().getCode() : "N/A" %></span>
+                                    <span class="text-bold"><%= curriculum.getMajor() != null ? curriculum.getMajor().getName() : "" %></span>
                                 </td>
                                 <td><%= curriculum.getVersion() %></td>
                                 <td><span class="badge <%= statusClass %>"><%= statusText %></span></td>
                                 <td><%= curriculum.getTotalSemesters() %></td>
                                 <td><%= curriculum.getCourses() != null ? curriculum.getCourses().size() : 0 %></td>
                                 <td>
-                                    <div class="table-actions">
+                                    <div class="actions-cell">
                                         <a href="${pageContext.request.contextPath}/curriculum?action=detail&id=<%= curriculum.getCurriculumId() %>" 
-                                           class="btn btn-view" title="View Curriculum">
-                                            <i class="fas fa-eye"></i> View
+                                           class="btn-action btn-action-view" title="View Curriculum">
+                                            <svg viewBox="0 0 24 24">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                            </svg>
                                         </a>
                                         <a href="${pageContext.request.contextPath}/curriculum?action=delete&id=<%= curriculum.getCurriculumId() %>" 
-                                           class="btn btn-delete" title="Delete Curriculum"
+                                           class="btn-action btn-action-delete" title="Delete Curriculum"
                                            onclick="return confirm('Are you sure you want to delete this curriculum?')">
-                                            <i class="fas fa-trash"></i>
+                                            <svg viewBox="0 0 24 24">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                                            </svg>
                                         </a>
                                     </div>
                                 </td>
@@ -650,8 +813,41 @@
                         <%
                                 }
                         %>
+                        <% if (curriculums.isEmpty()) { %>
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">
+                                        <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                                        </svg>
+                                    </div>
+                                    <div class="text-bold">No Curriculums Found</div>
+                                    <div class="empty-state-text">
+                                        There are no curriculums available.
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <% } %>
                     </tbody>
                 </table>
+
+                <!-- Client side Pagination Footer -->
+                <% if(curriculums != null && !curriculums.isEmpty()){ %>
+                <div class="pagination-footer">
+                    <div class="pagination-info" id="paginationInfo">
+                        Showing <span>0</span> to <span>0</span> of <span><%= curriculums.size() %></span> entries
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="page-btn" id="btnFirst" title="First Page">&lt;&lt;</button>
+                        <button class="page-btn" id="btnPrev" title="Previous Page">&lt;</button>
+                        <span class="page-indicator" id="pageIndicator">Page 1 of 1</span>
+                        <button class="page-btn" id="btnNext" title="Next Page">&gt;</button>
+                        <button class="page-btn" id="btnLast" title="Last Page">&gt;&gt;</button>
+                    </div>
+                </div>
+                <% } %>
             </div>
         </div>
 
@@ -1312,6 +1508,47 @@
         }
     %>
     document.addEventListener('DOMContentLoaded', function() {
+        const table = document.getElementById('curriculumTable');
+        if (table) {
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => !row.querySelector('.empty-state'));
+
+            if (rows.length > 0) {
+                const rowsPerPage = 5;
+                let currentPage = 1;
+                const totalPages = Math.ceil(rows.length / rowsPerPage);
+
+                function showPage(page) {
+                    currentPage = page;
+                    const start = (page - 1) * rowsPerPage;
+                    const end = Math.min(start + rowsPerPage, rows.length);
+
+                    rows.forEach((row, index) => {
+                        if (index >= start && index < end) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+
+                    document.getElementById('pageIndicator').textContent = 'Page ' + page + ' of ' + totalPages;
+                    document.getElementById('paginationInfo').innerHTML = 'Showing <span>' + (start + 1) + '</span> to <span>' + end + '</span> of <span>' + rows.length + '</span> entries';
+
+                    document.getElementById('btnFirst').disabled = (page === 1);
+                    document.getElementById('btnPrev').disabled = (page === 1);
+                    document.getElementById('btnNext').disabled = (page === totalPages);
+                    document.getElementById('btnLast').disabled = (page === totalPages);
+                }
+
+                document.getElementById('btnFirst').addEventListener('click', () => showPage(1));
+                document.getElementById('btnPrev').addEventListener('click', () => showPage(currentPage - 1));
+                document.getElementById('btnNext').addEventListener('click', () => showPage(currentPage + 1));
+                document.getElementById('btnLast').addEventListener('click', () => showPage(totalPages));
+
+                showPage(1);
+            }
+        }
+
         const successMsg = "<%= jsSuccess %>";
         const errorMsg = "<%= jsError %>";
         

@@ -45,6 +45,11 @@ public class CourseServlet extends HttpServlet {
         }
         
         // Lấy danh sách courses
+        String creditsFilter = req.getParameter("creditsFilter");
+        if (creditsFilter == null) {
+            creditsFilter = "all";
+        }
+        
         List<Course> courseList;
         if (keyword != null && !keyword.trim().isEmpty()) {
             courseList = courseDAO.search(keyword.trim());
@@ -53,6 +58,31 @@ public class CourseServlet extends HttpServlet {
             courseList = courseDAO.listAll();
         }
         
+        // Áp dụng bộ lọc credits trong Java memory
+        if (!"all".equals(creditsFilter)) {
+            List<Course> filteredList = new java.util.ArrayList<>();
+            try {
+                int targetCredits = Integer.parseInt(creditsFilter);
+                if (targetCredits == 5) {
+                    for (Course c : courseList) {
+                        if (c.getCredits() != null && c.getCredits() >= 5) {
+                            filteredList.add(c);
+                        }
+                    }
+                } else {
+                    for (Course c : courseList) {
+                        if (c.getCredits() != null && c.getCredits() == targetCredits) {
+                            filteredList.add(c);
+                        }
+                    }
+                }
+                courseList = filteredList;
+            } catch (NumberFormatException e) {
+                // Bỏ qua lọc nếu không hợp lệ
+            }
+        }
+        
+        req.setAttribute("creditsFilter", creditsFilter);
         req.setAttribute("courseList", courseList);
         req.getRequestDispatcher("/views/academic/course.jsp").forward(req, resp);
     }
