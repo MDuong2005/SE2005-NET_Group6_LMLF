@@ -11,16 +11,7 @@
         </div>
     </div>
 
-    <div class="filter-group first">
-        <div class="filter-label">Role:</div>
-        <button class="tab-btn role-btn active" onclick="filterData('role', 'ALL', this)">All External Users</button>
-        <c:forEach var="role" items="${roles}">
-            <c:if test="${role.roleName == 'REVIEWER' || role.roleName == 'DESIGNER'}">
-                <button class="tab-btn role-btn" onclick="filterData('role', '${role.roleName}', this)">${role.roleName}</button>
-            </c:if>
-        </c:forEach>
-    </div>
-    <div class="filter-group last">
+    <div class="filter-group first last">
         <div class="filter-label">Status:</div>
         <button class="tab-btn status-btn active" onclick="filterData('status', 'ALL', this)">All Status</button>
         <button class="tab-btn status-btn" onclick="filterData('status', 'ACTIVE', this)">Active</button>
@@ -33,7 +24,6 @@
                 <tr>
                     <th>ID</th>
                     <th>Guest Info</th>
-                    <th>Role</th>
                     <th>Status</th>
                     <th>Registered</th>
                     <th>Actions</th>
@@ -41,21 +31,11 @@
             </thead>
             <tbody>
                 <c:forEach var="user" items="${guests}">
-                    <tr class="guest-row" data-role="${not empty user.roles ? user.roles[0].roleName : 'NONE'}" data-status="${user.status == 'ACTIVE' ? 'ACTIVE' : 'BANNED'}">
+                    <tr class="guest-row" data-status="${user.status == 'ACTIVE' ? 'ACTIVE' : 'BANNED'}">
                         <td style="color: #95a5a6;">#${user.userId}</td>
                         <td>
                             <div class="user-col">${user.firstName} ${user.lastName} <span class="badge badge-role" style="font-size: 0.6rem; padding: 2px 4px; margin-left: 5px;">GUEST</span></div>
                             <div class="email-col">${user.email}</div>
-                        </td>
-                        <td>
-                            <c:choose>
-                                <c:when test="${not empty user.roles}">
-                                    <span class="badge badge-role">${user.roles[0].roleName}</span>
-                                </c:when>
-                                <c:otherwise>
-                                    <span class="badge badge-role">NO ROLE</span>
-                                </c:otherwise>
-                            </c:choose>
                         </td>
                         <td>
                             <c:choose>
@@ -93,23 +73,18 @@
 </div>
 
 <script>
-    let currentRole = 'ALL';
     let currentStatus = 'ALL';
 
     function filterData(type, value, btnElement) {
-        if (type === 'role') {
-            currentRole = value;
-            document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
-        } else if (type === 'status') {
+        if (type === 'status') {
             currentStatus = value;
             document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active'));
         }
         btnElement.classList.add('active');
 
         document.querySelectorAll('.guest-row').forEach(row => {
-            const matchRole = currentRole === 'ALL' || row.dataset.role === currentRole;
             const matchStatus = currentStatus === 'ALL' || row.dataset.status === currentStatus;
-            row.style.display = (matchRole && matchStatus) ? '' : 'none';
+            row.style.display = matchStatus ? '' : 'none';
         });
     }
 </script>

@@ -84,15 +84,9 @@ public class GuestManagementServlet extends HttpServlet {
     }
 
     private void showCreateForm(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        List<Role> allRoles = roleDAO.getAllRoles();
-        // Filter roles suitable for guests
-        List<Role> guestRoles = new java.util.ArrayList<>();
-        for (Role r : allRoles) {
-            if (r.getRoleName().equals("REVIEWER") || r.getRoleName().equals("DESIGNER")) {
-                guestRoles.add(r);
-            }
-        }
-        request.setAttribute("roles", guestRoles);
+        // External users are always created with the EXTERNAL_EXPERT role and land
+        // in the waiting room; Academic Office assigns the actual review work later.
+        // No role selection is offered here (kept in sync with the approval flow).
         request.setAttribute("contentPage", "admin/user/create_guest.jsp");
         request.setAttribute("cssFile", "admin/admin.css");
         request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
@@ -102,9 +96,9 @@ public class GuestManagementServlet extends HttpServlet {
         String firstName = utils.ValidationUtil.sanitize(request.getParameter("firstName"));
         String lastName = utils.ValidationUtil.sanitize(request.getParameter("lastName"));
         String email = utils.ValidationUtil.sanitize(request.getParameter("email"));
-        
+
         // Backend Validation
-        if (!utils.ValidationUtil.isValidEmail(email) || 
+        if (!utils.ValidationUtil.isValidEmail(email) ||
             !utils.ValidationUtil.isNotEmpty(firstName) || !utils.ValidationUtil.isNotEmpty(lastName)) {
             response.sendRedirect(request.getContextPath() + "/admin/guests?action=create&error=invalid_data");
             return;
@@ -115,11 +109,11 @@ public class GuestManagementServlet extends HttpServlet {
             return;
         }
 
-        long roleId = 0;
-        try {
-            roleId = Long.parseLong(request.getParameter("roleId"));
-        } catch (NumberFormatException e) {
-            response.sendRedirect(request.getContextPath() + "/admin/guests?action=create&error=invalid_role");
+        // Manual fallback: always create as EXTERNAL_EXPERT (waiting room),
+        // never a concrete review role - that is Academic Office's decision.
+        Role extRole = roleDAO.getRoleByName("EXTERNAL_EXPERT");
+        if (extRole == null) {
+            response.sendRedirect(request.getContextPath() + "/admin/guests?action=create&error=role_missing");
             return;
         }
 
@@ -136,28 +130,16 @@ public class GuestManagementServlet extends HttpServlet {
         newGuest.setMustChangePassword(true);
         newGuest.setStatus("ACTIVE");
 
-        long generatedId = userDAO.insertUser(newGuest);
+        // Create user + role in one transaction (same result as the approval flow)
+        long generatedId = userDAO.createExpertTx(newGuest, extRole.getRoleId());
         if (generatedId > 0) {
-            userDAO.assignRole(generatedId, roleId);
-            
-            // Get role name for email
-            String roleName = "Guest";
-            List<Role> roles = roleDAO.getAllRoles();
-            for (Role r : roles) {
-                if (r.getRoleId() == roleId) {
-                    roleName = r.getRoleName();
-                    break;
-                }
-            }
-            
-            // Send email
-            boolean emailSent = EmailUtil.sendGuestCredentials(email, plainPassword, roleName);
+            // Send credentials email
+            boolean emailSent = EmailUtil.sendGuestCredentials(email, plainPassword, extRole.getRoleName());
             if (!emailSent) {
-                // Log warning or redirect with partial success message
                 System.err.println("Failed to send email to " + email);
             }
         }
-        
+
         response.sendRedirect(request.getContextPath() + "/admin/guests");
     }
 

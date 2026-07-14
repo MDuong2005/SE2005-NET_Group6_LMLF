@@ -569,4 +569,134 @@ public class UserDAO extends DBContext {
         }
         return result;
     }
+    public long approveExpertRequestTx(User newUser, long roleId, long requestId, long adminId) {
+        boolean previousAutoCommit = true;
+        try {
+            if (connection == null) return -1;
+            previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+
+            // 1. Insert User
+            long newUserId = insertUser(newUser);
+            if (newUserId <= 0) {
+                connection.rollback();
+                return -1;
+            }
+
+            // 2. Assign Role
+            boolean assigned = assignRole(newUserId, roleId);
+            if (!assigned) {
+                connection.rollback();
+                return -1;
+            }
+
+            // 3. Update Request Status on the same connection
+            String updateReqSql = "UPDATE account_requests SET status = 'APPROVED', resolved_at = CURRENT_TIMESTAMP, resolved_by = ? WHERE request_id = ?";
+            try (PreparedStatement ps = connection.prepareStatement(updateReqSql)) {
+                ps.setLong(1, adminId);
+                ps.setLong(2, requestId);
+                int rows = ps.executeUpdate();
+                if (rows <= 0) {
+                    connection.rollback();
+                    return -1;
+                }
+            }
+
+            connection.commit();
+            return newUserId;
+        } catch (SQLException e) {
+            try {
+                connection.rollback();
+            } catch (SQLException rb) {
+                System.err.println("UserDAO - rollback failed: " + rb.getMessage());
+            }
+            e.printStackTrace();
+            return -1;
+        } finally {
+            try {
+                connection.setAutoCommit(previousAutoCommit);
+            } catch (SQLException e) {
+                System.err.println("UserDAO - restore autocommit failed: " + e.getMessage());
+            }
+        }
+    }
+
+    public boolean undoApproveExpertRequestTx(long userId, long requestId) {
+        boolean previousAutoCommit = true;
+        try {
+            if (connection == null) return false;
+            previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            
+            // Delete user_roles
+            try (PreparedStatement ps1 = connection.prepareStatement("DELETE FROM user_roles WHERE user_id = ?")) {
+                ps1.setLong(1, userId);
+                ps1.executeUpdate();
+            }
+            // Delete user
+            try (PreparedStatement ps2 = connection.prepareStatement("DELETE FROM users WHERE user_id = ?")) {
+                ps2.setLong(1, userId);
+                ps2.executeUpdate();
+            }
+            // Revert request status
+            try (PreparedStatement ps3 = connection.prepareStatement("UPDATE account_requests SET status = 'PENDING', resolved_at = NULL, resolved_by = NULL WHERE request_id = ?")) {
+                ps3.setLong(1, requestId);
+                ps3.executeUpdate();
+            }
+
+            connection.commit();
+            return true;
+        } catch (SQLException e) {
+            try { connection.rollback(); } catch (SQLException ex) {}
+            return false;
+        } finally {
+            try { connection.setAutoCommit(previousAutoCommit); } catch (SQLException ex) {}
+        }
+    }
+
+    /**
+     * Create an external user and assign the given role atomically.
+     * Used by the manual "Add External User" fallback so it produces the
+     * exact same result as the request-approval flow (user + role in one tx).
+     * Returns the new user id, or -1 if the whole transaction was rolled back.
+     */
+    public long createExpertTx(User newUser, long roleId) {
+        boolean previousAutoCommit = true;
+        try {
+            if (connection == null) return -1;
+            previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+
+            // 1. Insert User
+            long newUserId = insertUser(newUser);
+            if (newUserId <= 0) {
+                connection.rollback();
+                return -1;
+            }
+
+            // 2. Assign Role
+            boolean assigned = assignRole(newUserId, roleId);
+            if (!assigned) {
+                connection.rollback();
+                return -1;
+            }
+
+            connection.commit();
+            return newUserId;
+        } catch (SQLException e) {
+            try {
+                connection.rollback();
+            } catch (SQLException rb) {
+                System.err.println("UserDAO - rollback failed: " + rb.getMessage());
+            }
+            e.printStackTrace();
+            return -1;
+        } finally {
+            try {
+                connection.setAutoCommit(previousAutoCommit);
+            } catch (SQLException e) {
+                System.err.println("UserDAO - restore autocommit failed: " + e.getMessage());
+            }
+        }
+    }
 }

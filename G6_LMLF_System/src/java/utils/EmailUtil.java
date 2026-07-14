@@ -12,8 +12,9 @@ import jakarta.mail.internet.MimeMessage;
 
 public class EmailUtil {
 
-    private static String SMTP_EMAIL = "maid88391@gmail.com";
-    private static String SMTP_PASSWORD = "mekhyplcvuoqwryq";
+    // Credentials are loaded from config.properties (gitignored). Never hardcode secrets here.
+    private static String SMTP_EMAIL = "";
+    private static String SMTP_PASSWORD = "";
 
     static {
         try (InputStream input = EmailUtil.class.getClassLoader().getResourceAsStream("config.properties")) {

@@ -129,6 +129,16 @@ public class DashboardServlet extends HttpServlet {
         } else if (user.hasRole("ACADEMIC_OFFICE")) {
             contentPage = "academic/dashboard.jsp";
             cssFile = "academic/academic.css";
+        } else if (user.hasRole("EXTERNAL_EXPERT")) {
+            dao.SyllabusAssignmentDAO assignDAO = new dao.SyllabusAssignmentDAO();
+            if (!assignDAO.hasAssignments(user.getUserId())) {
+                // Chưa được Academic Office phân công -> vào phòng chờ
+                request.getRequestDispatcher("/views/expert/waiting_standalone.jsp").forward(request, response);
+            } else {
+                // External chỉ đóng vai reviewer -> vào thẳng màn hình review
+                response.sendRedirect(request.getContextPath() + "/review?action=pending");
+            }
+            return;
         }
 
         request.setAttribute("contentPage", contentPage);
