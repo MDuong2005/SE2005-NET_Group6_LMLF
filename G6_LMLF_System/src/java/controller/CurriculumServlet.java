@@ -117,7 +117,8 @@ public class CurriculumServlet extends HttpServlet {
                 addPLO(request, response);
             } else if ("toggleMapping".equals(action)) {
                 toggleMapping(request, response);
-
+            } else if ("toggleCoursePloMapping".equals(action)) {
+                toggleCoursePloMapping(request, response);
             } else if ("updateActive".equals(action)) {
                 updateActive(request, response);
             } else {
@@ -137,6 +138,7 @@ public class CurriculumServlet extends HttpServlet {
         List<Major> majors = majorDAO.getAllMajors();
         request.setAttribute("curriculums", curriculums);
         request.setAttribute("majors", majors);
+        request.setAttribute("totalCurriculums", curriculums.size());
         request.getRequestDispatcher("/views/academic/curriculum/curriculum.jsp").forward(request, response);
     }
 
@@ -152,6 +154,7 @@ public class CurriculumServlet extends HttpServlet {
         request.setAttribute("majors", majors);
         request.setAttribute("courses", courses);
         request.setAttribute("curriculums", curriculums);
+        request.setAttribute("prerequisites", prerequisites);
         request.getRequestDispatcher("/views/academic/curriculum/add-curriculum.jsp").forward(request, response);
     }
 
@@ -583,6 +586,7 @@ public class CurriculumServlet extends HttpServlet {
                         CurriculumCourse cc = new CurriculumCourse();
                         cc.setCourseId(course.getCourseId());
                         cc.setSemester(dto.semester);
+                        cc.setKnowledgeBlock(dto.knowledgeBlock);
                         courses.add(cc);
                     }
                 }
@@ -596,8 +600,17 @@ public class CurriculumServlet extends HttpServlet {
                     mappingCodes.add(new String[]{cleanPlo, cleanPo});
                 }
             }
+            
+            List<String[]> coursePloMappings = new ArrayList<>();
+            if (data.coursePloMappings != null) {
+                for (CoursePloMappingDto dto : data.coursePloMappings) {
+                    String cleanPlo = dto.ploCode.replace("-", "");
+                    coursePloMappings.add(new String[]{dto.courseCode, cleanPlo});
+                }
+            }
+            
             try {
-                boolean success = curriculumDAO.createWizardCurriculum(curriculum, pos, plos, courses, mappingCodes);
+                boolean success = curriculumDAO.createWizardCurriculum(curriculum, pos, plos, courses, mappingCodes, coursePloMappings);
                 if (success) {
                     response.getWriter().write("{\"success\":true,\"message\":\"Curriculum created successfully\"}");
                 } else {
@@ -773,6 +786,30 @@ public class CurriculumServlet extends HttpServlet {
         List<PloDto> plos;
         List<CourseDto> courses;
         List<MappingDto> mappings;
+        List<CoursePloMappingDto> coursePloMappings;
+    }
+
+    private void toggleCoursePloMapping(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        
+        String curriculumIdStr = request.getParameter("curriculumId");
+        String courseCode = request.getParameter("courseCode");
+        String ploCode = request.getParameter("ploCode");
+        
+        if (curriculumIdStr != null && courseCode != null && ploCode != null) {
+            try {
+                Long curriculumId = Long.parseLong(curriculumIdStr.trim());
+                if (curriculumDAO.toggleCoursePloMapping(curriculumId, courseCode.trim(), ploCode.trim().replace("-", ""))) {
+                    response.getWriter().write("{\"success\":true}");
+                    return;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        response.getWriter().write("{\"success\":false}");
     }
 
     private void getPoPloJson(HttpServletRequest request, HttpServletResponse response) 
@@ -792,6 +829,7 @@ public class CurriculumServlet extends HttpServlet {
                     res.pos = curriculum.getPos();
                     res.plos = curriculum.getPlos();
                     res.courses = curriculum.getCourses();
+                    res.coursePloMappings = curriculum.getCoursePloMappings();
                     response.getWriter().write(gson.toJson(res));
                     return;
                 }
@@ -807,6 +845,7 @@ public class CurriculumServlet extends HttpServlet {
         List<CurriculumPO> pos;
         List<CurriculumPLO> plos;
         List<CurriculumCourse> courses;
+        List<String[]> coursePloMappings;
     }
 
     private static class PoDto {
@@ -822,10 +861,16 @@ public class CurriculumServlet extends HttpServlet {
     private static class CourseDto {
         String code;
         int semester;
+        String knowledgeBlock;
     }
 
     private static class MappingDto {
         String ploCode;
         String poCode;
+    }
+
+    private static class CoursePloMappingDto {
+        String courseCode;
+        String ploCode;
     }
 }

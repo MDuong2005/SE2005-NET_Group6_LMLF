@@ -429,7 +429,7 @@
                     <button class="tab-btn active" onclick="switchTab(event, 'tabOverview')">Overview</button>
                     <button class="tab-btn" onclick="switchTab(event, 'tabObjectives')">Objectives & Learning Outcomes (PO/PLO)</button>
                     <button class="tab-btn" onclick="switchTab(event, 'tabCourses')">Syllabus Structure</button>
-                    <button class="tab-btn" onclick="switchTab(event, 'tabMatrix')">PO - PLO Mapping Matrix</button>
+                    <button class="tab-btn" onclick="switchTab(event, 'tabMatrix')">Course - PLO Mapping Matrix</button>
                 </div>
                 
                 <!-- TAB 1: OVERVIEW -->
@@ -530,6 +530,29 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- PO-PLO Mapping Matrix Card -->
+                    <div class="card" style="margin-top: 24px;">
+                        <div class="card-title">
+                            <i class="fas fa-table"></i> Mapping Matrix of Program Objectives (PO) - Program Learning Outcomes (PLO)
+                        </div>
+                        <p style="color:var(--text-muted); font-size:14px; margin-bottom: 20px;">
+                            The mapping indicates the compatibility between Program Learning Outcomes (PLO) and Program Objectives (PO). Click directly on a cell to toggle the link (updates immediately).
+                        </p>
+                        <div style="overflow-x: auto;">
+                            <table class="matrix-table">
+                                <thead>
+                                    <tr id="matrixHeaderDetail">
+                                        <th style="text-align: left; min-width: 150px;">PLO(s) \ PO(s)</th>
+                                        <!-- Rendered dynamically -->
+                                    </tr>
+                                </thead>
+                                <tbody id="matrixBodyDetail">
+                                    <!-- Rendered dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- TAB 3: COURSES (SYLLABUS STRUCTURE) -->
@@ -604,24 +627,24 @@
                     </div>
                 </div>
                 
-                <!-- TAB 4: MAPPING MATRIX -->
+                <!-- TAB 4: COURSE-PLO MAPPING MATRIX -->
                 <div id="tabMatrix" class="tab-panel">
                     <div class="card">
                         <div class="card-title">
-                            <i class="fas fa-table"></i> Mapping Matrix of Program Objectives (PO) - Program Learning Outcomes (PLO)
+                            <i class="fas fa-th"></i> Mapping subjects of the Curriculum <span style="color: var(--fpt-orange);"><%= curriculum.getCurriculumCode() %></span> to program learning outcomes
                         </div>
                         <p style="color:var(--text-muted); font-size:14px; margin-bottom: 20px;">
-                            The mapping indicates the compatibility between Program Learning Outcomes (PLO) and Program Objectives (PO). Click directly on a cell to toggle the link (updates immediately).
+                            Click directly on a cell to toggle the mapping link between Course/Subject and PLO (updates immediately in database).
                         </p>
                         <div style="overflow-x: auto;">
-                            <table class="matrix-table">
+                            <table class="matrix-table" id="coursePloMatrixDetail">
                                 <thead>
-                                    <tr id="matrixHeaderDetail">
-                                        <th style="text-align: left; min-width: 150px;">PLO(s) \ PO(s)</th>
+                                    <tr id="coursePloHeaderDetail">
+                                        <th style="text-align: left; min-width: 150px;">Subject Code</th>
                                         <!-- Rendered dynamically -->
                                     </tr>
                                 </thead>
-                                <tbody id="matrixBodyDetail">
+                                <tbody id="coursePloBodyDetail">
                                     <!-- Rendered dynamically -->
                                 </tbody>
                             </table>
@@ -696,6 +719,35 @@
                 '<%= entry.getValue().get(k) %>'<%= k < entry.getValue().size() - 1 ? "," : "" %>
                 <% } %>
             ]<%= groupIdx++ < grouped.size() - 1 ? "," : "" %>
+            <% } %>
+        };
+
+        let detailCourseList = [
+            <%
+                List<CurriculumCourse> dbCoursesList = curriculum.getCourses();
+                for (int i = 0; i < dbCoursesList.size(); i++) {
+                    CurriculumCourse cc = dbCoursesList.get(i);
+                    Course c = cc.getCourse();
+            %>
+            { code: '<%= c.getCode() %>', name: '<%= c.getName().replace("\'", "\\\'") %>', knowledgeBlock: '<%= cc.getKnowledgeBlock() != null ? cc.getKnowledgeBlock().replace("\'", "\\\'") : "" %>' }<%= i < dbCoursesList.size() - 1 ? "," : "" %>
+            <% } %>
+        ];
+
+        let presetCoursePloMappings = {
+            <%
+                List<String[]> dbCoursePloMaps = curriculum.getCoursePloMappings();
+                java.util.Map<String, List<String>> groupedCoursePlo = new java.util.HashMap<>();
+                for (String[] map : dbCoursePloMaps) {
+                    groupedCoursePlo.computeIfAbsent(map[0], k -> new ArrayList<>()).add(map[1]);
+                }
+                int cgIdx = 0;
+                for (java.util.Map.Entry<String, List<String>> entry : groupedCoursePlo.entrySet()) {
+            %>
+            '<%= entry.getKey() %>': [
+                <% for (int k = 0; k < entry.getValue().size(); k++) { %>
+                '<%= entry.getValue().get(k) %>'<%= k < entry.getValue().size() - 1 ? "," : "" %>
+                <% } %>
+            ]<%= cgIdx++ < groupedCoursePlo.size() - 1 ? "," : "" %>
             <% } %>
         };
 
@@ -901,6 +953,115 @@
             });
         }
 
+        function renderCoursePloMatrixDetail() {
+            const headerRow = document.getElementById('coursePloHeaderDetail');
+            const tbody = document.getElementById('coursePloBodyDetail');
+            if (!headerRow || !tbody) return;
+            
+            // Header columns
+            headerRow.innerHTML = '<th style="text-align: left; font-weight: 800; min-width: 150px;">Subject Code</th>';
+            detailPloList.forEach(plo => {
+                headerRow.innerHTML += `<th style="text-align: center; font-weight: 800; min-width: 80px;">\${plo.id}</th>`;
+            });
+            
+            tbody.innerHTML = '';
+            
+            if (detailCourseList.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="\${detailPloList.length + 1}" style="text-align: center; padding: 20px; color: var(--text-muted); font-style: italic;">
+                            No courses available.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            if (detailPloList.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="\${detailCourseList.length + 1}" style="text-align: center; padding: 20px; color: var(--text-muted); font-style: italic;">
+                            No PLOs available.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            const blocks = [
+                'General knowledge and skills_Khối Kiến thức chung',
+                'Major knowledge and skills_Khối kiến thức ngành',
+                'Specialized knowledge and skills _Khối kiến thức chuyên ngành',
+                'Elective combo knowledge and skills_Khối kiến thức combo lựa chọn'
+            ];
+            
+            blocks.forEach(blockName => {
+                const blockCourses = detailCourseList.filter(c => c.knowledgeBlock === blockName);
+                if (blockCourses.length === 0) return;
+                
+                // Red category group header row
+                tbody.innerHTML += `
+                    <tr>
+                        <td colspan="\${detailPloList.length + 1}" style="text-align: center; color: #EF4444; font-weight: 800; background-color: #FEF2F2; font-size: 13.5px; border-bottom: 1px solid #E2E8F0; padding: 8px;">
+                            \${blockName}
+                        </td>
+                    </tr>
+                `;
+                
+                blockCourses.forEach(course => {
+                    let cellsHtml = '';
+                    detailPloList.forEach(plo => {
+                        const isSelected = (presetCoursePloMappings[course.code] && presetCoursePloMappings[course.code].includes(plo.id));
+                        const cellVal = isSelected ? '✓' : '';
+                        cellsHtml += `<td onclick="toggleCoursePloCellDetail(this, '\${course.code}', '\${plo.id}')" style="text-align: center; font-weight: 800; font-size: 16px; color: #1E293B; cursor: pointer; user-select: none;">\${cellVal}</td>`;
+                    });
+                    
+                    tbody.innerHTML += `
+                        <tr data-course="\${course.code}">
+                            <td class="plo-col" style="text-align: left; font-weight: 700; color: #3b82f6; background-color: #FFFFFF;">\${course.code}</td>
+                            \${cellsHtml}
+                        </tr>
+                    `;
+                });
+            });
+        }
+
+        function toggleCoursePloCellDetail(cell, courseCode, ploCode) {
+            const params = new URLSearchParams();
+            params.append('action', 'toggleCoursePloMapping');
+            params.append('curriculumId', '<%= id %>');
+            params.append('courseCode', courseCode);
+            params.append('ploCode', ploCode);
+            
+            fetch('${pageContext.request.contextPath}/curriculum', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success) {
+                    if (cell.textContent === '✓') {
+                        cell.textContent = '';
+                        if (presetCoursePloMappings[courseCode]) {
+                            presetCoursePloMappings[courseCode] = presetCoursePloMappings[courseCode].filter(item => item !== ploCode);
+                        }
+                    } else {
+                        cell.textContent = '✓';
+                        if (!presetCoursePloMappings[courseCode]) {
+                            presetCoursePloMappings[courseCode] = [];
+                        }
+                        presetCoursePloMappings[courseCode].push(ploCode);
+                    }
+                } else {
+                    alert('Failed to toggle course PLO mapping in database.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('An error occurred.');
+            });
+        }
+
         function toggleCellDetail(cell) {
             const row = cell.parentElement;
             const ploCode = row.getAttribute('data-plo');
@@ -1019,6 +1180,7 @@
             renderDetailPOs();
             renderDetailPLOs();
             renderDetailMatrix();
+            renderCoursePloMatrixDetail();
         });
     </script>
     

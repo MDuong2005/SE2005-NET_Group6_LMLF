@@ -26,6 +26,7 @@ public class Curriculum {
     private List<CurriculumPO> pos = new ArrayList<>();
     private List<CurriculumPLO> plos = new ArrayList<>();
     private List<CurriculumPloPoMapping> mappings = new ArrayList<>();
+    private List<String[]> coursePloMappings = new ArrayList<>();
     private Major major;
 
     public Curriculum() {}
@@ -96,6 +97,9 @@ public class Curriculum {
     
     public List<CurriculumPloPoMapping> getMappings() { return mappings; }
     public void setMappings(List<CurriculumPloPoMapping> mappings) { this.mappings = mappings; }
+    
+    public List<String[]> getCoursePloMappings() { return coursePloMappings; }
+    public void setCoursePloMappings(List<String[]> coursePloMappings) { this.coursePloMappings = coursePloMappings; }
     
     public Major getMajor() { return major; }
     public void setMajor(Major major) { this.major = major; }

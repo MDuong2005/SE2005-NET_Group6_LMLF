@@ -18,6 +18,51 @@ public class CurriculumDAO extends DBContext {
     private MajorDAO majorDAO = new MajorDAO();
     private CourseDAO courseDAO = new CourseDAO();
 
+    public CurriculumDAO() {
+        super();
+        // Auto-migrate database: add knowledge_block to curriculum_courses if not present
+        try {
+            DatabaseMetaData md = connection.getMetaData();
+            try (ResultSet rs = md.getColumns(null, null, "curriculum_courses", "knowledge_block")) {
+                if (!rs.next()) {
+                    try (ResultSet rs2 = md.getColumns(null, null, "CURRICULUM_COURSES", "KNOWLEDGE_BLOCK")) {
+                        if (!rs2.next()) {
+                            try (Statement stmt = connection.createStatement()) {
+                                stmt.execute("ALTER TABLE curriculum_courses ADD knowledge_block NVARCHAR(255) NULL");
+                                System.out.println("Auto-migrated curriculum_courses: added knowledge_block column.");
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Auto-migrate: create curriculum_course_plo_mappings table if not exists
+            try (ResultSet rs = md.getTables(null, null, "curriculum_course_plo_mappings", null)) {
+                if (!rs.next()) {
+                    try (ResultSet rs2 = md.getTables(null, null, "CURRICULUM_COURSE_PLO_MAPPINGS", null)) {
+                        if (!rs2.next()) {
+                            try (Statement stmt = connection.createStatement()) {
+                                String sql = "CREATE TABLE curriculum_course_plo_mappings (" +
+                                             "  curriculum_id BIGINT NOT NULL," +
+                                             "  course_id BIGINT NOT NULL," +
+                                             "  plo_id BIGINT NOT NULL," +
+                                             "  mapped_at DATETIME2 NOT NULL DEFAULT SYSDATETIME()," +
+                                             "  CONSTRAINT pk_curriculum_course_plo_mappings PRIMARY KEY (curriculum_id, course_id, plo_id)," +
+                                             "  CONSTRAINT fk_ccpm_curriculum_course FOREIGN KEY (curriculum_id, course_id) REFERENCES curriculum_courses(curriculum_id, course_id) ON DELETE CASCADE," +
+                                             "  CONSTRAINT fk_ccpm_plo FOREIGN KEY (plo_id) REFERENCES curriculum_plos(plo_id) ON DELETE CASCADE" +
+                                             ")";
+                                stmt.execute(sql);
+                                System.out.println("Auto-migrated: created curriculum_course_plo_mappings table.");
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Migration warning (knowledge_block / mapping table): " + e.getMessage());
+        }
+    }
+
     // Lấy tất cả curriculums (chưa bị xóa mềm)
     public List<Curriculum> getAll() {
         List<Curriculum> curriculums = new ArrayList<>();
@@ -51,6 +96,7 @@ public class CurriculumDAO extends DBContext {
                     curriculum.setPos(getPosByCurriculumId(curriculumId));
                     curriculum.setPlos(getPlosByCurriculumId(curriculumId));
                     curriculum.setMappings(getMappingsByCurriculumId(curriculumId));
+                    curriculum.setCoursePloMappings(getCurriculumCoursePloMappings(curriculumId));
                     return curriculum;
                 }
             }
@@ -190,6 +236,7 @@ public class CurriculumDAO extends DBContext {
                     cc.setCurriculumId(rs.getLong("curriculum_id"));
                     cc.setCourseId(rs.getLong("course_id"));
                     cc.setSemester(rs.getInt("semester"));
+                    cc.setKnowledgeBlock(rs.getString("knowledge_block"));
                     
                     Course course = new Course();
                     course.setCourseId(rs.getLong("course_id"));
@@ -624,7 +671,8 @@ public class CurriculumDAO extends DBContext {
                                           List<CurriculumPO> pos, 
                                           List<CurriculumPLO> plos, 
                                           List<CurriculumCourse> courses, 
-                                          List<String[]> mappingCodes) throws Exception {
+                                          List<String[]> mappingCodes,
+                                          List<String[]> coursePloMappings) throws Exception {
         Connection conn = connection;
         boolean originalAutoCommit = true;
         try {
@@ -713,12 +761,13 @@ public class CurriculumDAO extends DBContext {
             }
             
             // 4. Insert Courses
-            String insertCourseSql = "INSERT INTO curriculum_courses (curriculum_id, course_id, semester) VALUES (?, ?, ?)";
+            String insertCourseSql = "INSERT INTO curriculum_courses (curriculum_id, course_id, semester, knowledge_block) VALUES (?, ?, ?, ?)";
             try (PreparedStatement ps = conn.prepareStatement(insertCourseSql)) {
                 for (CurriculumCourse cc : courses) {
                     ps.setLong(1, curriculumId);
                     ps.setLong(2, cc.getCourseId());
                     ps.setInt(3, cc.getSemester());
+                    ps.setString(4, cc.getKnowledgeBlock());
                     ps.addBatch();
                 }
                 if (!courses.isEmpty()) {
@@ -740,6 +789,25 @@ public class CurriculumDAO extends DBContext {
                     }
                 }
                 if (!mappingCodes.isEmpty()) {
+                    ps.executeBatch();
+                }
+            }
+
+            // 6. Insert Course-PLO Mappings
+            String insertCoursePloSql = "INSERT INTO curriculum_course_plo_mappings (curriculum_id, course_id, plo_id, mapped_at) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement ps = conn.prepareStatement(insertCoursePloSql)) {
+                for (String[] mapping : coursePloMappings) {
+                    Course course = courseDAO.getByCode(mapping[0]);
+                    Long ploId = ploCodeToId.get(mapping[1]);
+                    if (course != null && ploId != null) {
+                        ps.setLong(1, curriculumId);
+                        ps.setLong(2, course.getCourseId());
+                        ps.setLong(3, ploId);
+                        ps.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
+                        ps.addBatch();
+                    }
+                }
+                if (!coursePloMappings.isEmpty()) {
                     ps.executeBatch();
                 }
             }
@@ -794,5 +862,92 @@ public class CurriculumDAO extends DBContext {
         curriculum.setUpdatedBy(rs.getObject("updated_by") != null ? rs.getLong("updated_by") : null);
         curriculum.setDeletedAt(rs.getTimestamp("deleted_at"));
         return curriculum;
+    }
+
+    public List<String[]> getCurriculumCoursePloMappings(Long curriculumId) {
+        List<String[]> mappings = new ArrayList<>();
+        String sql = "SELECT c.code AS course_code, p.code AS plo_code FROM curriculum_course_plo_mappings ccpm " +
+                     "JOIN courses c ON ccpm.course_id = c.course_id " +
+                     "JOIN curriculum_plos p ON ccpm.plo_id = p.plo_id " +
+                     "WHERE ccpm.curriculum_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, curriculumId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    mappings.add(new String[]{ rs.getString("course_code"), rs.getString("plo_code") });
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return mappings;
+    }
+
+    public boolean toggleCoursePloMapping(Long curriculumId, String courseCode, String ploCode) {
+        // Find course_id and plo_id
+        String findCourseSql = "SELECT course_id FROM courses WHERE code = ?";
+        String findPloSql = "SELECT plo_id FROM curriculum_plos WHERE curriculum_id = ? AND code = ?";
+        Long courseId = null;
+        Long ploId = null;
+        
+        try (PreparedStatement ps = connection.prepareStatement(findCourseSql)) {
+            ps.setString(1, courseCode);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) courseId = rs.getLong("course_id");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        try (PreparedStatement ps = connection.prepareStatement(findPloSql)) {
+            ps.setLong(1, curriculumId);
+            ps.setString(2, ploCode);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) ploId = rs.getLong("plo_id");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        if (courseId == null || ploId == null) return false;
+        
+        // Check if exists
+        String checkSql = "SELECT COUNT(*) FROM curriculum_course_plo_mappings WHERE curriculum_id = ? AND course_id = ? AND plo_id = ?";
+        boolean exists = false;
+        try (PreparedStatement ps = connection.prepareStatement(checkSql)) {
+            ps.setLong(1, curriculumId);
+            ps.setLong(2, courseId);
+            ps.setLong(3, ploId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) exists = true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        if (exists) {
+            // Delete
+            String delSql = "DELETE FROM curriculum_course_plo_mappings WHERE curriculum_id = ? AND course_id = ? AND plo_id = ?";
+            try (PreparedStatement ps = connection.prepareStatement(delSql)) {
+                ps.setLong(1, curriculumId);
+                ps.setLong(2, courseId);
+                ps.setLong(3, ploId);
+                return ps.executeUpdate() > 0;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            // Insert
+            String insSql = "INSERT INTO curriculum_course_plo_mappings (curriculum_id, course_id, plo_id) VALUES (?, ?, ?)";
+            try (PreparedStatement ps = connection.prepareStatement(insSql)) {
+                ps.setLong(1, curriculumId);
+                ps.setLong(2, courseId);
+                ps.setLong(3, ploId);
+                return ps.executeUpdate() > 0;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
     }
 }

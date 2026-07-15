@@ -136,6 +136,7 @@ CREATE TABLE curriculum_courses (
     curriculum_id BIGINT NOT NULL,
     course_id BIGINT NOT NULL,
     semester INT NOT NULL,
+    knowledge_block NVARCHAR(255) NULL,
     CONSTRAINT uq_curriculum_courses UNIQUE (curriculum_id, course_id),
     CONSTRAINT fk_currcourses_curriculum FOREIGN KEY (curriculum_id) REFERENCES curriculums(curriculum_id),
     CONSTRAINT fk_currcourses_course FOREIGN KEY (course_id) REFERENCES courses(course_id)
@@ -558,6 +559,20 @@ CREATE TABLE curriculum_plo_po_mappings (
 GO
 
 -- =======================================================
+-- 28. CURRICULUM COURSE PLO MAPPINGS
+-- =======================================================
+CREATE TABLE curriculum_course_plo_mappings (
+    curriculum_id BIGINT NOT NULL,
+    course_id BIGINT NOT NULL,
+    plo_id BIGINT NOT NULL,
+    mapped_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    CONSTRAINT pk_curriculum_course_plo_mappings PRIMARY KEY (curriculum_id, course_id, plo_id),
+    CONSTRAINT fk_ccpm_curriculum_course FOREIGN KEY (curriculum_id, course_id) REFERENCES curriculum_courses(curriculum_id, course_id) ON DELETE CASCADE,
+    CONSTRAINT fk_ccpm_plo FOREIGN KEY (plo_id) REFERENCES curriculum_plos(plo_id) ON DELETE CASCADE
+);
+GO
+
+-- =======================================================
 -- INDEXES
 -- =======================================================
 CREATE INDEX idx_users_provider ON users(auth_provider);
@@ -865,20 +880,113 @@ BEGIN
     JOIN curriculum_pos po ON po.code = mapping.po_code AND po.curriculum_id = @CurriculumId;
 
     -- Curriculum Courses Mapping
-    INSERT INTO curriculum_courses (curriculum_id, course_id, semester)
-    SELECT @CurriculumId, c.course_id, t.semester
+    INSERT INTO curriculum_courses (curriculum_id, course_id, semester, knowledge_block)
+    SELECT @CurriculumId, c.course_id, t.semester, t.knowledge_block
     FROM (
         VALUES
-        ('VOV114', 1), ('TRS601', 1), ('SSL101c', 1), ('CSI101', 1), ('PRF192', 1), ('MAE101', 1), ('MLN111', 1), ('SSG104', 1),
-        ('VOV124', 2), ('TMI101', 2), ('CEA201', 2), ('PRO192', 2), ('MAD101', 2), ('DBI202', 2), ('MLN122', 2),
-        ('VOV134', 3), ('OSG202', 3), ('NWC204', 3), ('JPD113', 3), ('CSS201', 3), ('LAB211', 3), ('WED201c', 3), ('MLN131', 3),
-        ('JPD123', 4), ('MAS291', 4), ('PRJ301', 4), ('SWE201c', 4), ('HCM202', 4), ('WDU203c', 4),
-        ('JPD133', 5), ('IOT102', 5), ('SWR302', 5), ('SWT301', 5), ('PMG201c', 5), ('SWP391', 5), ('VNR302', 5),
-        ('UIT202', 6), ('ENW492', 6), ('ITE302c', 6),
-        ('SWD392', 7), ('SYB302c', 7), ('JPD316', 7), ('JFE301', 7), ('PRM392', 7),
-        ('JIT401', 8)
-    ) AS t(course_code, semester)
+        ('VOV114', 1, N'General knowledge and skills_Khối Kiến thức chung'),
+        ('TRS601', 1, N'General knowledge and skills_Khối Kiến thức chung'),
+        ('SSL101c', 1, N'General knowledge and skills_Khối Kiến thức chung'),
+        ('CSI101', 1, N'Major knowledge and skills_Khối kiến thức ngành'),
+        ('PRF192', 1, N'Major knowledge and skills_Khối kiến thức ngành'),
+        ('MAE101', 1, N'Major knowledge and skills_Khối kiến thức ngành'),
+        ('MLN111', 1, N'General knowledge and skills_Khối Kiến thức chung'),
+        ('SSG104', 1, N'General knowledge and skills_Khối Kiến thức chung'),
+
+        ('VOV124', 2, N'General knowledge and skills_Khối Kiến thức chung'),
+        ('TMI101', 2, N'General knowledge and skills_Khối Kiến thức chung'),
+        ('CEA201', 2, N'Major knowledge and skills_Khối kiến thức ngành'),
+        ('PRO192', 2, N'Major knowledge and skills_Khối kiến thức ngành'),
+        ('MAD101', 2, N'Major knowledge and skills_Khối kiến thức ngành'),
+        ('DBI202', 2, N'Major knowledge and skills_Khối kiến thức ngành'),
+        ('MLN122', 2, N'General knowledge and skills_Khối Kiến thức chung'),
+
+        ('VOV134', 3, N'General knowledge and skills_Khối Kiến thức chung'),
+        ('OSG202', 3, N'Major knowledge and skills_Khối kiến thức ngành'),
+        ('NWC204', 3, N'Major knowledge and skills_Khối kiến thức ngành'),
+        ('JPD113', 3, N'General knowledge and skills_Khối Kiến thức chung'),
+        ('CSS201', 3, N'Major knowledge and skills_Khối kiến thức ngành'),
+        ('LAB211', 3, N'Major knowledge and skills_Khối kiến thức ngành'),
+        ('WED201c', 3, N'Major knowledge and skills_Khối kiến thức ngành'),
+        ('MLN131', 3, N'General knowledge and skills_Khối Kiến thức chung'),
+
+        ('JPD123', 4, N'General knowledge and skills_Khối Kiến thức chung'),
+        ('MAS291', 4, N'Major knowledge and skills_Khối kiến thức ngành'),
+        ('PRJ301', 4, N'Specialized knowledge and skills _Khối kiến thức chuyên ngành'),
+        ('SWE201c', 4, N'Major knowledge and skills_Khối kiến thức ngành'),
+        ('HCM202', 4, N'General knowledge and skills_Khối Kiến thức chung'),
+        ('WDU203c', 4, N'Specialized knowledge and skills _Khối kiến thức chuyên ngành'),
+
+        ('JPD133', 5, N'General knowledge and skills_Khối Kiến thức chung'),
+        ('IOT102', 5, N'Specialized knowledge and skills _Khối kiến thức chuyên ngành'),
+        ('SWR302', 5, N'Specialized knowledge and skills _Khối kiến thức chuyên ngành'),
+        ('SWT301', 5, N'Specialized knowledge and skills _Khối kiến thức chuyên ngành'),
+        ('PMG201c', 5, N'Specialized knowledge and skills _Khối kiến thức chuyên ngành'),
+        ('SWP391', 5, N'Specialized knowledge and skills _Khối kiến thức chuyên ngành'),
+        ('VNR302', 5, N'General knowledge and skills_Khối Kiến thức chung'),
+
+        ('UIT202', 6, N'Specialized knowledge and skills _Khối kiến thức chuyên ngành'),
+        ('ENW492', 6, N'General knowledge and skills_Khối Kiến thức chung'),
+        ('ITE302c', 6, N'Major knowledge and skills_Khối kiến thức ngành'),
+
+        ('SWD392', 7, N'Specialized knowledge and skills _Khối kiến thức chuyên ngành'),
+        ('SYB302c', 7, N'General knowledge and skills_Khối Kiến thức chung'),
+        ('JPD316', 7, N'General knowledge and skills_Khối Kiến thức chung'),
+        ('JFE301', 7, N'Specialized knowledge and skills _Khối kiến thức chuyên ngành'),
+        ('PRM392', 7, N'Specialized knowledge and skills _Khối kiến thức chuyên ngành'),
+
+        ('JIT401', 8, N'Specialized knowledge and skills _Khối kiến thức chuyên ngành')
+    ) AS t(course_code, semester, knowledge_block)
     JOIN courses c ON c.code = t.course_code;
+
+    -- Curriculum Course PLO Mappings
+    INSERT INTO curriculum_course_plo_mappings (curriculum_id, course_id, plo_id)
+    SELECT @CurriculumId, c.course_id, plo.plo_id
+    FROM (
+        VALUES
+        ('VOV114', 'PLO6'), ('VOV124', 'PLO6'), ('VOV134', 'PLO6'),
+        ('TRS601', 'PLO4'),
+        ('SSL101c', 'PLO3'), ('SSL101c', 'PLO7'),
+        ('CSI101', 'PLO9'),
+        ('PRF192', 'PLO10'),
+        ('MAE101', 'PLO8'),
+        ('MLN111', 'PLO1'),
+        ('SSG104', 'PLO3'),
+        ('TMI101', 'PLO6'),
+        ('CEA201', 'PLO9'),
+        ('PRO192', 'PLO10'),
+        ('MAD101', 'PLO8'),
+        ('DBI202', 'PLO9'), ('DBI202', 'PLO10'),
+        ('MLN122', 'PLO1'),
+        ('OSG202', 'PLO9'),
+        ('NWC204', 'PLO9'),
+        ('JPD113', 'PLO4'), ('JPD123', 'PLO4'), ('JPD133', 'PLO4'), ('JPD316', 'PLO4'),
+        ('CSS201', 'PLO10'),
+        ('LAB211', 'PLO10'),
+        ('WED201c', 'PLO10'), ('WED201c', 'PLO15'),
+        ('MLN131', 'PLO1'),
+        ('MAS291', 'PLO8'),
+        ('PRJ301', 'PLO10'), ('PRJ301', 'PLO15'),
+        ('SWE201c', 'PLO14'),
+        ('HCM202', 'PLO1'),
+        ('WDU203c', 'PLO14'),
+        ('IOT102', 'PLO17'),
+        ('SWR302', 'PLO14'),
+        ('SWT301', 'PLO14'),
+        ('PMG201c', 'PLO12'),
+        ('SWP391', 'PLO2'), ('SWP391', 'PLO3'), ('SWP391', 'PLO15'),
+        ('VNR302', 'PLO1'),
+        ('UIT202', 'PLO12'), ('UIT202', 'PLO13'),
+        ('ENW492', 'PLO2'),
+        ('ITE302c', 'PLO5'), ('ITE302c', 'PLO11'),
+        ('SWD392', 'PLO14'), ('SWD392', 'PLO16'),
+        ('SYB302c', 'PLO2'),
+        ('JFE301', 'PLO4'), ('JFE301', 'PLO18'),
+        ('PRM392', 'PLO15'),
+        ('JIT401', 'PLO4'), ('JIT401', 'PLO18')
+    ) AS cp_map(course_code, plo_code)
+    JOIN courses c ON c.code = cp_map.course_code
+    JOIN curriculum_plos plo ON plo.code = cp_map.plo_code AND plo.curriculum_id = @CurriculumId;
 END
 GO
 

@@ -1089,23 +1089,15 @@
                         <!-- ================= STEP 5: COURSES ================= -->
                         <div class="step-panel" id="stepPanel5">
                             <div class="card">
-                                <div class="card-title">
+                                <div class="card-title" style="margin-bottom: 25px;">
                                     <i class="fas fa-book-open"></i> Step 5: Allocate Courses into Semesters
                                 </div>
-                                
-                                <div class="action-buttons-row" style="display: flex; gap: 12px; justify-content: flex-end; margin-bottom: 20px;">
-                                    <button type="button" class="btn btn-primary" onclick="openAddCourseModal()" style="background-color: var(--fpt-orange); border: none; border-radius: 8px; font-weight: 700; height: 40px; color: white; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; padding: 0 16px;">
-                                        <i class="fas fa-plus"></i> Add Course
-                                    </button>
-                                    <button type="button" class="btn btn-success" onclick="toggleImportCoursesForm()" style="background-color: #10B981; color: white; border: none; border-radius: 8px; font-weight: 700; height: 40px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; padding: 0 16px;">
-                                        <i class="fas fa-file-import"></i> Import
-                                    </button>
-                                </div>
 
-                                <div id="importCoursesFormContainer" style="display: none; background-color: #F8FAFC; padding: 20px; border-radius: 12px; border: 1px solid #E2E8F0; align-items: flex-end; margin-bottom: 20px; gap: 15px;">
+                                <!-- Dynamic Import Container, will be moved next to the active table -->
+                                <div id="importCoursesFormContainer" style="display: none; background-color: #F8FAFC; padding: 20px; border-radius: 12px; border: 1px solid #E2E8F0; align-items: flex-end; margin-bottom: 20px; gap: 15px; width: 100%; box-sizing: border-box;">
                                     <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                                        <label for="importCoursesCurriculumSelect">Select source curriculum to import courses <span class="required">*</span></label>
-                                        <select id="importCoursesCurriculumSelect" style="height: 38px;">
+                                        <label id="importTargetBlockLabel" style="font-weight: 700; color: #1E293B; display: block; margin-bottom: 8px;">Import courses</label>
+                                        <select id="importCoursesCurriculumSelect" style="height: 38px; width: 100%;">
                                             <option value="">-- Select Curriculum --</option>
                                             <%
                                                 if (curricList != null) {
@@ -1122,22 +1114,141 @@
                                         <i class="fas fa-file-import"></i> Perform Import
                                     </button>
                                 </div>
-                                
-                                <div class="table-card" style="margin-top: 20px;">
-                                    <table class="data-table" id="coursesWizardTable">
-                                        <thead>
-                                            <tr>
-                                                <th>Course Code</th>
-                                                <th>Course Name</th>
-                                                <th>Credits</th>
-                                                <th style="width: 140px;">Prerequisites</th>
-                                                <th>Allocated Semester</th>
-                                                <th style="width: 80px; text-align: center;">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="coursesWizardList">
-                                        </tbody>
-                                    </table>
+
+                                <!-- Section: General Knowledge -->
+                                <div id="section-General" class="knowledge-block-section" style="margin-bottom: 30px; border: 1px solid #E2E8F0; padding: 20px; border-radius: 12px; background-color: #FAFBFD;">
+                                    <div class="table-actions-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                        <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #1E293B; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-book" style="color: #3B82F6;"></i> General knowledge and skills_Khối Kiến thức chung
+                                        </h4>
+                                        <div style="display: flex; gap: 8px;">
+                                            <button type="button" class="btn btn-primary" onclick="openAddCourseModal('General knowledge and skills_Khối Kiến thức chung')" style="background-color: var(--fpt-orange); border: none; border-radius: 8px; font-weight: 700; height: 36px; color: white; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 0 12px; font-size: 13px;">
+                                                <i class="fas fa-plus"></i> Add Course
+                                            </button>
+                                            <button type="button" class="btn btn-success" onclick="toggleImportCoursesForm('General knowledge and skills_Khối Kiến thức chung')" style="background-color: #10B981; color: white; border: none; border-radius: 8px; font-weight: 700; height: 36px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 0 12px; font-size: 13px;">
+                                                <i class="fas fa-file-import"></i> Import
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="table-card">
+                                        <table class="data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Course Code</th>
+                                                    <th>Course Name</th>
+                                                    <th>Credits</th>
+                                                    <th style="width: 140px;">Prerequisites</th>
+                                                    <th>Allocated Semester</th>
+                                                    <th style="width: 80px; text-align: center;">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="coursesList-General">
+                                                <!-- Dynamic courses for General block -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Section: Major Knowledge -->
+                                <div id="section-Major" class="knowledge-block-section" style="margin-bottom: 30px; border: 1px solid #E2E8F0; padding: 20px; border-radius: 12px; background-color: #FAFBFD;">
+                                    <div class="table-actions-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                        <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #1E293B; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-project-diagram" style="color: #10B981;"></i> Major knowledge and skills_Khối kiến thức ngành
+                                        </h4>
+                                        <div style="display: flex; gap: 8px;">
+                                            <button type="button" class="btn btn-primary" onclick="openAddCourseModal('Major knowledge and skills_Khối kiến thức ngành')" style="background-color: var(--fpt-orange); border: none; border-radius: 8px; font-weight: 700; height: 36px; color: white; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 0 12px; font-size: 13px;">
+                                                <i class="fas fa-plus"></i> Add Course
+                                            </button>
+                                            <button type="button" class="btn btn-success" onclick="toggleImportCoursesForm('Major knowledge and skills_Khối kiến thức ngành')" style="background-color: #10B981; color: white; border: none; border-radius: 8px; font-weight: 700; height: 36px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 0 12px; font-size: 13px;">
+                                                <i class="fas fa-file-import"></i> Import
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="table-card">
+                                        <table class="data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Course Code</th>
+                                                    <th>Course Name</th>
+                                                    <th>Credits</th>
+                                                    <th style="width: 140px;">Prerequisites</th>
+                                                    <th>Allocated Semester</th>
+                                                    <th style="width: 80px; text-align: center;">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="coursesList-Major">
+                                                <!-- Dynamic courses for Major block -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Section: Specialized Knowledge -->
+                                <div id="section-Specialized" class="knowledge-block-section" style="margin-bottom: 30px; border: 1px solid #E2E8F0; padding: 20px; border-radius: 12px; background-color: #FAFBFD;">
+                                    <div class="table-actions-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                        <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #1E293B; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-graduation-cap" style="color: #8B5CF6;"></i> Specialized knowledge and skills _Khối kiến thức chuyên ngành
+                                        </h4>
+                                        <div style="display: flex; gap: 8px;">
+                                            <button type="button" class="btn btn-primary" onclick="openAddCourseModal('Specialized knowledge and skills _Khối kiến thức chuyên ngành')" style="background-color: var(--fpt-orange); border: none; border-radius: 8px; font-weight: 700; height: 36px; color: white; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 0 12px; font-size: 13px;">
+                                                <i class="fas fa-plus"></i> Add Course
+                                            </button>
+                                            <button type="button" class="btn btn-success" onclick="toggleImportCoursesForm('Specialized knowledge and skills _Khối kiến thức chuyên ngành')" style="background-color: #10B981; color: white; border: none; border-radius: 8px; font-weight: 700; height: 36px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 0 12px; font-size: 13px;">
+                                                <i class="fas fa-file-import"></i> Import
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="table-card">
+                                        <table class="data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Course Code</th>
+                                                    <th>Course Name</th>
+                                                    <th>Credits</th>
+                                                    <th style="width: 140px;">Prerequisites</th>
+                                                    <th>Allocated Semester</th>
+                                                    <th style="width: 80px; text-align: center;">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="coursesList-Specialized">
+                                                <!-- Dynamic courses for Specialized block -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Section: Elective Combo Knowledge -->
+                                <div id="section-Elective" class="knowledge-block-section" style="margin-bottom: 10px; border: 1px solid #E2E8F0; padding: 20px; border-radius: 12px; background-color: #FAFBFD;">
+                                    <div class="table-actions-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                        <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #1E293B; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-layer-group" style="color: #EC4899;"></i> Elective combo knowledge and skills_Khối kiến thức combo lựa chọn
+                                        </h4>
+                                        <div style="display: flex; gap: 8px;">
+                                            <button type="button" class="btn btn-primary" onclick="openAddCourseModal('Elective combo knowledge and skills_Khối kiến thức combo lựa chọn')" style="background-color: var(--fpt-orange); border: none; border-radius: 8px; font-weight: 700; height: 36px; color: white; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 0 12px; font-size: 13px;">
+                                                <i class="fas fa-plus"></i> Add Course
+                                            </button>
+                                            <button type="button" class="btn btn-success" onclick="toggleImportCoursesForm('Elective combo knowledge and skills_Khối kiến thức combo lựa chọn')" style="background-color: #10B981; color: white; border: none; border-radius: 8px; font-weight: 700; height: 36px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 0 12px; font-size: 13px;">
+                                                <i class="fas fa-file-import"></i> Import
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="table-card">
+                                        <table class="data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Course Code</th>
+                                                    <th>Course Name</th>
+                                                    <th>Credits</th>
+                                                    <th style="width: 140px;">Prerequisites</th>
+                                                    <th>Allocated Semester</th>
+                                                    <th style="width: 80px; text-align: center;">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="coursesList-Elective">
+                                                <!-- Dynamic courses for Elective block -->
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1166,6 +1277,34 @@
                                             </tr>
                                         </thead>
                                         <tbody id="matrixBody">
+                                            <!-- Dynamically generated mapping rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <div class="card" style="margin-top: 24px;">
+                                <div class="card-title">
+                                    <i class="fas fa-th"></i> Step 6b: Map Course to PLOs Matrix
+                                </div>
+                                <p style="color:#64748B; font-size:14px; margin-bottom: 20px;">
+                                    Select the intersecting cells to map individual courses/subjects to Program Learning Outcomes (PLO).
+                                </p>
+                                
+                                <div class="matrix-table-wrapper" style="overflow-x: auto;">
+                                    <table class="matrix-table" id="coursePloMatrix">
+                                        <thead>
+                                            <tr style="background-color: var(--fpt-orange, #FF6B00); color: #FFFFFF;">
+                                                <th id="coursePloMatrixSpanningHeader" colspan="1" style="text-align: center; font-size: 14px; padding: 10px; border-right: none; color: #FFFFFF; font-weight: 800;">
+                                                    Mapping subjects of the Curriculum <span id="coursePloCurriculumNameSpan"></span> to program learning outcomes
+                                                </th>
+                                            </tr>
+                                            <tr id="coursePloMatrixHeader">
+                                                <th>Subject Code</th>
+                                                <!-- PLO columns dynamically generated -->
+                                            </tr>
+                                        </thead>
+                                        <tbody id="coursePloMatrixBody">
                                             <!-- Dynamically generated mapping rows -->
                                         </tbody>
                                     </table>
@@ -1505,6 +1644,7 @@
             // Build Matrix table dynamically on Step 6
             if (currentStep === 6) {
                 generateMatrixTable();
+                generateCoursePloMatrixTable();
             }
             
             // Collect fields values on Step 7
@@ -1630,12 +1770,35 @@
             });
         }
 
-        function toggleImportCoursesForm() {
+        function getBlockId(block) {
+            if (block.includes('General')) return 'General';
+            if (block.includes('Major')) return 'Major';
+            if (block.includes('Specialized')) return 'Specialized';
+            if (block.includes('Elective')) return 'Elective';
+            return 'General';
+        }
+
+        let activeImportTargetBlock = '';
+
+        function toggleImportCoursesForm(block) {
             const form = document.getElementById('importCoursesFormContainer');
-            if (form.style.display === 'none') {
-                form.style.display = 'flex';
-            } else {
+            if (!form) return;
+            
+            if (form.style.display === 'flex' && activeImportTargetBlock === block) {
                 form.style.display = 'none';
+                activeImportTargetBlock = '';
+            } else {
+                activeImportTargetBlock = block;
+                const label = document.getElementById('importTargetBlockLabel');
+                if (label) {
+                    label.textContent = 'Import courses into: ' + block;
+                }
+                const targetSection = document.getElementById('section-' + getBlockId(block));
+                if (targetSection) {
+                    const insertionPoint = targetSection.querySelector('.table-actions-row');
+                    insertionPoint.after(form);
+                }
+                form.style.display = 'flex';
             }
         }
 
@@ -1652,25 +1815,40 @@
             .then(res => res.json())
             .then(res => {
                 if (res.success && res.courses) {
-                    courseList = [];
                     res.courses.forEach(cc => {
                         if (cc.course) {
+                            if (courseList.some(existing => existing.code === cc.course.code)) {
+                                return; // Skip duplicate
+                            }
                             const prereqs = getCoursePrerequisitesStr(cc.course.code);
+                            let kBlock = cc.knowledgeBlock || activeImportTargetBlock;
                             courseList.push({
                                 code: cc.course.code,
                                 name: cc.course.name,
                                 credits: cc.course.credits,
                                 semester: cc.semester,
-                                prerequisites: prereqs
+                                prerequisites: prereqs,
+                                knowledgeBlock: kBlock
                             });
                         }
                     });
+                    
+                    if (res.coursePloMappings) {
+                        if (!window.coursePloSelections) {
+                            window.coursePloSelections = {};
+                        }
+                        res.coursePloMappings.forEach(m => {
+                            const ploId = m[1].replace('PLO', 'PLO-');
+                            const selectionKey = `${m[0]}_${ploId}`;
+                            window.coursePloSelections[selectionKey] = true;
+                        });
+                    }
                     
                     courseList.sort((a, b) => a.semester - b.semester);
                     renderCoursesList();
                     
                     document.getElementById('importCoursesFormContainer').style.display = 'none';
-                    showToast(`Successfully imported all courses from curriculum: "${selectedText}"!`, true);
+                    showToast(`Successfully imported courses from curriculum: "${selectedText}"!`, true);
                 } else {
                     showToast('Failed to import courses from selected curriculum.', false);
                 }
@@ -1687,7 +1865,7 @@
             const text = input.value.trim();
             if (!text) return;
             
-            const nextId = `PO-${poList.length + 1}`;
+            const nextId = 'PO-' + (poList.length + 1);
             poList.push({ id: nextId, text: text });
             input.value = '';
             renderPOs();
@@ -1697,7 +1875,7 @@
         function removePO(id) {
             poList = poList.filter(item => item.id !== id);
             poList.forEach((item, index) => {
-                item.id = `PO-${index + 1}`;
+                item.id = 'PO-' + (index + 1);
             });
             renderPOs();
         }
@@ -1749,7 +1927,7 @@
         function removePLO(id) {
             ploList = ploList.filter(item => item.id !== id);
             ploList.forEach((item, index) => {
-                item.id = `PLO-${index + 1}`;
+                item.id = 'PLO-' + (index + 1);
             });
             renderPLOs();
         }
@@ -1848,7 +2026,10 @@
             %>
         ];
 
-        function openAddCourseModal() {
+        let activeTargetBlock = 'General knowledge and skills_Khối Kiến thức chung';
+
+        function openAddCourseModal(blockName) {
+            activeTargetBlock = blockName || 'General knowledge and skills_Khối Kiến thức chung';
             // Reset states
             activeSelectedCourse = null;
             selectedPrerequisites = [];
@@ -2154,7 +2335,8 @@
                 name: activeSelectedCourse.name,
                 credits: activeSelectedCourse.credits,
                 semester: semester,
-                prerequisites: selectedPrerequisites.join(', ') || 'None'
+                prerequisites: selectedPrerequisites.join(', ') || 'None',
+                knowledgeBlock: activeTargetBlock
             });
             
             courseList.sort((a, b) => a.semester - b.semester);
@@ -2178,45 +2360,56 @@
                 totalCreditsInput.value = total;
             }
 
-            const tbody = document.getElementById('coursesWizardList');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            
-            if (courseList.length === 0) {
-                tbody.innerHTML = 
-                    '<tr>' +
-                        '<td colspan="6" style="text-align: center; color: #64748B; font-style: italic; padding: 20px;">' +
-                            'No courses have been added to the framework yet.' +
-                        '</td>' +
-                    '</tr>';
-                return;
-            }
-            
-            courseList.forEach(course => {
-                const prereq = course.prerequisites || 'None';
-                let prereqBadgeHtml = '';
-                if (prereq !== 'None') {
-                    const prereqsArray = prereq.split(', ');
-                    prereqsArray.forEach(p => {
-                        prereqBadgeHtml += '<span class="badge-code" style="background-color: #E2E8F0; color: #334155; margin-right: 4px;">' + p + '</span>';
-                    });
-                } else {
-                    prereqBadgeHtml = '<span style="color: #94A3B8; font-style: italic;">None</span>';
-                }
+            const blocks = [
+                'General knowledge and skills_Khối Kiến thức chung',
+                'Major knowledge and skills_Khối kiến thức ngành',
+                'Specialized knowledge and skills _Khối kiến thức chuyên ngành',
+                'Elective combo knowledge and skills_Khối kiến thức combo lựa chọn'
+            ];
+
+            blocks.forEach(blockName => {
+                const blockId = getBlockId(blockName);
+                const tbody = document.getElementById('coursesList-' + blockId);
+                if (!tbody) return;
+                tbody.innerHTML = '';
                 
-                tbody.innerHTML += 
-                    '<tr id="row-' + course.code + '">' +
-                        '<td><span class="badge-code">' + course.code + '</span></td>' +
-                        '<td class="text-bold">' + course.name + '</td>' +
-                        '<td>' + course.credits + '</td>' +
-                        '<td>' + prereqBadgeHtml + '</td>' +
-                        '<td><span class="badge-semester">Semester ' + course.semester + '</span></td>' +
-                        '<td style="text-align: center;">' +
-                            '<button type="button" class="btn-delete-item" onclick="removeCourseRow(\'' + course.code + '\')">' +
-                                '<i class="fas fa-trash-alt"></i>' +
-                            '</button>' +
-                        '</td>' +
-                    '</tr>';
+                const blockCourses = courseList.filter(c => c.knowledgeBlock === blockName);
+                
+                if (blockCourses.length === 0) {
+                    tbody.innerHTML = 
+                        '<tr>' +
+                            '<td colspan="6" style="text-align: center; color: #64748B; font-style: italic; padding: 15px; font-size: 13px;">' +
+                                'No courses added to this block yet.' +
+                            '</td>' +
+                        '</tr>';
+                } else {
+                    blockCourses.forEach(course => {
+                        const prereq = course.prerequisites || 'None';
+                        let prereqBadgeHtml = '';
+                        if (prereq !== 'None') {
+                            const prereqsArray = prereq.split(', ');
+                            prereqsArray.forEach(p => {
+                                prereqBadgeHtml += '<span class="badge-code" style="background-color: #E2E8F0; color: #334155; margin-right: 4px;">' + p + '</span>';
+                            });
+                        } else {
+                            prereqBadgeHtml = '<span style="color: #94A3B8; font-style: italic;">None</span>';
+                        }
+                        
+                        tbody.innerHTML += 
+                            '<tr id="row-' + course.code + '">' +
+                                '<td><span class="badge-code">' + course.code + '</span></td>' +
+                                '<td class="text-bold">' + course.name + '</td>' +
+                                '<td>' + course.credits + '</td>' +
+                                '<td>' + prereqBadgeHtml + '</td>' +
+                                '<td><span class="badge-semester">Semester ' + course.semester + '</span></td>' +
+                                '<td style="text-align: center;">' +
+                                    '<button type="button" class="btn-delete-item" onclick="removeCourseRow(\'' + course.code + '\')">' +
+                                        '<i class="fas fa-trash-alt"></i>' +
+                                    '</button>' +
+                                '</td>' +
+                            '</tr>';
+                    });
+                }
             });
         }
 
@@ -2293,6 +2486,120 @@
             }
         }
 
+        function generateCoursePloMatrixTable() {
+            const headerRow = document.getElementById('coursePloMatrixHeader');
+            const body = document.getElementById('coursePloMatrixBody');
+            const spanningHeader = document.getElementById('coursePloMatrixSpanningHeader');
+            const nameSpan = document.getElementById('coursePloCurriculumNameSpan');
+            if (!headerRow || !body || !spanningHeader) return;
+            
+            // Update curriculum code in table title
+            const curriculumCode = document.getElementById('curriculumCode').value || 'CUR-CODE';
+            if (nameSpan) nameSpan.textContent = curriculumCode;
+            
+            // Set colspan for the top orange bar (1 for Subject Code column + PLO list length)
+            spanningHeader.setAttribute('colspan', 1 + ploList.length);
+            
+            // Header columns
+            headerRow.innerHTML = '<th style="text-align: left; font-weight: 800; min-width: 140px;">Subject Code</th>';
+            ploList.forEach(plo => {
+                headerRow.innerHTML += `<th style="text-align: center; font-weight: 800; min-width: 80px;">\${plo.id.replace('-', '')}</th>`;
+            });
+            
+            body.innerHTML = '';
+            
+            if (courseList.length === 0) {
+                body.innerHTML = `
+                    <tr>
+                        <td colspan="\${ploList.length + 1}" style="text-align: center; padding: 20px; color: #64748B; font-style: italic;">
+                            No subjects/courses allocated to the curriculum. Please add courses in Step 5.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            if (ploList.length === 0) {
+                body.innerHTML = `
+                    <tr>
+                        <td colspan="\${ploList.length + 1}" style="text-align: center; padding: 20px; color: #64748B; font-style: italic;">
+                            No PLOs available. Please add PLOs in Step 3.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const blocks = [
+                'General knowledge and skills_Khối Kiến thức chung',
+                'Major knowledge and skills_Khối kiến thức ngành',
+                'Specialized knowledge and skills _Khối kiến thức chuyên ngành',
+                'Elective combo knowledge and skills_Khối kiến thức combo lựa chọn'
+            ];
+
+            if (!window.coursePloSelections) {
+                window.coursePloSelections = {};
+            }
+            
+            blocks.forEach(blockName => {
+                const blockCourses = courseList.filter(c => c.knowledgeBlock === blockName);
+                if (blockCourses.length === 0) return;
+                
+                // Red category group header row
+                body.innerHTML += `
+                    <tr>
+                        <td colspan="\${ploList.length + 1}" style="text-align: center; color: #EF4444; font-weight: 800; background-color: #FEF2F2; font-size: 13.5px; border-bottom: 1px solid #E2E8F0; padding: 8px;">
+                            \${blockName}
+                        </td>
+                    </tr>
+                `;
+                
+                blockCourses.forEach(course => {
+                    let cellsHtml = '';
+                    ploList.forEach(plo => {
+                        const selectionKey = `\${course.code}_\${plo.id}`;
+                        const isSelected = window.coursePloSelections[selectionKey] || false;
+                        const cellVal = isSelected ? '✓' : '';
+                        cellsHtml += `<td onclick="toggleCoursePloCell(this, '\${course.code}', '\${plo.id}')" style="text-align: center; font-weight: 800; font-size: 16px; color: #1E293B; user-select: none;">\${cellVal}</td>`;
+                    });
+                    
+                    body.innerHTML += `
+                        <tr data-course="\${course.code}">
+                            <td style="text-align: left; font-weight: 700; color: #3b82f6; background-color: #FFFFFF;">\${course.code}</td>
+                            \${cellsHtml}
+                        </tr>
+                    `;
+                });
+            });
+        }
+
+        function toggleCoursePloCell(cell, courseCode, ploId) {
+            const selectionKey = `${courseCode}_${ploId}`;
+            if (cell.textContent === '✓') {
+                cell.textContent = '';
+                window.coursePloSelections[selectionKey] = false;
+            } else {
+                cell.textContent = '✓';
+                window.coursePloSelections[selectionKey] = true;
+            }
+        }
+
+        function collectCoursePloMappings() {
+            const mappings = [];
+            if (window.coursePloSelections) {
+                for (const key in window.coursePloSelections) {
+                    if (window.coursePloSelections[key]) {
+                        const parts = key.split('_');
+                        if (parts.length >= 2) {
+                            const ploId = parts[parts.length - 1];
+                            const courseCode = parts.slice(0, parts.length - 1).join('_');
+                            mappings.push({ courseCode: courseCode, ploCode: ploId });
+                        }
+                    }
+                }
+            }
+            return mappings;
+        }
+
         // Step 7: Preview details compilation
         function generatePreviewData() {
             document.getElementById('prevCode').textContent = document.getElementById('curriculumCode').value || '---';
@@ -2361,8 +2668,9 @@
                 totalCredits: parseInt(totalCredits),
                 pos: poList.map(po => ({ id: po.id, text: po.text })),
                 plos: ploList.map(plo => ({ id: plo.id, text: plo.text })),
-                courses: courseList.map(c => ({ code: c.code, semester: parseInt(c.semester) })),
-                mappings: collectMappings()
+                courses: courseList.map(c => ({ code: c.code, semester: parseInt(c.semester), knowledgeBlock: c.knowledgeBlock })),
+                mappings: collectMappings(),
+                coursePloMappings: collectCoursePloMappings()
             };
             
             // Disable button
