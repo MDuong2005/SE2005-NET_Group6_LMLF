@@ -88,38 +88,19 @@ public class DesignerDAO extends DBContext {
                 AND tf.file_type = 'TEMPLATE'
                 AND tf.is_active = 1
 
-            OUTER APPLY (
-                SELECT TOP 1
-                    svf.file_id,
-                    svf.original_file_name
-
-                FROM syllabus_version_files svf
-
-                WHERE svf.version_id = sv.version_id
-                  AND svf.file_type = 'DESIGNER_SUBMISSION'
-                  AND svf.is_active = 1
-
-                ORDER BY
-                    svf.uploaded_at DESC,
-                    svf.file_id DESC
-            ) sf
+            LEFT JOIN syllabus_version_files sf
+                ON sf.version_id = sv.version_id
+                AND sf.file_type = 'DESIGNER_SUBMISSION'
+                AND sf.is_active = 1
 
             WHERE sa.designer_id = ?
-              AND sa.assignment_status NOT IN (
-                    'REJECTED',
-                    'CANCELLED'
-              )
             """);
 
     if ("draft".equalsIgnoreCase(filter)) {
         sql.append("""
                 AND (
                     sa.submitted_version_id IS NULL
-                    OR sv.status IS NULL
-                    OR sv.status IN (
-                        'DRAFT',
-                        'REJECTED'
-                    )
+                    OR sv.status IN ('DRAFT', 'REJECTED')
                 )
                 """);
     } else if ("submitted".equalsIgnoreCase(filter)) {
@@ -135,13 +116,6 @@ public class DesignerDAO extends DBContext {
 
     sql.append("""
             ORDER BY
-                CASE
-                    WHEN sv.status = 'REJECTED' THEN 0
-                    WHEN sa.submitted_version_id IS NULL THEN 1
-                    WHEN sv.status = 'DRAFT' THEN 2
-                    ELSE 3
-                END,
-                sa.due_date ASC,
                 sa.assigned_at DESC,
                 sa.assignment_id DESC
             """);
@@ -396,7 +370,10 @@ public class DesignerDAO extends DBContext {
                 throw new SQLException("Assignment not found or you are not allowed to submit this assignment.");
             }
 
-          
+            if ("PENDING".equalsIgnoreCase(assignment.assignmentStatus)) {
+                throw new SQLException("You must accept the assignment before submitting syllabus.");
+            }
+
             if ("REJECTED".equalsIgnoreCase(assignment.assignmentStatus)
                     || "COMPLETED".equalsIgnoreCase(assignment.assignmentStatus)
                     || "CANCELLED".equalsIgnoreCase(assignment.assignmentStatus)) {
@@ -823,44 +800,26 @@ public class DesignerDAO extends DBContext {
         }
     }
 
-    private void updateAssignmentAfterSubmit(
-        long assignmentId,
-        long designerId,
-        long versionId
-) throws SQLException {
+    private void updateAssignmentAfterSubmit(long assignmentId, long designerId, long versionId)
+            throws SQLException {
 
-    String sql = """
-            UPDATE syllabus_assignments
+        String sql = """
+                UPDATE syllabus_assignments
+                SET submitted_version_id = ?,
+                    assignment_status = 'SUBMITTED',
+                    accepted_at = COALESCE(accepted_at, SYSDATETIME()),
+                    submitted_at = SYSDATETIME()
+                WHERE assignment_id = ?
+                  AND designer_id = ?
+                """;
 
-            SET submitted_version_id = ?,
-                assignment_status = 'SUBMITTED',
-                submitted_at = SYSDATETIME()
-
-            WHERE assignment_id = ?
-              AND designer_id = ?
-              AND assignment_status NOT IN (
-                    'REJECTED',
-                    'COMPLETED',
-                    'CANCELLED'
-              )
-            """;
-
-    try (PreparedStatement statement
-                 = connection.prepareStatement(sql)) {
-
-        statement.setLong(1, versionId);
-        statement.setLong(2, assignmentId);
-        statement.setLong(3, designerId);
-
-        int updatedRows = statement.executeUpdate();
-
-        if (updatedRows != 1) {
-            throw new SQLException(
-                    "Unable to update assignment after submission."
-            );
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, versionId);
+            ps.setLong(2, assignmentId);
+            ps.setLong(3, designerId);
+            ps.executeUpdate();
         }
     }
-}
 
     private void updateSyllabusAfterSubmit(long syllabusId, String versionNumber, long designerId)
             throws SQLException {

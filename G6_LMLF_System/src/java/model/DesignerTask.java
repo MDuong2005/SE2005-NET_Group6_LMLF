@@ -3,7 +3,6 @@ package model;
 import java.sql.Timestamp;
 
 public class DesignerTask {
-
     private Long assignmentId;
     private Long courseId;
     private Long syllabusId;
@@ -47,59 +46,35 @@ public class DesignerTask {
     }
 
     public boolean isRejected() {
-        return "REJECTED".equalsIgnoreCase(versionStatus);
+        return "REJECTED".equalsIgnoreCase(assignmentStatus);
     }
 
     public boolean isSubmitted() {
-        return "SUBMITTED".equalsIgnoreCase(versionStatus);
-    }
-
-    public boolean isApproved() {
-        return "APPROVED".equalsIgnoreCase(versionStatus);
-    }
-
-    public boolean isArchived() {
-        return "ARCHIVED".equalsIgnoreCase(versionStatus);
+        return submittedVersionId != null || "SUBMITTED".equalsIgnoreCase(assignmentStatus);
     }
 
     public boolean isCompleted() {
         return "COMPLETED".equalsIgnoreCase(assignmentStatus);
     }
 
-    public boolean isDraftTask() {
-        return submittedVersionId == null
-                || versionStatus == null
-                || "DRAFT".equalsIgnoreCase(versionStatus)
-                || "REJECTED".equalsIgnoreCase(versionStatus);
-    }
-
-    public boolean isSubmittedTask() {
-        return "SUBMITTED".equalsIgnoreCase(versionStatus)
-                || "APPROVED".equalsIgnoreCase(versionStatus)
-                || "ARCHIVED".equalsIgnoreCase(versionStatus);
-    }
-
     public boolean isUploadAllowed() {
         if (assignmentStatus == null) {
             return false;
         }
-
-        if ("REJECTED".equalsIgnoreCase(assignmentStatus)
+        if ("CANCELLED".equalsIgnoreCase(assignmentStatus)
                 || "COMPLETED".equalsIgnoreCase(assignmentStatus)
-                || "CANCELLED".equalsIgnoreCase(assignmentStatus)) {
+                || "REJECTED".equalsIgnoreCase(assignmentStatus)) {
             return false;
         }
-
-        if ("APPROVED".equalsIgnoreCase(versionStatus)
+        if ("SUBMITTED".equalsIgnoreCase(versionStatus)
+                || "APPROVED".equalsIgnoreCase(versionStatus)
                 || "ARCHIVED".equalsIgnoreCase(versionStatus)) {
             return false;
         }
-
-        return "PENDING".equalsIgnoreCase(assignmentStatus)
-                || "ACCEPTED".equalsIgnoreCase(assignmentStatus)
-                || "ACTIVE".equalsIgnoreCase(assignmentStatus)
-                || "IN_PROGRESS".equalsIgnoreCase(assignmentStatus)
-                || "SUBMITTED".equalsIgnoreCase(assignmentStatus);
+        return submittedVersionId == null
+                || versionStatus == null
+                || "DRAFT".equalsIgnoreCase(versionStatus)
+                || "REJECTED".equalsIgnoreCase(versionStatus);
     }
 
     public Long getAssignmentId() {

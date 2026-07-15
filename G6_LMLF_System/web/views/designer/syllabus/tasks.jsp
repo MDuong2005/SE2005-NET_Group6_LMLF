@@ -40,7 +40,6 @@
         }
 
         .task-filter-card {
-            width: 100%;
             background: #ffffff;
             border: 1px solid #e8ecf1;
             border-radius: 14px;
@@ -58,17 +57,14 @@
         .filter-button {
             display: inline-flex;
             align-items: center;
-            justify-content: center;
             gap: 7px;
-            min-height: 42px;
-            padding: 9px 17px;
+            padding: 9px 16px;
             border: 1px solid #d8dee8;
             border-radius: 9px;
             background: #ffffff;
             color: #475569;
             font-size: 14px;
             font-weight: 650;
-            text-decoration: none;
             transition: all 0.2s ease;
         }
 
@@ -85,7 +81,6 @@
         }
 
         .task-table-card {
-            width: 100%;
             background: #ffffff;
             border: 1px solid #e8ecf1;
             border-radius: 14px;
@@ -100,7 +95,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 16px;
         }
 
         .task-table-header h2 {
@@ -113,57 +107,36 @@
         .task-count {
             display: inline-flex;
             align-items: center;
-            justify-content: center;
             border-radius: 999px;
             background: #64748b;
             color: #ffffff;
-            padding: 5px 11px;
+            padding: 4px 10px;
             font-size: 12px;
             font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .task-table-wrapper {
-            width: 100%;
-            overflow: hidden;
         }
 
         .designer-table {
             width: 100%;
-            table-layout: fixed;
-            border-collapse: collapse;
             margin: 0;
+            border-collapse: collapse;
         }
 
         .designer-table thead th {
             background: #f8fafc;
             color: #334155;
             border-bottom: 1px solid #dfe5ec;
-            padding: 13px 8px;
-            font-size: 12px;
+            padding: 14px 12px;
+            font-size: 13px;
             font-weight: 750;
-            text-align: left;
-            vertical-align: middle;
-            white-space: normal;
-            word-break: normal;
-            overflow-wrap: break-word;
-            line-height: 1.35;
-        }
-
-        .designer-table thead th.text-center {
-            text-align: center;
+            white-space: nowrap;
         }
 
         .designer-table tbody td {
             color: #334155;
             border-bottom: 1px solid #edf0f4;
-            padding: 14px 8px;
-            font-size: 13px;
+            padding: 15px 12px;
+            font-size: 14px;
             vertical-align: middle;
-            white-space: normal;
-            word-break: normal;
-            overflow-wrap: break-word;
-            line-height: 1.45;
         }
 
         .designer-table tbody tr:last-child td {
@@ -177,46 +150,29 @@
         .course-code {
             color: #172033;
             font-weight: 750;
-            line-height: 1.35;
         }
 
         .course-name {
             color: #64748b;
-            font-size: 12px;
-            margin-top: 4px;
-            line-height: 1.4;
+            font-size: 13px;
+            margin-top: 3px;
+            max-width: 200px;
         }
 
         .syllabus-name {
-            color: #172033;
-            line-height: 1.45;
-        }
-
-        .date-value {
-            color: #334155;
-            text-align: center;
-            line-height: 1.45;
-        }
-
-        .status-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            max-width: 240px;
+            line-height: 1.5;
         }
 
         .status-badge {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 82px;
-            max-width: 100%;
+            min-width: 76px;
             border-radius: 999px;
-            padding: 6px 10px;
-            font-size: 11px;
+            padding: 5px 10px;
+            font-size: 12px;
             font-weight: 750;
-            white-space: normal;
-            text-align: center;
-            line-height: 1.2;
         }
 
         .status-draft {
@@ -225,48 +181,29 @@
         }
 
         .status-submitted {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .status-approved {
             background: #dcfce7;
             color: #166534;
         }
 
-        .status-rejected {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
-
-        .status-archived {
-            background: #e2e8f0;
-            color: #475569;
-        }
-
         .action-container {
-            width: 100%;
             display: flex;
-            flex-wrap: wrap;
             justify-content: flex-end;
-            align-items: center;
+            flex-wrap: wrap;
             gap: 7px;
+            min-width: 310px;
         }
 
         .action-button {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 5px;
-            min-height: 34px;
+            gap: 6px;
+            min-height: 35px;
             border-radius: 7px;
-            padding: 7px 9px;
-            font-size: 11px;
+            padding: 7px 11px;
+            font-size: 13px;
             font-weight: 650;
-            text-decoration: none;
-            text-align: center;
-            white-space: normal;
-            line-height: 1.25;
+            white-space: nowrap;
             transition: all 0.2s ease;
         }
 
@@ -310,6 +247,18 @@
             color: #0891b2;
         }
 
+        .action-pending {
+            border: 1px solid #94a3b8;
+            background: #f8fafc;
+            color: #64748b;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .status-approved { background: #dcfce7; color: #166534; }
+        .status-rejected { background: #fee2e2; color: #b91c1c; }
+        .status-archived { background: #e2e8f0; color: #475569; }
+
         .action-review:hover {
             background: #ecfeff;
             color: #0e7490;
@@ -321,73 +270,13 @@
             color: #64748b;
         }
 
-        @media (max-width: 1300px) {
+        @media (max-width: 1100px) {
             .dashboard-content {
                 padding: 20px;
             }
 
-            .designer-table thead th {
-                padding: 11px 6px;
-                font-size: 11px;
-            }
-
-            .designer-table tbody td {
-                padding: 12px 6px;
-                font-size: 12px;
-            }
-
-            .action-button {
-                padding: 6px 7px;
-                font-size: 10px;
-            }
-
-            .status-badge {
-                min-width: 72px;
-                font-size: 10px;
-            }
-        }
-
-        @media (max-width: 1050px) {
-            .task-page-header h1 {
-                font-size: 26px;
-            }
-
-            .designer-table thead th {
-                padding: 9px 4px;
-                font-size: 10px;
-            }
-
-            .designer-table tbody td {
-                padding: 10px 4px;
-                font-size: 10px;
-            }
-
-            .course-name {
-                font-size: 9px;
-            }
-
-            .action-button {
-                width: 100%;
-                padding: 5px 4px;
-                font-size: 9px;
-            }
-
-            .action-button i {
-                display: none;
-            }
-            
-            .action-pending {
-    border: 1px solid #94a3b8;
-    background: #f8fafc;
-    color: #64748b;
-    cursor: default;
-    pointer-events: none;
-}
-
-            .status-badge {
-                min-width: 62px;
-                padding: 5px 4px;
-                font-size: 9px;
+            .designer-table {
+                min-width: 1180px;
             }
         }
     </style>
@@ -436,8 +325,7 @@
 
                     <button type="button"
                             class="btn-close"
-                            data-bs-dismiss="alert"
-                            aria-label="Close">
+                            data-bs-dismiss="alert">
                     </button>
 
                 </div>
@@ -458,8 +346,7 @@
 
                     <button type="button"
                             class="btn-close"
-                            data-bs-dismiss="alert"
-                            aria-label="Close">
+                            data-bs-dismiss="alert">
                     </button>
 
                 </div>
@@ -479,8 +366,7 @@
                        ? 'active' : ''}">
 
                         <i class="bi bi-grid"></i>
-                        <span>All</span>
-
+                        All
                     </a>
 
                     <a href="${pageContext.request.contextPath}/designer/tasks?status=draft"
@@ -489,8 +375,7 @@
                        ? 'active' : ''}">
 
                         <i class="bi bi-pencil-square"></i>
-                        <span>Draft</span>
-
+                        Draft
                     </a>
 
                     <a href="${pageContext.request.contextPath}/designer/tasks?status=submitted"
@@ -499,8 +384,7 @@
                        ? 'active' : ''}">
 
                         <i class="bi bi-send"></i>
-                        <span>Submitted</span>
-
+                        Submitted
                     </a>
 
                 </div>
@@ -514,20 +398,8 @@
                     <h2>Task List</h2>
 
                     <span class="task-count">
-
-                        <c:choose>
-
-                            <c:when test="${empty taskList}">
-                                0 task(s)
-                            </c:when>
-
-                            <c:otherwise>
-                                <c:out value="${taskList.size()}"/>
-                                task(s)
-                            </c:otherwise>
-
-                        </c:choose>
-
+                        <c:out value="${taskList.size()}"/>
+                        task(s)
                     </span>
 
                 </div>
@@ -554,32 +426,21 @@
 
                     <c:otherwise>
 
-                        <div class="task-table-wrapper">
+                        <div class="table-responsive">
 
                             <table class="designer-table">
-
-                                <colgroup>
-                                    <col style="width: 11%;">
-                                    <col style="width: 13%;">
-                                    <col style="width: 7%;">
-                                    <col style="width: 8%;">
-                                    <col style="width: 10%;">
-                                    <col style="width: 10%;">
-                                    <col style="width: 9%;">
-                                    <col style="width: 32%;">
-                                </colgroup>
 
                                 <thead>
 
                                 <tr>
                                     <th>Course</th>
                                     <th>Syllabus</th>
-                                    <th class="text-center">Semester</th>
-                                    <th class="text-center">Academic Year</th>
-                                    <th class="text-center">Assigned Date</th>
-                                    <th class="text-center">Due Date</th>
-                                    <th class="text-center">Status</th>
-                                    <th class="text-center">Actions</th>
+                                    <th>Semester</th>
+                                    <th>Academic Year</th>
+                                    <th>Assigned Date</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
                                 </tr>
 
                                 </thead>
@@ -610,17 +471,13 @@
                                                 <c:choose>
 
                                                     <c:when test="${not empty task.syllabusTitle}">
-
                                                         <c:out value="${task.syllabusTitle}"/>
-
                                                     </c:when>
 
                                                     <c:otherwise>
-
                                                         <span class="text-muted">
                                                             Not created
                                                         </span>
-
                                                     </c:otherwise>
 
                                                 </c:choose>
@@ -629,284 +486,68 @@
 
                                         </td>
 
-                                        <td class="text-center">
+                                        <td>
+                                            <c:out value="${task.semester}"/>
+                                        </td>
 
+                                        <td>
+                                            <c:out value="${task.academicYear}"/>
+                                        </td>
+
+                                        <td>
                                             <c:choose>
-
-                                                <c:when test="${not empty task.semester}">
-                                                    <c:out value="${task.semester}"/>
-                                                </c:when>
-
-                                                <c:otherwise>
-                                                    <span class="text-muted">-</span>
-                                                </c:otherwise>
-
+                                                <c:when test="${not empty task.assignedAt}"><fmt:formatDate value="${task.assignedAt}" pattern="dd/MM/yyyy HH:mm"/></c:when>
+                                                <c:otherwise><span class="text-muted">-</span></c:otherwise>
                                             </c:choose>
-
                                         </td>
 
-                                        <td class="text-center">
-
+                                        <td>
                                             <c:choose>
-
-                                                <c:when test="${not empty task.academicYear}">
-                                                    <c:out value="${task.academicYear}"/>
-                                                </c:when>
-
-                                                <c:otherwise>
-                                                    <span class="text-muted">-</span>
-                                                </c:otherwise>
-
+                                                <c:when test="${not empty task.dueDate}"><fmt:formatDate value="${task.dueDate}" pattern="dd/MM/yyyy HH:mm"/></c:when>
+                                                <c:otherwise><span class="text-muted">No deadline</span></c:otherwise>
                                             </c:choose>
-
                                         </td>
 
                                         <td>
-
-                                            <div class="date-value">
-
-                                                <c:choose>
-
-                                                    <c:when test="${not empty task.assignedAt}">
-
-                                                        <fmt:formatDate
-                                                            value="${task.assignedAt}"
-                                                            pattern="dd/MM/yyyy HH:mm"/>
-
-                                                    </c:when>
-
-                                                    <c:otherwise>
-
-                                                        <span class="text-muted">
-                                                            -
-                                                        </span>
-
-                                                    </c:otherwise>
-
-                                                </c:choose>
-
-                                            </div>
-
-                                        </td>
-
-                                        <td>
-
-                                            <div class="date-value">
-
-                                                <c:choose>
-
-                                                    <c:when test="${not empty task.dueDate}">
-
-                                                        <fmt:formatDate
-                                                            value="${task.dueDate}"
-                                                            pattern="dd/MM/yyyy HH:mm"/>
-
-                                                    </c:when>
-
-                                                    <c:otherwise>
-
-                                                        <span class="text-muted">
-                                                            No deadline
-                                                        </span>
-
-                                                    </c:otherwise>
-
-                                                </c:choose>
-
-                                            </div>
-
-                                        </td>
-
-                                        <td>
-
                                             <div class="status-wrapper">
-
                                                 <c:choose>
-
-                                                    <c:when test="${task.versionStatus == 'REJECTED'}">
-
-                                                        <span class="status-badge status-rejected">
-                                                            Rejected
-                                                        </span>
-
-                                                    </c:when>
-
-                                                    <c:when test="${task.versionStatus == 'APPROVED'}">
-
-                                                        <span class="status-badge status-approved">
-                                                            Approved
-                                                        </span>
-
-                                                    </c:when>
-
-                                                    <c:when test="${task.versionStatus == 'ARCHIVED'}">
-
-                                                        <span class="status-badge status-archived">
-                                                            Archived
-                                                        </span>
-
-                                                    </c:when>
-
-                                                    <c:when test="${task.versionStatus == 'SUBMITTED'}">
-
-                                                        <span class="status-badge status-submitted">
-                                                            Submitted
-                                                        </span>
-
-                                                    </c:when>
-
-                                                    <c:otherwise>
-
-                                                        <span class="status-badge status-draft">
-                                                            Draft
-                                                        </span>
-
-                                                    </c:otherwise>
-
+                                                    <c:when test="${task.versionStatus == 'REJECTED'}"><span class="status-badge status-rejected">Rejected</span></c:when>
+                                                    <c:when test="${task.versionStatus == 'APPROVED'}"><span class="status-badge status-approved">Approved</span></c:when>
+                                                    <c:when test="${task.versionStatus == 'ARCHIVED'}"><span class="status-badge status-archived">Archived</span></c:when>
+                                                    <c:when test="${task.versionStatus == 'SUBMITTED'}"><span class="status-badge status-submitted">Submitted</span></c:when>
+                                                    <c:otherwise><span class="status-badge status-draft">Draft</span></c:otherwise>
                                                 </c:choose>
-
                                             </div>
-
                                         </td>
 
                                         <td>
-
-    <div class="action-container">
-
-        <c:if test="${task.templateFileId != null}">
-
-            <a href="${pageContext.request.contextPath}/designer/download?fileId=${task.templateFileId}"
-               class="action-button action-template">
-
-                <i class="bi bi-download"></i>
-                <span>Template</span>
-
-            </a>
-
-        </c:if>
-
-        <c:choose>
-
-            <c:when test="${task.versionStatus == 'REJECTED'}">
-
-                <a href="${pageContext.request.contextPath}/designer/design?assignmentId=${task.assignmentId}"
-                   class="action-button action-primary">
-
-                    <i class="bi bi-pencil-square"></i>
-                    <span>Edit / Resubmit</span>
-
-                </a>
-
-                <c:if test="${task.submissionFileId != null}">
-
-                    <a href="${pageContext.request.contextPath}/designer/download?fileId=${task.submissionFileId}"
-                       class="action-button action-download">
-
-                        <i class="bi bi-file-earmark-arrow-down"></i>
-                        <span>Download</span>
-
-                    </a>
-
-                </c:if>
-
-                <c:if test="${task.submittedVersionId != null}">
-
-                    <a href="${pageContext.request.contextPath}/designer/review-result?versionId=${task.submittedVersionId}"
-                       class="action-button action-review">
-
-                        <i class="bi bi-chat-square-text"></i>
-                        <span>Review Result</span>
-
-                    </a>
-
-                </c:if>
-
-            </c:when>
-
-            <c:when test="${task.versionStatus == 'SUBMITTED'}">
-
-                <c:if test="${task.submissionFileId != null}">
-
-                    <a href="${pageContext.request.contextPath}/designer/download?fileId=${task.submissionFileId}"
-                       class="action-button action-download">
-
-                        <i class="bi bi-file-earmark-arrow-down"></i>
-                        <span>Download</span>
-
-                    </a>
-
-                </c:if>
-
-                <span class="action-button action-pending">
-
-                    <i class="bi bi-hourglass-split"></i>
-                    <span>Pending Review</span>
-
-                </span>
-
-            </c:when>
-
-            <c:when test="${task.versionStatus == 'APPROVED'}">
-
-                <c:if test="${task.submissionFileId != null}">
-
-                    <a href="${pageContext.request.contextPath}/designer/download?fileId=${task.submissionFileId}"
-                       class="action-button action-download">
-
-                        <i class="bi bi-file-earmark-arrow-down"></i>
-                        <span>Download</span>
-
-                    </a>
-
-                </c:if>
-
-                <c:if test="${task.submittedVersionId != null}">
-
-                    <a href="${pageContext.request.contextPath}/designer/review-result?versionId=${task.submittedVersionId}"
-                       class="action-button action-review">
-
-                        <i class="bi bi-chat-square-text"></i>
-                        <span>Review Result</span>
-
-                    </a>
-
-                </c:if>
-
-            </c:when>
-
-            <c:when test="${task.versionStatus == 'ARCHIVED'}">
-
-                <c:if test="${task.submissionFileId != null}">
-
-                    <a href="${pageContext.request.contextPath}/designer/download?fileId=${task.submissionFileId}"
-                       class="action-button action-download">
-
-                        <i class="bi bi-file-earmark-arrow-down"></i>
-                        <span>Download</span>
-
-                    </a>
-
-                </c:if>
-
-            </c:when>
-
-            <c:otherwise>
-
-                <a href="${pageContext.request.contextPath}/designer/design?assignmentId=${task.assignmentId}"
-                   class="action-button action-primary">
-
-                    <i class="bi bi-pencil-square"></i>
-                    <span>Edit Task</span>
-
-                </a>
-
-            </c:otherwise>
-
-        </c:choose>
-
-    </div>
-
-</td>
+                                            <div class="action-container">
+                                                <c:if test="${task.templateFileId != null}">
+                                                    <a href="${pageContext.request.contextPath}/designer/download?fileId=${task.templateFileId}" class="action-button action-template"><i class="bi bi-download"></i> Template</a>
+                                                </c:if>
+                                                <c:choose>
+                                                    <c:when test="${task.versionStatus == 'REJECTED'}">
+                                                        <a href="${pageContext.request.contextPath}/designer/editor?assignmentId=${task.assignmentId}" class="action-button action-primary"><i class="bi bi-pencil-square"></i> Edit / Resubmit</a>
+                                                        <c:if test="${task.submissionFileId != null}"><a href="${pageContext.request.contextPath}/designer/download?fileId=${task.submissionFileId}" class="action-button action-download"><i class="bi bi-file-earmark-arrow-down"></i> Download</a></c:if>
+                                                        <c:if test="${task.submittedVersionId != null}"><a href="${pageContext.request.contextPath}/designer/review-result?versionId=${task.submittedVersionId}" class="action-button action-review"><i class="bi bi-chat-square-text"></i> Review Result</a></c:if>
+                                                    </c:when>
+                                                    <c:when test="${task.versionStatus == 'SUBMITTED'}">
+                                                        <c:if test="${task.submissionFileId != null}"><a href="${pageContext.request.contextPath}/designer/download?fileId=${task.submissionFileId}" class="action-button action-download"><i class="bi bi-file-earmark-arrow-down"></i> Download</a></c:if>
+                                                        <span class="action-button action-pending"><i class="bi bi-hourglass-split"></i> Pending Review</span>
+                                                    </c:when>
+                                                    <c:when test="${task.versionStatus == 'APPROVED'}">
+                                                        <c:if test="${task.submissionFileId != null}"><a href="${pageContext.request.contextPath}/designer/download?fileId=${task.submissionFileId}" class="action-button action-download"><i class="bi bi-file-earmark-arrow-down"></i> Download</a></c:if>
+                                                        <c:if test="${task.submittedVersionId != null}"><a href="${pageContext.request.contextPath}/designer/review-result?versionId=${task.submittedVersionId}" class="action-button action-review"><i class="bi bi-chat-square-text"></i> Review Result</a></c:if>
+                                                    </c:when>
+                                                    <c:when test="${task.versionStatus == 'ARCHIVED'}">
+                                                        <c:if test="${task.submissionFileId != null}"><a href="${pageContext.request.contextPath}/designer/download?fileId=${task.submissionFileId}" class="action-button action-download"><i class="bi bi-file-earmark-arrow-down"></i> Download</a></c:if>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <a href="${pageContext.request.contextPath}/designer/editor?assignmentId=${task.assignmentId}" class="action-button action-primary"><i class="bi bi-pencil-square"></i> Edit Task</a>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </div>
+                                        </td>
 
                                     </tr>
 
