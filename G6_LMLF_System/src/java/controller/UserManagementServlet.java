@@ -188,6 +188,9 @@ public class UserManagementServlet extends HttpServlet {
         long generatedId = userDAO.insertUser(newUser);
         if (generatedId > 0) {
             userDAO.assignRole(generatedId, roleId);
+            
+            String newUserJson = "{\"username\":\"" + newUser.getUsername() + "\", \"email\":\"" + newUser.getEmail() + "\"}";
+            utils.AuditUtil.logAction(request, "CREATE_USER", "users", generatedId, null, newUserJson);
         }
 
         response.sendRedirect(request.getContextPath() + "/admin/users");
@@ -363,6 +366,8 @@ public class UserManagementServlet extends HttpServlet {
 
         User userToUpdate = userDAO.getUserById(userId);
         if (userToUpdate != null) {
+            String oldData = "{\"firstName\":\"" + userToUpdate.getFirstName() + "\", \"lastName\":\"" + userToUpdate.getLastName() + "\", \"status\":\"" + userToUpdate.getStatus() + "\"}";
+            
             userToUpdate.setFirstName(firstName);
             userToUpdate.setLastName(lastName);
             userToUpdate.setStatus(status);
@@ -370,6 +375,9 @@ public class UserManagementServlet extends HttpServlet {
             
             userDAO.removeAllRoles(userId);
             userDAO.assignRole(userId, roleId);
+            
+            String newData = "{\"firstName\":\"" + userToUpdate.getFirstName() + "\", \"lastName\":\"" + userToUpdate.getLastName() + "\", \"status\":\"" + userToUpdate.getStatus() + "\"}";
+            utils.AuditUtil.logAction(request, "UPDATE_USER", "users", userId, oldData, newData);
         }
         
         response.sendRedirect(request.getContextPath() + "/admin/users");
@@ -379,7 +387,12 @@ public class UserManagementServlet extends HttpServlet {
         try {
             long userId = Long.parseLong(request.getParameter("id"));
             String status = action.equals("ban") ? "BANNED" : "ACTIVE";
+            String logActionName = action.equals("ban") ? "BAN_USER" : "UNBAN_USER";
+            
             userDAO.updateUserStatus(userId, status);
+            
+            String newData = "{\"status\":\"" + status + "\"}";
+            utils.AuditUtil.logAction(request, logActionName, "users", userId, null, newData);
         } catch (NumberFormatException e) {
             // ignore
         }
