@@ -28,11 +28,14 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
 
-@WebServlet(name = "DesignerServlet", urlPatterns = {"/designer/*"})
+@WebServlet(
+        name = "DesignerServlet",
+        urlPatterns = {"/designer/*"}
+)
 @MultipartConfig(
         fileSizeThreshold = 1024 * 1024,
-        maxFileSize = 20 * 1024 * 1024,
-        maxRequestSize = 25 * 1024 * 1024
+        maxFileSize = 20L * 1024L * 1024L,
+        maxRequestSize = 25L * 1024L * 1024L
 )
 public class DesignerServlet extends HttpServlet {
 
@@ -45,8 +48,10 @@ public class DesignerServlet extends HttpServlet {
     private final DesignerDAO designerDAO = new DesignerDAO();
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+    protected void doGet(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws ServletException, IOException {
 
         User user = requireDesigner(request, response);
 
@@ -58,15 +63,7 @@ public class DesignerServlet extends HttpServlet {
 
         switch (path) {
             case "/tasks":
-                showTasks(request, response, user, "all", "/views/designer/syllabus/tasks.jsp");
-                break;
-
-            case "/drafts":
-                showTasks(request, response, user, "drafts", "/views/designer/syllabus/tasks.jsp");
-                break;
-
-            case "/submitted":
-                showTasks(request, response, user, "submitted", "/views/designer/syllabus/submitted.jsp");
+                showTasks(request, response, user);
                 break;
 
             case "/design":
@@ -86,14 +83,19 @@ public class DesignerServlet extends HttpServlet {
                 break;
 
             default:
-                response.sendRedirect(request.getContextPath() + "/designer/tasks");
+                response.sendRedirect(
+                        request.getContextPath()
+                        + "/designer/tasks"
+                );
                 break;
         }
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+    protected void doPost(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws ServletException, IOException {
 
         User user = requireDesigner(request, response);
 
@@ -103,38 +105,41 @@ public class DesignerServlet extends HttpServlet {
 
         String path = getPath(request);
 
-        switch (path) {
-            case "/accept":
-                acceptAssignment(request, response, user);
-                break;
-
-            case "/reject":
-                rejectAssignment(request, response, user);
-                break;
-
-            case "/upload":
-                uploadSyllabus(request, response, user);
-                break;
-
-            default:
-                response.sendRedirect(request.getContextPath() + "/designer/tasks");
-                break;
+        if ("/upload".equals(path)) {
+            uploadSyllabus(request, response, user);
+            return;
         }
+
+        response.sendRedirect(
+                request.getContextPath()
+                + "/designer/tasks"
+        );
     }
 
-    private User requireDesigner(HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException {
+    private User requireDesigner(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws IOException, ServletException {
 
         User user = SessionUtil.getCurrentUser(request);
 
         if (user == null) {
-            response.sendRedirect(request.getContextPath() + "/login");
+            response.sendRedirect(
+                    request.getContextPath()
+                    + "/login"
+            );
             return null;
         }
 
         if (!user.hasRole(RoleConstants.DESIGNER)) {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            request.getRequestDispatcher("/views/error/403.jsp").forward(request, response);
+            response.setStatus(
+                    HttpServletResponse.SC_FORBIDDEN
+            );
+
+            request.getRequestDispatcher(
+                    "/views/error/403.jsp"
+            ).forward(request, response);
+
             return null;
         }
 
@@ -142,9 +147,13 @@ public class DesignerServlet extends HttpServlet {
     }
 
     private String getPath(HttpServletRequest request) {
+
         String path = request.getPathInfo();
 
-        if (path == null || path.trim().isEmpty() || "/".equals(path)) {
+        if (path == null
+                || path.trim().isEmpty()
+                || "/".equals(path)) {
+
             return "/tasks";
         }
 
@@ -154,93 +163,120 @@ public class DesignerServlet extends HttpServlet {
     private void showTasks(
             HttpServletRequest request,
             HttpServletResponse response,
-            User user,
-            String filter,
-            String jsp
+            User user
     ) throws ServletException, IOException {
 
-        List<DesignerTask> tasks = designerDAO.getTasksByDesigner(user.getUserId(), filter);
+        String filter = request.getParameter("status");
 
-        request.setAttribute("tasks", tasks);
-        request.setAttribute("filter", filter);
+        if (!"draft".equalsIgnoreCase(filter)
+                && !"submitted".equalsIgnoreCase(filter)) {
 
-        if ("drafts".equals(filter)) {
-            request.setAttribute("pageTitle", "Đang chỉnh sửa / cần sửa");
-        } else if ("submitted".equals(filter)) {
-            request.setAttribute("pageTitle", "Đã Submit");
-        } else {
-            request.setAttribute("pageTitle", "Công việc được giao");
+            filter = "all";
         }
 
-        request.getRequestDispatcher(jsp).forward(request, response);
+        List<DesignerTask> tasks
+                = designerDAO.getTasksByDesigner(
+                        user.getUserId(),
+                        filter
+                );
+
+        request.setAttribute("tasks", tasks);
+        request.setAttribute("taskList", tasks);
+        request.setAttribute("filter", filter);
+        request.setAttribute(
+                "pageTitle",
+                "Assigned Tasks"
+        );
+
+        request.getRequestDispatcher(
+                "/views/designer/syllabus/tasks.jsp"
+        ).forward(request, response);
     }
 
-    private void showDesign(HttpServletRequest request, HttpServletResponse response, User user)
-            throws ServletException, IOException {
+    private void showDesign(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            User user
+    ) throws ServletException, IOException {
 
-        long assignmentId = parseLong(request.getParameter("assignmentId"), -1);
+        long assignmentId = parseLong(
+                request.getParameter("assignmentId"),
+                -1
+        );
 
         if (assignmentId <= 0) {
-            response.sendRedirect(request.getContextPath() + "/designer/tasks?error=missing_assignment");
+            response.sendRedirect(
+                    request.getContextPath()
+                    + "/designer/tasks?error=missing_assignment"
+            );
             return;
         }
 
-        DesignerTask task = designerDAO.getTaskDetail(assignmentId, user.getUserId());
+        DesignerTask task = designerDAO.getTaskDetail(
+                assignmentId,
+                user.getUserId()
+        );
 
         if (task == null) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Assignment not found.");
+            response.sendError(
+                    HttpServletResponse.SC_NOT_FOUND,
+                    "Assignment not found."
+            );
+            return;
+        }
+
+        if (!task.isUploadAllowed()) {
+            response.sendError(
+                    HttpServletResponse.SC_FORBIDDEN,
+                    "This assignment cannot be edited."
+            );
             return;
         }
 
         request.setAttribute("task", task);
-        request.getRequestDispatcher("/views/designer/syllabus/design.jsp").forward(request, response);
+
+        request.getRequestDispatcher(
+                "/views/designer/syllabus/design.jsp"
+        ).forward(request, response);
     }
 
-    private void acceptAssignment(HttpServletRequest request, HttpServletResponse response, User user)
-            throws IOException {
+    private void uploadSyllabus(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            User user
+    ) throws ServletException, IOException {
 
-        long assignmentId = parseLong(request.getParameter("assignmentId"), -1);
+        long assignmentId = parseLong(
+                request.getParameter("assignmentId"),
+                -1
+        );
 
         if (assignmentId <= 0) {
-            response.sendRedirect(request.getContextPath() + "/designer/tasks?error=missing_assignment");
+            response.sendRedirect(
+                    request.getContextPath()
+                    + "/designer/tasks?error=missing_assignment"
+            );
             return;
         }
 
-        boolean ok = designerDAO.acceptAssignment(assignmentId, user.getUserId());
-
-        response.sendRedirect(
-                request.getContextPath()
-                        + "/designer/design?assignmentId=" + assignmentId
-                        + (ok ? "&success=accepted" : "&error=accept_failed")
+        DesignerTask task = designerDAO.getTaskDetail(
+                assignmentId,
+                user.getUserId()
         );
-    }
 
-    private void rejectAssignment(HttpServletRequest request, HttpServletResponse response, User user)
-            throws IOException {
-
-        long assignmentId = parseLong(request.getParameter("assignmentId"), -1);
-
-        if (assignmentId <= 0) {
-            response.sendRedirect(request.getContextPath() + "/designer/tasks?error=missing_assignment");
+        if (task == null) {
+            response.sendError(
+                    HttpServletResponse.SC_NOT_FOUND,
+                    "Assignment not found."
+            );
             return;
         }
 
-        boolean ok = designerDAO.rejectAssignment(assignmentId, user.getUserId());
-
-        response.sendRedirect(
-                request.getContextPath()
-                        + "/designer/tasks"
-                        + (ok ? "?success=rejected" : "?error=reject_failed")
-        );
-    }
-
-    private void uploadSyllabus(HttpServletRequest request, HttpServletResponse response, User user)
-            throws ServletException, IOException {
-
-        long assignmentId = parseLong(request.getParameter("assignmentId"), -1);
-
-        if (assignmentId <= 0) {
-            response.sendRedirect(request.getContextPath() + "/designer/tasks?error=missing_assignment");
+        if (!task.isUploadAllowed()) {
+            response.sendError(
+                    HttpServletResponse.SC_FORBIDDEN,
+                    "This assignment cannot be submitted."
+            );
             return;
         }
 
@@ -249,190 +285,260 @@ public class DesignerServlet extends HttpServlet {
         if (part == null || part.getSize() == 0) {
             response.sendRedirect(
                     request.getContextPath()
-                            + "/designer/design?assignmentId=" + assignmentId
-                            + "&error=no_file"
+                    + "/designer/design?assignmentId="
+                    + assignmentId
+                    + "&error=no_file"
             );
             return;
         }
 
-        String originalFileName = getSubmittedFileName(part);
+        String originalFileName
+                = getSubmittedFileName(part);
 
         if (!isExcelFile(originalFileName)) {
             response.sendRedirect(
                     request.getContextPath()
-                            + "/designer/design?assignmentId=" + assignmentId
-                            + "&error=invalid_file"
+                    + "/designer/design?assignmentId="
+                    + assignmentId
+                    + "&error=invalid_file"
             );
             return;
         }
 
         Files.createDirectories(UPLOAD_DIR);
 
-        String extension = getExtension(originalFileName);
-
-        String storedName = "assignment_" + assignmentId
-                + "_designer_" + user.getUserId()
-                + "_" + UUID.randomUUID()
-                + extension;
+        String storedName
+                = "assignment_"
+                + assignmentId
+                + "_designer_"
+                + user.getUserId()
+                + "_"
+                + UUID.randomUUID()
+                + getExtension(originalFileName);
 
         Path storedPath = UPLOAD_DIR.resolve(storedName);
 
         try (InputStream input = part.getInputStream()) {
-            Files.copy(input, storedPath, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(
+                    input,
+                    storedPath,
+                    StandardCopyOption.REPLACE_EXISTING
+            );
         }
 
         try {
-            long versionId = designerDAO.submitSyllabusExcel(
-                    assignmentId,
-                    user.getUserId(),
-                    originalFileName,
-                    storedPath.toAbsolutePath().toString(),
-                    part.getSize(),
-                    part.getContentType(),
-                    request.getParameter("description")
-            );
+            long versionId
+                    = designerDAO.submitSyllabusExcel(
+                            assignmentId,
+                            user.getUserId(),
+                            originalFileName,
+                            storedPath.toAbsolutePath().toString(),
+                            part.getSize(),
+                            part.getContentType(),
+                            request.getParameter("description")
+                    );
 
             response.sendRedirect(
                     request.getContextPath()
-                            + "/designer/review-result?versionId=" + versionId
-                            + "&success=submitted"
+                    + "/designer/review-result?versionId="
+                    + versionId
+                    + "&success=submitted"
             );
 
-        } catch (Exception e) {
+        } catch (Exception exception) {
             Files.deleteIfExists(storedPath);
-            throw new ServletException("Cannot upload and submit syllabus Excel.", e);
+
+            throw new ServletException(
+                    "Cannot upload and submit syllabus Excel.",
+                    exception
+            );
         }
     }
 
-    private void downloadFile(HttpServletRequest request, HttpServletResponse response, User user)
-            throws IOException {
+    private void downloadFile(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            User user
+    ) throws IOException {
 
-        long fileId = parseLong(request.getParameter("fileId"), -1);
+        long fileId = parseLong(
+                request.getParameter("fileId"),
+                -1
+        );
 
         if (fileId <= 0) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid file id.");
+            response.sendError(
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    "Invalid file ID."
+            );
             return;
         }
 
-        DesignerFile file = designerDAO.getDownloadFile(fileId, user.getUserId());
+        DesignerFile file = designerDAO.getDownloadFile(
+                fileId,
+                user.getUserId()
+        );
 
         if (file == null) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND, "File not found.");
+            response.sendError(
+                    HttpServletResponse.SC_NOT_FOUND,
+                    "File not found."
+            );
             return;
         }
 
         Path path = Paths.get(file.getStoredFilePath());
 
-        if (!Files.exists(path) || !Files.isRegularFile(path)) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Physical file not found.");
+        if (!Files.exists(path)
+                || !Files.isRegularFile(path)) {
+
+            response.sendError(
+                    HttpServletResponse.SC_NOT_FOUND,
+                    "Physical file not found."
+            );
             return;
         }
 
         String mimeType = file.getMimeType();
 
-        if (mimeType == null || mimeType.trim().isEmpty()) {
-            mimeType = getServletContext().getMimeType(file.getOriginalFileName());
+        if (mimeType == null
+                || mimeType.trim().isEmpty()) {
+
+            mimeType = getServletContext().getMimeType(
+                    file.getOriginalFileName()
+            );
         }
 
-        if (mimeType == null || mimeType.trim().isEmpty()) {
+        if (mimeType == null
+                || mimeType.trim().isEmpty()) {
+
             mimeType = "application/octet-stream";
         }
 
         String encodedFileName = URLEncoder
-                .encode(file.getOriginalFileName(), StandardCharsets.UTF_8)
+                .encode(
+                        file.getOriginalFileName(),
+                        StandardCharsets.UTF_8
+                )
                 .replace("+", "%20");
 
         response.setContentType(mimeType);
-        response.setContentLengthLong(Files.size(path));
-        response.setHeader(
-                "Content-Disposition",
-                "attachment; filename*=UTF-8''" + encodedFileName
+        response.setContentLengthLong(
+                Files.size(path)
         );
 
-        try (OutputStream output = response.getOutputStream()) {
+        response.setHeader(
+                "Content-Disposition",
+                "attachment; filename*=UTF-8''"
+                + encodedFileName
+        );
+
+        try (OutputStream output
+                     = response.getOutputStream()) {
+
             Files.copy(path, output);
         }
     }
 
-    private void showVersionHistory(HttpServletRequest request, HttpServletResponse response, User user)
-            throws ServletException, IOException {
+    private void showVersionHistory(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            User user
+    ) throws ServletException, IOException {
 
-        long syllabusId = parseLong(request.getParameter("syllabusId"), -1);
-
-        if (syllabusId <= 0) {
-            response.sendRedirect(request.getContextPath() + "/designer/tasks?error=missing_syllabus");
-            return;
-        }
-
-        List<DesignerVersion> versions = designerDAO.getVersionHistory(
-                syllabusId,
-                user.getUserId()
-        );
+        List<DesignerVersion> versions
+                = designerDAO.getVersionHistoryByDesigner(
+                        user.getUserId()
+                );
 
         request.setAttribute("versions", versions);
-        request.setAttribute("syllabusId", syllabusId);
+        request.setAttribute("versionList", versions);
 
-        request.getRequestDispatcher("/views/designer/syllabus/version_history.jsp")
-                .forward(request, response);
+        request.getRequestDispatcher(
+                "/views/designer/syllabus/version_history.jsp"
+        ).forward(request, response);
     }
 
-    private void showReviewResult(HttpServletRequest request, HttpServletResponse response, User user)
-            throws ServletException, IOException {
+    private void showReviewResult(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            User user
+    ) throws ServletException, IOException {
 
-        long versionId = parseLong(request.getParameter("versionId"), -1);
+        long versionId = parseLong(
+                request.getParameter("versionId"),
+                -1
+        );
 
         if (versionId <= 0) {
-            response.sendRedirect(request.getContextPath() + "/designer/tasks?error=missing_version");
+            response.sendRedirect(
+                    request.getContextPath()
+                    + "/designer/tasks?error=missing_version"
+            );
             return;
         }
 
-        List<DesignerReviewResult> reviews = designerDAO.getReviewResults(
-                versionId,
-                user.getUserId()
-        );
+        List<DesignerReviewResult> reviews
+                = designerDAO.getReviewResults(
+                        versionId,
+                        user.getUserId()
+                );
 
         request.setAttribute("reviews", reviews);
+        request.setAttribute("reviewResults", reviews);
         request.setAttribute("versionId", versionId);
 
-        request.getRequestDispatcher("/views/designer/syllabus/review_result.jsp")
-                .forward(request, response);
+        request.getRequestDispatcher(
+                "/views/designer/syllabus/review_result.jsp"
+        ).forward(request, response);
     }
 
-    private long parseLong(String value, long defaultValue) {
+    private long parseLong(
+            String value,
+            long defaultValue
+    ) {
         try {
             return Long.parseLong(value);
-        } catch (Exception e) {
+        } catch (Exception exception) {
             return defaultValue;
         }
     }
 
     private String getSubmittedFileName(Part part) {
-        String submitted = part.getSubmittedFileName();
 
-        if (submitted == null) {
+        String submittedFileName
+                = part.getSubmittedFileName();
+
+        if (submittedFileName == null
+                || submittedFileName.trim().isEmpty()) {
+
             return "syllabus.xlsx";
         }
 
-        return Paths.get(submitted).getFileName().toString();
+        return Paths.get(submittedFileName)
+                .getFileName()
+                .toString();
     }
 
     private boolean isExcelFile(String fileName) {
+
         if (fileName == null) {
             return false;
         }
 
-        String lower = fileName.toLowerCase();
+        String lowerFileName
+                = fileName.toLowerCase();
 
-        return lower.endsWith(".xlsx") || lower.endsWith(".xls");
+        return lowerFileName.endsWith(".xlsx")
+                || lowerFileName.endsWith(".xls");
     }
 
     private String getExtension(String fileName) {
-        int dot = fileName.lastIndexOf('.');
 
-        if (dot >= 0) {
-            return fileName.substring(dot);
-        }
+        int dotIndex = fileName.lastIndexOf('.');
 
-        return ".xlsx";
+        return dotIndex >= 0
+                ? fileName.substring(dotIndex)
+                : ".xlsx";
     }
 }

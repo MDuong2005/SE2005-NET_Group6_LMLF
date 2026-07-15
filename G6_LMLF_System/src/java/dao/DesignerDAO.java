@@ -16,158 +16,255 @@ import java.util.List;
 
 public class DesignerDAO extends DBContext {
 
-    public List<DesignerTask> getTasksByDesigner(long designerId, String filter) {
-        List<DesignerTask> list = new ArrayList<>();
+    public List<DesignerTask> getTasksByDesigner(
+        long designerId,
+        String filter
+) {
 
-        StringBuilder sql = new StringBuilder();
+    List<DesignerTask> list = new ArrayList<>();
+
+    StringBuilder sql = new StringBuilder();
+
+    sql.append("""
+            SELECT
+                sa.assignment_id,
+                sa.course_id,
+                sa.syllabus_id,
+                sa.designer_id,
+                sa.reviewer_id,
+                sa.semester,
+                sa.academic_year,
+                sa.assignment_status,
+                sa.assigned_at,
+                sa.due_date,
+                sa.accepted_at,
+                sa.submitted_at,
+                sa.completed_at,
+
+                c.code AS course_code,
+                c.name AS course_name,
+                c.credits,
+
+                s.title AS syllabus_title,
+                s.status AS syllabus_status,
+                s.current_version,
+
+                CONCAT(
+                    r.first_name,
+                    ' ',
+                    r.last_name
+                ) AS reviewer_name,
+
+                r.email AS reviewer_email,
+
+                sv.version_id AS submitted_version_id,
+                sv.version_number,
+                sv.status AS version_status,
+                sv.description_of_changes,
+                sv.submitted_at AS version_submitted_at,
+
+                tf.file_id AS template_file_id,
+                tf.original_file_name AS template_file_name,
+
+                sf.file_id AS submission_file_id,
+                sf.original_file_name AS submission_file_name
+
+            FROM syllabus_assignments sa
+
+            INNER JOIN courses c
+                ON c.course_id = sa.course_id
+
+            LEFT JOIN syllabuses s
+                ON s.syllabus_id = sa.syllabus_id
+
+            LEFT JOIN users r
+                ON r.user_id = sa.reviewer_id
+
+            LEFT JOIN syllabus_versions sv
+                ON sv.version_id = sa.submitted_version_id
+
+            LEFT JOIN syllabus_version_files tf
+                ON tf.file_id = sa.template_file_id
+                AND tf.file_type = 'TEMPLATE'
+                AND tf.is_active = 1
+
+            OUTER APPLY (
+                SELECT TOP 1
+                    svf.file_id,
+                    svf.original_file_name
+
+                FROM syllabus_version_files svf
+
+                WHERE svf.version_id = sv.version_id
+                  AND svf.file_type = 'DESIGNER_SUBMISSION'
+                  AND svf.is_active = 1
+
+                ORDER BY
+                    svf.uploaded_at DESC,
+                    svf.file_id DESC
+            ) sf
+
+            WHERE sa.designer_id = ?
+              AND sa.assignment_status NOT IN (
+                    'REJECTED',
+                    'CANCELLED'
+              )
+            """);
+
+    if ("draft".equalsIgnoreCase(filter)) {
         sql.append("""
-                SELECT
-                    sa.assignment_id,
-                    sa.course_id,
-                    sa.syllabus_id,
-                    sa.designer_id,
-                    sa.reviewer_id,
-                    sa.semester,
-                    sa.academic_year,
-                    sa.assignment_status,
-                    sa.assigned_at,
-                    sa.due_date,
-                    sa.accepted_at,
-                    sa.submitted_at,
-                    sa.completed_at,
-
-                    c.code AS course_code,
-                    c.name AS course_name,
-                    c.credits,
-
-                    s.title AS syllabus_title,
-                    s.status AS syllabus_status,
-                    s.current_version,
-
-                    CONCAT(r.first_name, ' ', r.last_name) AS reviewer_name,
-                    r.email AS reviewer_email,
-
-                    sv.version_id AS submitted_version_id,
-                    sv.version_number,
-                    sv.status AS version_status,
-                    sv.description_of_changes,
-                    sv.submitted_at AS version_submitted_at,
-
-                    tf.file_id AS template_file_id,
-                    tf.original_file_name AS template_file_name,
-
-                    sf.file_id AS submission_file_id,
-                    sf.original_file_name AS submission_file_name
-                FROM syllabus_assignments sa
-                JOIN courses c ON sa.course_id = c.course_id
-                LEFT JOIN syllabuses s ON sa.syllabus_id = s.syllabus_id
-                LEFT JOIN users r ON sa.reviewer_id = r.user_id
-                LEFT JOIN syllabus_versions sv ON sa.submitted_version_id = sv.version_id
-                LEFT JOIN syllabus_version_files tf
-                       ON sa.template_file_id = tf.file_id
-                      AND tf.is_active = 1
-                LEFT JOIN syllabus_version_files sf
-                       ON sv.version_id = sf.version_id
-                      AND sf.file_type = 'DESIGNER_SUBMISSION'
-                      AND sf.is_active = 1
-                WHERE sa.designer_id = ?
+                AND (
+                    sa.submitted_version_id IS NULL
+                    OR sv.status IS NULL
+                    OR sv.status IN (
+                        'DRAFT',
+                        'REJECTED'
+                    )
+                )
                 """);
-
-        if ("drafts".equalsIgnoreCase(filter)) {
-            sql.append(" AND (sa.assignment_status IN ('ACCEPTED','ACTIVE','IN_PROGRESS') OR sv.status = 'REJECTED') ");
-        } else if ("submitted".equalsIgnoreCase(filter)) {
-            sql.append(" AND (sa.assignment_status = 'SUBMITTED' OR sv.status IN ('SUBMITTED','APPROVED','REJECTED','PUBLISHED')) ");
-        }
-
-        sql.append(" ORDER BY sa.assigned_at DESC, sa.assignment_id DESC ");
-
-        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-            ps.setLong(1, designerId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapTask(rs));
-                }
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return list;
+    } else if ("submitted".equalsIgnoreCase(filter)) {
+        sql.append("""
+                AND sa.submitted_version_id IS NOT NULL
+                AND sv.status IN (
+                    'SUBMITTED',
+                    'APPROVED',
+                    'ARCHIVED'
+                )
+                """);
     }
 
-    public DesignerTask getTaskDetail(long assignmentId, long designerId) {
-        String sql = """
-                SELECT
-                    sa.assignment_id,
-                    sa.course_id,
-                    sa.syllabus_id,
-                    sa.designer_id,
-                    sa.reviewer_id,
-                    sa.semester,
-                    sa.academic_year,
-                    sa.assignment_status,
-                    sa.assigned_at,
-                    sa.due_date,
-                    sa.accepted_at,
-                    sa.submitted_at,
-                    sa.completed_at,
+    sql.append("""
+            ORDER BY
+                CASE
+                    WHEN sv.status = 'REJECTED' THEN 0
+                    WHEN sa.submitted_version_id IS NULL THEN 1
+                    WHEN sv.status = 'DRAFT' THEN 2
+                    ELSE 3
+                END,
+                sa.due_date ASC,
+                sa.assigned_at DESC,
+                sa.assignment_id DESC
+            """);
 
-                    c.code AS course_code,
-                    c.name AS course_name,
-                    c.credits,
+    try (PreparedStatement statement
+                 = connection.prepareStatement(
+                         sql.toString()
+                 )) {
 
-                    s.title AS syllabus_title,
-                    s.status AS syllabus_status,
-                    s.current_version,
+        statement.setLong(1, designerId);
 
-                    CONCAT(r.first_name, ' ', r.last_name) AS reviewer_name,
-                    r.email AS reviewer_email,
+        try (ResultSet resultSet
+                     = statement.executeQuery()) {
 
-                    sv.version_id AS submitted_version_id,
-                    sv.version_number,
-                    sv.status AS version_status,
-                    sv.description_of_changes,
-                    sv.submitted_at AS version_submitted_at,
-
-                    tf.file_id AS template_file_id,
-                    tf.original_file_name AS template_file_name,
-
-                    sf.file_id AS submission_file_id,
-                    sf.original_file_name AS submission_file_name
-                FROM syllabus_assignments sa
-                JOIN courses c ON sa.course_id = c.course_id
-                LEFT JOIN syllabuses s ON sa.syllabus_id = s.syllabus_id
-                LEFT JOIN users r ON sa.reviewer_id = r.user_id
-                LEFT JOIN syllabus_versions sv ON sa.submitted_version_id = sv.version_id
-                LEFT JOIN syllabus_version_files tf
-                       ON sa.template_file_id = tf.file_id
-                      AND tf.is_active = 1
-                LEFT JOIN syllabus_version_files sf
-                       ON sv.version_id = sf.version_id
-                      AND sf.file_type = 'DESIGNER_SUBMISSION'
-                      AND sf.is_active = 1
-                WHERE sa.assignment_id = ?
-                  AND sa.designer_id = ?
-                """;
-
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setLong(1, assignmentId);
-            ps.setLong(2, designerId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return mapTask(rs);
-                }
+            while (resultSet.next()) {
+                list.add(mapTask(resultSet));
             }
-
-        } catch (Exception e) {
-            e.printStackTrace();
         }
 
-        return null;
+    } catch (Exception exception) {
+        exception.printStackTrace();
     }
+
+    return list;
+}
+
+    public DesignerTask getTaskDetail(
+        long assignmentId,
+        long designerId
+) {
+
+    String sql = """
+            SELECT
+                sa.assignment_id,
+                sa.course_id,
+                sa.syllabus_id,
+                sa.designer_id,
+                sa.reviewer_id,
+                sa.semester,
+                sa.academic_year,
+                sa.assignment_status,
+                sa.assigned_at,
+                sa.due_date,
+                sa.accepted_at,
+                sa.submitted_at,
+                sa.completed_at,
+
+                c.code AS course_code,
+                c.name AS course_name,
+                c.credits,
+
+                s.title AS syllabus_title,
+                s.status AS syllabus_status,
+                s.current_version,
+
+                CONCAT(
+                    r.first_name,
+                    ' ',
+                    r.last_name
+                ) AS reviewer_name,
+
+                r.email AS reviewer_email,
+
+                sv.version_id AS submitted_version_id,
+                sv.version_number,
+                sv.status AS version_status,
+                sv.description_of_changes,
+                sv.submitted_at AS version_submitted_at,
+
+                tf.file_id AS template_file_id,
+                tf.original_file_name AS template_file_name,
+
+                sf.file_id AS submission_file_id,
+                sf.original_file_name AS submission_file_name
+
+            FROM syllabus_assignments sa
+
+            INNER JOIN courses c
+                ON c.course_id = sa.course_id
+
+            LEFT JOIN syllabuses s
+                ON s.syllabus_id = sa.syllabus_id
+
+            LEFT JOIN users r
+                ON r.user_id = sa.reviewer_id
+
+            LEFT JOIN syllabus_versions sv
+                ON sv.version_id = sa.submitted_version_id
+
+            LEFT JOIN syllabus_version_files tf
+                ON tf.file_id = sa.template_file_id
+                AND tf.file_type = 'TEMPLATE'
+                AND tf.is_active = 1
+
+            LEFT JOIN syllabus_version_files sf
+                ON sf.version_id = sv.version_id
+                AND sf.file_type = 'DESIGNER_SUBMISSION'
+                AND sf.is_active = 1
+
+            WHERE sa.assignment_id = ?
+              AND sa.designer_id = ?
+            """;
+
+    try (PreparedStatement statement
+                 = connection.prepareStatement(sql)) {
+
+        statement.setLong(1, assignmentId);
+        statement.setLong(2, designerId);
+
+        try (ResultSet resultSet
+                     = statement.executeQuery()) {
+
+            if (resultSet.next()) {
+                return mapTask(resultSet);
+            }
+        }
+
+    } catch (Exception exception) {
+        exception.printStackTrace();
+    }
+
+    return null;
+}
 
     public boolean acceptAssignment(long assignmentId, long designerId) {
         String sql = """
@@ -299,10 +396,7 @@ public class DesignerDAO extends DBContext {
                 throw new SQLException("Assignment not found or you are not allowed to submit this assignment.");
             }
 
-            if ("PENDING".equalsIgnoreCase(assignment.assignmentStatus)) {
-                throw new SQLException("You must accept the assignment before submitting syllabus.");
-            }
-
+          
             if ("REJECTED".equalsIgnoreCase(assignment.assignmentStatus)
                     || "COMPLETED".equalsIgnoreCase(assignment.assignmentStatus)
                     || "CANCELLED".equalsIgnoreCase(assignment.assignmentStatus)) {
@@ -729,26 +823,44 @@ public class DesignerDAO extends DBContext {
         }
     }
 
-    private void updateAssignmentAfterSubmit(long assignmentId, long designerId, long versionId)
-            throws SQLException {
+    private void updateAssignmentAfterSubmit(
+        long assignmentId,
+        long designerId,
+        long versionId
+) throws SQLException {
 
-        String sql = """
-                UPDATE syllabus_assignments
-                SET submitted_version_id = ?,
-                    assignment_status = 'SUBMITTED',
-                    accepted_at = COALESCE(accepted_at, SYSDATETIME()),
-                    submitted_at = SYSDATETIME()
-                WHERE assignment_id = ?
-                  AND designer_id = ?
-                """;
+    String sql = """
+            UPDATE syllabus_assignments
 
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setLong(1, versionId);
-            ps.setLong(2, assignmentId);
-            ps.setLong(3, designerId);
-            ps.executeUpdate();
+            SET submitted_version_id = ?,
+                assignment_status = 'SUBMITTED',
+                submitted_at = SYSDATETIME()
+
+            WHERE assignment_id = ?
+              AND designer_id = ?
+              AND assignment_status NOT IN (
+                    'REJECTED',
+                    'COMPLETED',
+                    'CANCELLED'
+              )
+            """;
+
+    try (PreparedStatement statement
+                 = connection.prepareStatement(sql)) {
+
+        statement.setLong(1, versionId);
+        statement.setLong(2, assignmentId);
+        statement.setLong(3, designerId);
+
+        int updatedRows = statement.executeUpdate();
+
+        if (updatedRows != 1) {
+            throw new SQLException(
+                    "Unable to update assignment after submission."
+            );
         }
     }
+}
 
     private void updateSyllabusAfterSubmit(long syllabusId, String versionNumber, long designerId)
             throws SQLException {
@@ -882,4 +994,188 @@ public class DesignerDAO extends DBContext {
         String courseCode;
         String courseName;
     }
+    
+    public List<DesignerVersion> getVersionHistoryByDesigner(
+        long designerId
+) {
+
+    List<DesignerVersion> list = new ArrayList<>();
+
+    String sql = """
+            SELECT
+                sv.version_id,
+                sv.syllabus_id,
+
+                s.title AS syllabus_title,
+
+                c.code AS course_code,
+                c.name AS course_name,
+
+                sv.version_number,
+                sv.change_type,
+                sv.description_of_changes,
+                sv.status,
+
+                sv.submitted_at,
+                sv.approved_at,
+                sv.rejected_at,
+                sv.published_at,
+                sv.archived_at,
+
+                submission_file.file_id,
+                submission_file.original_file_name AS file_name
+
+            FROM syllabus_versions sv
+
+            INNER JOIN syllabuses s
+                ON s.syllabus_id = sv.syllabus_id
+
+            INNER JOIN courses c
+                ON c.course_id = s.course_id
+
+            OUTER APPLY (
+                SELECT TOP 1
+                    svf.file_id,
+                    svf.original_file_name
+
+                FROM syllabus_version_files svf
+
+                WHERE svf.version_id = sv.version_id
+                  AND svf.file_type = 'DESIGNER_SUBMISSION'
+                  AND svf.is_active = 1
+
+                ORDER BY
+                    svf.uploaded_at DESC,
+                    svf.file_id DESC
+            ) submission_file
+
+            WHERE sv.created_by = ?
+
+            ORDER BY
+                CASE
+                    WHEN sv.submitted_at IS NOT NULL
+                        THEN sv.submitted_at
+                    WHEN sv.approved_at IS NOT NULL
+                        THEN sv.approved_at
+                    WHEN sv.rejected_at IS NOT NULL
+                        THEN sv.rejected_at
+                    ELSE sv.archived_at
+                END DESC,
+                sv.version_id DESC
+            """;
+
+    try (PreparedStatement statement
+                 = connection.prepareStatement(sql)) {
+
+        statement.setLong(1, designerId);
+
+        try (ResultSet resultSet
+                     = statement.executeQuery()) {
+
+            while (resultSet.next()) {
+
+                DesignerVersion version
+                        = new DesignerVersion();
+
+                version.setVersionId(
+                        resultSet.getLong("version_id")
+                );
+
+                version.setSyllabusId(
+                        resultSet.getLong("syllabus_id")
+                );
+
+                version.setSyllabusTitle(
+                        resultSet.getString(
+                                "syllabus_title"
+                        )
+                );
+
+                version.setCourseCode(
+                        resultSet.getString(
+                                "course_code"
+                        )
+                );
+
+                version.setCourseName(
+                        resultSet.getString(
+                                "course_name"
+                        )
+                );
+
+                version.setVersionNumber(
+                        resultSet.getString(
+                                "version_number"
+                        )
+                );
+
+                version.setChangeType(
+                        resultSet.getString(
+                                "change_type"
+                        )
+                );
+
+                version.setDescriptionOfChanges(
+                        resultSet.getString(
+                                "description_of_changes"
+                        )
+                );
+
+                version.setStatus(
+                        resultSet.getString("status")
+                );
+
+                version.setSubmittedAt(
+                        resultSet.getTimestamp(
+                                "submitted_at"
+                        )
+                );
+
+                version.setApprovedAt(
+                        resultSet.getTimestamp(
+                                "approved_at"
+                        )
+                );
+
+                version.setRejectedAt(
+                        resultSet.getTimestamp(
+                                "rejected_at"
+                        )
+                );
+
+                version.setPublishedAt(
+                        resultSet.getTimestamp(
+                                "published_at"
+                        )
+                );
+
+                version.setArchivedAt(
+                        resultSet.getTimestamp(
+                                "archived_at"
+                        )
+                );
+
+                long fileId
+                        = resultSet.getLong("file_id");
+
+                version.setFileId(
+                        resultSet.wasNull()
+                                ? null
+                                : fileId
+                );
+
+                version.setFileName(
+                        resultSet.getString("file_name")
+                );
+
+                list.add(version);
+            }
+        }
+
+    } catch (Exception exception) {
+        exception.printStackTrace();
+    }
+
+    return list;
+}
 }

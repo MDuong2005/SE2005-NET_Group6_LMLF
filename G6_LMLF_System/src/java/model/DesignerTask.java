@@ -3,6 +3,7 @@ package model;
 import java.sql.Timestamp;
 
 public class DesignerTask {
+
     private Long assignmentId;
     private Long courseId;
     private Long syllabusId;
@@ -46,15 +47,36 @@ public class DesignerTask {
     }
 
     public boolean isRejected() {
-        return "REJECTED".equalsIgnoreCase(assignmentStatus);
+        return "REJECTED".equalsIgnoreCase(versionStatus);
     }
 
     public boolean isSubmitted() {
-        return submittedVersionId != null || "SUBMITTED".equalsIgnoreCase(assignmentStatus);
+        return "SUBMITTED".equalsIgnoreCase(versionStatus);
+    }
+
+    public boolean isApproved() {
+        return "APPROVED".equalsIgnoreCase(versionStatus);
+    }
+
+    public boolean isArchived() {
+        return "ARCHIVED".equalsIgnoreCase(versionStatus);
     }
 
     public boolean isCompleted() {
         return "COMPLETED".equalsIgnoreCase(assignmentStatus);
+    }
+
+    public boolean isDraftTask() {
+        return submittedVersionId == null
+                || versionStatus == null
+                || "DRAFT".equalsIgnoreCase(versionStatus)
+                || "REJECTED".equalsIgnoreCase(versionStatus);
+    }
+
+    public boolean isSubmittedTask() {
+        return "SUBMITTED".equalsIgnoreCase(versionStatus)
+                || "APPROVED".equalsIgnoreCase(versionStatus)
+                || "ARCHIVED".equalsIgnoreCase(versionStatus);
     }
 
     public boolean isUploadAllowed() {
@@ -62,7 +84,19 @@ public class DesignerTask {
             return false;
         }
 
-        return "ACCEPTED".equalsIgnoreCase(assignmentStatus)
+        if ("REJECTED".equalsIgnoreCase(assignmentStatus)
+                || "COMPLETED".equalsIgnoreCase(assignmentStatus)
+                || "CANCELLED".equalsIgnoreCase(assignmentStatus)) {
+            return false;
+        }
+
+        if ("APPROVED".equalsIgnoreCase(versionStatus)
+                || "ARCHIVED".equalsIgnoreCase(versionStatus)) {
+            return false;
+        }
+
+        return "PENDING".equalsIgnoreCase(assignmentStatus)
+                || "ACCEPTED".equalsIgnoreCase(assignmentStatus)
                 || "ACTIVE".equalsIgnoreCase(assignmentStatus)
                 || "IN_PROGRESS".equalsIgnoreCase(assignmentStatus)
                 || "SUBMITTED".equalsIgnoreCase(assignmentStatus);

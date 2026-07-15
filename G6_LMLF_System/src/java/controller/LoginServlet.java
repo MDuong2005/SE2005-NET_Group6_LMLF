@@ -142,10 +142,24 @@ public class LoginServlet extends HttpServlet {
                         }
                     }
                 }
+                
+                boolean isDesigner = false;
+
+                if (user.getRoles() != null) {
+                    for (model.Role role : user.getRoles()) {
+                        if ("DESIGNER".equalsIgnoreCase(role.getRoleName())) {
+                            isDesigner = true;
+                            break;
+                        }
+                    }
+                }
 
                 if (isReviewer) {
                     response.sendRedirect(request.getContextPath() + "/review?action=pending");
-                } else {
+                }if (isDesigner) {
+                    response.sendRedirect(request.getContextPath() + "/designer/tasks");
+                }
+                else {
                     response.sendRedirect(request.getContextPath() + "/dashboard");
                 }
             } else {
