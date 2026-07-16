@@ -106,6 +106,11 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 );
             }
 
+            captureVersionCurriculumScope(
+                    draftVersionId,
+                    assignment.courseId
+            );
+
             connection.commit();
             return draftVersionId;
 
@@ -224,6 +229,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             );
 
             insertCloPloMappings(
+                    versionId,
                     data.getCloPloMappings(),
                     cloIds,
                     designerId
@@ -292,7 +298,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             String description
     ) throws SQLException {
 
-        validateForSubmit(data);
+        validateForSubmit(versionId, data);
         saveDraft(
                 assignmentId,
                 versionId,
@@ -596,6 +602,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
     }
 
     private void validateForSubmit(
+            long versionId,
             SyllabusEditorData data
     ) throws SQLException {
 
@@ -616,7 +623,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             throw new SQLException("At least one CLO is required.");
         }
 
-        Set<String> codes = new HashSet<>();
+        Set<String> codes = new LinkedHashSet<>();
 
         for (SyllabusEditorData.CloItem clo : data.getClos()) {
             if (clo == null) {
@@ -655,18 +662,24 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     + totalWeight
             );
         }
-    }
 
+        validateCurriculumCloPloMappings(
+                versionId,
+                data.getCloPloMappings(),
+                codes
+        );
+    }
     private void deleteStructuredData(
             long versionId
     ) throws SQLException {
 
         String[] statements = {
+            "DELETE FROM syllabus_clo_plo_mappings WHERE version_id = ?",
             """
-            DELETE mapping
-            FROM clo_plo_mappings mapping
+            DELETE oldMapping
+            FROM clo_plo_mappings oldMapping
             INNER JOIN learning_outcomes outcome
-                ON outcome.outcome_id = mapping.outcome_id
+                ON outcome.outcome_id = oldMapping.outcome_id
             WHERE outcome.version_id = ?
             """,
             """
@@ -708,6 +721,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             }
         }
     }
+
 
     private void insertGeneral(
             long versionId,
@@ -1337,8 +1351,8 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             statement.executeBatch();
         }
     }
-
     private void insertCloPloMappings(
+            long versionId,
             Map<String, List<Long>> mappings,
             Map<String, Long> cloIds,
             long designerId
@@ -1351,49 +1365,83 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             return;
         }
 
+        Map<Long, AllowedPloScope> allowedPlos
+                = loadAllowedPloScope(versionId);
+
         String sql = """
-                INSERT INTO clo_plo_mappings (
+                INSERT INTO syllabus_clo_plo_mappings (
+                    version_id,
                     outcome_id,
-                    plo_id,
+                    plo_option_id,
+                    contribution_level,
                     created_by,
                     created_at,
+                    updated_by,
                     updated_at
                 )
-                SELECT ?, ?, ?, SYSDATETIME(), SYSDATETIME()
+                SELECT ?, ?, ?, NULL, ?,
+                       SYSDATETIME(), ?, SYSDATETIME()
                 WHERE NOT EXISTS (
                     SELECT 1
-                    FROM clo_plo_mappings
+                    FROM syllabus_clo_plo_mappings
                     WHERE outcome_id = ?
-                      AND plo_id = ?
+                      AND plo_option_id = ?
                 )
                 """;
 
-        for (Map.Entry<String, List<Long>> entry : mappings.entrySet()) {
-            String normalizedCloCode = normalizeClo(entry.getKey());
-            Long outcomeId = cloIds.get(normalizedCloCode);
+        try (PreparedStatement statement
+                     = connection.prepareStatement(sql)) {
 
-            if (outcomeId == null) {
-                continue;
-            }
+            for (Map.Entry<String, List<Long>> entry
+                    : mappings.entrySet()) {
 
-            for (Long ploId : safe(entry.getValue())) {
-                if (ploId == null) {
-                    continue;
+                String normalizedCloCode
+                        = normalizeClo(entry.getKey());
+                Long outcomeId = cloIds.get(normalizedCloCode);
+
+                if (outcomeId == null) {
+                    throw new SQLException(
+                            "CLO-PLO mapping contains an unknown CLO: "
+                            + entry.getKey()
+                    );
                 }
 
-                try (PreparedStatement statement
-                             = connection.prepareStatement(sql)) {
+                Set<Long> uniqueOptionIds = new LinkedHashSet<>(
+                        safe(entry.getValue())
+                );
 
-                    statement.setLong(1, outcomeId);
-                    statement.setLong(2, ploId);
-                    statement.setLong(3, designerId);
-                    statement.setLong(4, outcomeId);
-                    statement.setLong(5, ploId);
-                    statement.executeUpdate();
+                for (Long optionId : uniqueOptionIds) {
+                    if (optionId == null) {
+                        continue;
+                    }
+
+                    AllowedPloScope allowed
+                            = allowedPlos.get(optionId);
+
+                    if (allowed == null) {
+                        throw new SQLException(
+                                "The selected PLO option ID "
+                                + optionId
+                                + " does not belong to the curriculum/course "
+                                + "snapshot of this syllabus version."
+                        );
+                    }
+
+                    statement.setLong(1, versionId);
+                    statement.setLong(2, outcomeId);
+                    statement.setLong(3, optionId);
+                    statement.setLong(4, designerId);
+                    statement.setLong(5, designerId);
+                    statement.setLong(6, outcomeId);
+                    statement.setLong(7, optionId);
+                    statement.addBatch();
                 }
             }
+
+            statement.executeBatch();
         }
     }
+
 
     private void syncReviewerSections(
             long versionId,
@@ -1439,8 +1487,8 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             },
             {
                 "CLO_PLO_MAPPING",
-                "Mapping CLOs to PLOs",
-                gson.toJson(data.getCloPloMappings()),
+                "Mapping CLOs to PLOs by Curriculum",
+                gson.toJson(buildReviewerCloPloSnapshot(versionId)),
                 "7"
             }
         };
@@ -1479,6 +1527,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             }
         }
     }
+
 
     private void loadGeneral(
             long versionId,
@@ -1843,31 +1892,36 @@ public class DesignerSyllabusEditorDAO extends DBContext {
 
         data.setAssessments(items);
     }
-
     private void loadPlos(
             long versionId,
             SyllabusEditorData data
     ) throws SQLException {
 
-        List<SyllabusEditorData.PloItem> items = new ArrayList<>();
+        Map<Long, SyllabusEditorData.CurriculumPloGroup> groups
+                = new LinkedHashMap<>();
+        List<SyllabusEditorData.PloItem> flattened
+                = new ArrayList<>();
 
         String sql = """
-                SELECT DISTINCT
-                    plo.plo_id,
-                    plo.code,
-                    plo.title,
-                    plo.description,
-                    plo.display_order
-                FROM syllabus_versions version
-                INNER JOIN syllabuses syllabus
-                    ON syllabus.syllabus_id = version.syllabus_id
-                INNER JOIN curriculum_courses curriculumCourse
-                    ON curriculumCourse.course_id = syllabus.course_id
-                INNER JOIN program_learning_outcomes plo
-                    ON plo.curriculum_id = curriculumCourse.curriculum_id
-                   AND plo.is_active = 1
-                WHERE version.version_id = ?
-                ORDER BY plo.display_order, plo.code
+                SELECT
+                    scope.scope_id,
+                    scope.academic_curriculum_id AS curriculum_id,
+                    scope.curriculum_code_snapshot,
+                    scope.curriculum_name_snapshot,
+                    scope.semester_snapshot,
+                    optionRow.plo_option_id,
+                    optionRow.academic_plo_id,
+                    optionRow.plo_code_snapshot,
+                    optionRow.plo_description_snapshot
+                FROM syllabus_version_curriculum_scopes scope
+                LEFT JOIN syllabus_version_plo_options optionRow
+                    ON optionRow.scope_id = scope.scope_id
+                   AND optionRow.version_id = scope.version_id
+                WHERE scope.version_id = ?
+                ORDER BY
+                    scope.curriculum_code_snapshot,
+                    optionRow.plo_code_snapshot,
+                    optionRow.plo_option_id
                 """;
 
         try (PreparedStatement statement
@@ -1877,23 +1931,90 @@ public class DesignerSyllabusEditorDAO extends DBContext {
 
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
+                    long scopeId = resultSet.getLong("scope_id");
+
+                    SyllabusEditorData.CurriculumPloGroup group
+                            = groups.get(scopeId);
+
+                    if (group == null) {
+                        group = new SyllabusEditorData.CurriculumPloGroup();
+                        group.setCurriculumId(
+                                resultSet.getLong("curriculum_id")
+                        );
+                        group.setCurriculumCode(
+                                resultSet.getString(
+                                        "curriculum_code_snapshot"
+                                )
+                        );
+                        group.setCurriculumName(
+                                resultSet.getString(
+                                        "curriculum_name_snapshot"
+                                )
+                        );
+
+                        int semester = resultSet.getInt(
+                                "semester_snapshot"
+                        );
+
+                        if (!resultSet.wasNull()) {
+                            group.setSemester(semester);
+                        }
+
+                        groups.put(scopeId, group);
+                    }
+
+                    Long optionId = getNullableLong(
+                            resultSet,
+                            "plo_option_id"
+                    );
+
+                    if (optionId == null) {
+                        continue;
+                    }
+
                     SyllabusEditorData.PloItem item
                             = new SyllabusEditorData.PloItem();
 
-                    item.setPloId(resultSet.getLong("plo_id"));
-                    item.setCode(resultSet.getString("code"));
-                    item.setName(resultSet.getString("title"));
-                    item.setDescription(
-                            resultSet.getString("description")
+                    /*
+                     * The UI continues to use the JSON property "ploId",
+                     * but its value is the Designer-owned snapshot option ID,
+                     * not the Academic Office table ID.
+                     */
+                    item.setPloId(optionId);
+                    item.setAcademicPloId(
+                            getNullableLong(
+                                    resultSet,
+                                    "academic_plo_id"
+                            )
                     );
-                    items.add(item);
+                    item.setCurriculumId(
+                            resultSet.getLong("curriculum_id")
+                    );
+                    item.setCode(
+                            resultSet.getString("plo_code_snapshot")
+                    );
+                    item.setDescription(
+                            resultSet.getString(
+                                    "plo_description_snapshot"
+                            )
+                    );
+                    item.setName(
+                            resultSet.getString(
+                                    "plo_description_snapshot"
+                            )
+                    );
+
+                    group.getPlos().add(item);
+                    flattened.add(item);
                 }
             }
         }
 
-        data.setPlos(items);
+        data.setCurriculumPloGroups(
+                new ArrayList<>(groups.values())
+        );
+        data.setPlos(flattened);
     }
-
     private void loadMappings(
             long versionId,
             SyllabusEditorData data
@@ -1902,12 +2023,247 @@ public class DesignerSyllabusEditorDAO extends DBContext {
         Map<String, List<Long>> mappings = new LinkedHashMap<>();
 
         String sql = """
-                SELECT outcome.code, mapping.plo_id
-                FROM learning_outcomes outcome
-                INNER JOIN clo_plo_mappings mapping
-                    ON mapping.outcome_id = outcome.outcome_id
-                WHERE outcome.version_id = ?
-                ORDER BY outcome.code, mapping.plo_id
+                SELECT
+                    outcome.code,
+                    mapping.plo_option_id
+                FROM syllabus_clo_plo_mappings mapping
+                INNER JOIN learning_outcomes outcome
+                    ON outcome.outcome_id = mapping.outcome_id
+                WHERE mapping.version_id = ?
+                  AND outcome.version_id = ?
+                ORDER BY
+                    outcome.code,
+                    mapping.plo_option_id
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(sql)) {
+
+            statement.setLong(1, versionId);
+            statement.setLong(2, versionId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    mappings.computeIfAbsent(
+                            resultSet.getString("code"),
+                            key -> new ArrayList<>()
+                    ).add(
+                            resultSet.getLong("plo_option_id")
+                    );
+                }
+            }
+        }
+
+        data.setCloPloMappings(mappings);
+    }
+    private void captureVersionCurriculumScope(
+            long versionId,
+            long courseId
+    ) throws SQLException {
+
+        String countSql = """
+                SELECT COUNT(*) AS total
+                FROM syllabus_version_curriculum_scopes
+                WHERE version_id = ?
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(countSql)) {
+
+            statement.setLong(1, versionId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()
+                        && resultSet.getInt("total") > 0) {
+                    return;
+                }
+            }
+        }
+
+        /*
+         * These four tables belong to Academic Office. This DAO only reads
+         * them. It never creates, alters, inserts, updates, or deletes rows
+         * in any Academic Office table.
+         */
+        String prerequisiteSql = """
+                SELECT
+                    CASE
+                        WHEN OBJECT_ID(
+                                'dbo.curriculums',
+                                'U'
+                             ) IS NOT NULL
+                         AND OBJECT_ID(
+                                'dbo.curriculum_courses',
+                                'U'
+                             ) IS NOT NULL
+                         AND OBJECT_ID(
+                                'dbo.curriculum_plos',
+                                'U'
+                             ) IS NOT NULL
+                         AND OBJECT_ID(
+                                'dbo.curriculum_course_plo_mappings',
+                                'U'
+                             ) IS NOT NULL
+                        THEN 1
+                        ELSE 0
+                    END AS academic_tables_ready
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(prerequisiteSql);
+             ResultSet resultSet = statement.executeQuery()) {
+
+            if (!resultSet.next()
+                    || resultSet.getInt("academic_tables_ready") != 1) {
+                throw new SQLException(
+                        "Academic Office PLO tables are not available. "
+                        + "Required read-only tables: curriculums, "
+                        + "curriculum_courses, curriculum_plos, and "
+                        + "curriculum_course_plo_mappings."
+                );
+            }
+        }
+
+        /*
+         * Only columns shared by the current database dump and the merged
+         * Academic Office module are used here. No dependency is placed on
+         * optional columns such as curriculum_code, name, or is_active.
+         */
+        String insertScopeSql = """
+                INSERT INTO syllabus_version_curriculum_scopes (
+                    version_id,
+                    academic_curriculum_id,
+                    course_id,
+                    curriculum_code_snapshot,
+                    curriculum_name_snapshot,
+                    curriculum_version_snapshot,
+                    major_code_snapshot,
+                    major_name_snapshot,
+                    course_code_snapshot,
+                    course_name_snapshot,
+                    semester_snapshot,
+                    captured_at
+                )
+                SELECT DISTINCT
+                    ?,
+                    curriculum.curriculum_id,
+                    curriculumCourse.course_id,
+                    CONCAT(
+                        COALESCE(NULLIF(major.code, ''), 'CURRICULUM'),
+                        '-',
+                        curriculum.version
+                    ),
+                    CONCAT(
+                        COALESCE(NULLIF(major.name, ''), 'Curriculum'),
+                        ' - Version ',
+                        curriculum.version
+                    ),
+                    curriculum.version,
+                    major.code,
+                    major.name,
+                    course.code,
+                    course.name,
+                    curriculumCourse.semester,
+                    SYSDATETIME()
+                FROM curriculum_courses curriculumCourse
+                INNER JOIN curriculums curriculum
+                    ON curriculum.curriculum_id
+                        = curriculumCourse.curriculum_id
+                INNER JOIN courses course
+                    ON course.course_id = curriculumCourse.course_id
+                LEFT JOIN majors major
+                    ON major.major_id = curriculum.major_id
+                WHERE curriculumCourse.course_id = ?
+                  AND curriculum.deleted_at IS NULL
+                  AND course.deleted_at IS NULL
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM syllabus_version_curriculum_scopes existingScope
+                        WHERE existingScope.version_id = ?
+                          AND existingScope.academic_curriculum_id
+                                = curriculum.curriculum_id
+                          AND existingScope.course_id
+                                = curriculumCourse.course_id
+                  )
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(insertScopeSql)) {
+
+            statement.setLong(1, versionId);
+            statement.setLong(2, courseId);
+            statement.setLong(3, versionId);
+            statement.executeUpdate();
+        }
+
+        String insertOptionsSql = """
+                INSERT INTO syllabus_version_plo_options (
+                    scope_id,
+                    version_id,
+                    academic_plo_id,
+                    plo_code_snapshot,
+                    plo_description_snapshot,
+                    captured_at
+                )
+                SELECT
+                    scope.scope_id,
+                    scope.version_id,
+                    academicPlo.plo_id,
+                    academicPlo.code,
+                    academicPlo.description,
+                    SYSDATETIME()
+                FROM syllabus_version_curriculum_scopes scope
+                INNER JOIN curriculum_course_plo_mappings coursePlo
+                    ON coursePlo.curriculum_id
+                        = scope.academic_curriculum_id
+                   AND coursePlo.course_id = scope.course_id
+                INNER JOIN curriculum_plos academicPlo
+                    ON academicPlo.plo_id = coursePlo.plo_id
+                   AND academicPlo.curriculum_id
+                        = scope.academic_curriculum_id
+                WHERE scope.version_id = ?
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM syllabus_version_plo_options existingOption
+                        WHERE existingOption.version_id = scope.version_id
+                          AND existingOption.scope_id = scope.scope_id
+                          AND existingOption.academic_plo_id
+                                = academicPlo.plo_id
+                  )
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(insertOptionsSql)) {
+
+            statement.setLong(1, versionId);
+            statement.executeUpdate();
+        }
+    }
+    private Map<Long, AllowedPloScope> loadAllowedPloScope(
+            long versionId
+    ) throws SQLException {
+
+        Map<Long, AllowedPloScope> values = new LinkedHashMap<>();
+
+        String sql = """
+                SELECT
+                    optionRow.plo_option_id,
+                    optionRow.academic_plo_id,
+                    optionRow.plo_code_snapshot,
+                    optionRow.plo_description_snapshot,
+                    scope.academic_curriculum_id,
+                    scope.course_id,
+                    scope.curriculum_code_snapshot,
+                    scope.curriculum_name_snapshot
+                FROM syllabus_version_plo_options optionRow
+                INNER JOIN syllabus_version_curriculum_scopes scope
+                    ON scope.scope_id = optionRow.scope_id
+                   AND scope.version_id = optionRow.version_id
+                WHERE optionRow.version_id = ?
+                ORDER BY
+                    scope.curriculum_code_snapshot,
+                    optionRow.plo_code_snapshot,
+                    optionRow.plo_option_id
                 """;
 
         try (PreparedStatement statement
@@ -1917,15 +2273,330 @@ public class DesignerSyllabusEditorDAO extends DBContext {
 
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    mappings.computeIfAbsent(
-                            resultSet.getString("code"),
-                            key -> new ArrayList<>()
-                    ).add(resultSet.getLong("plo_id"));
+                    AllowedPloScope item = new AllowedPloScope();
+                    item.ploId = resultSet.getLong("plo_option_id");
+                    item.academicPloId
+                            = resultSet.getLong("academic_plo_id");
+                    item.curriculumId
+                            = resultSet.getLong(
+                                    "academic_curriculum_id"
+                            );
+                    item.courseId = resultSet.getLong("course_id");
+                    item.curriculumCode
+                            = resultSet.getString(
+                                    "curriculum_code_snapshot"
+                            );
+                    item.curriculumName
+                            = resultSet.getString(
+                                    "curriculum_name_snapshot"
+                            );
+                    item.ploCode
+                            = resultSet.getString(
+                                    "plo_code_snapshot"
+                            );
+                    item.ploDescription
+                            = resultSet.getString(
+                                    "plo_description_snapshot"
+                            );
+
+                    values.put(item.ploId, item);
                 }
             }
         }
 
-        data.setCloPloMappings(mappings);
+        return values;
+    }
+    private void validateCurriculumCloPloMappings(
+            long versionId,
+            Map<String, List<Long>> mappings,
+            Set<String> cloCodes
+    ) throws SQLException {
+
+        List<String> curriculaWithoutPlo
+                = findCurriculaWithoutAllowedPlo(versionId);
+
+        if (!curriculaWithoutPlo.isEmpty()) {
+            throw new SQLException(
+                    "Academic Office has not assigned a PLO to this course "
+                    + "in the following curriculum(s): "
+                    + String.join(", ", curriculaWithoutPlo)
+            );
+        }
+
+        Map<Long, AllowedPloScope> allowed
+                = loadAllowedPloScope(versionId);
+
+        if (allowed.isEmpty()) {
+            throw new SQLException(
+                    "No Academic Office Course-PLO mapping is available "
+                    + "for this course."
+            );
+        }
+
+        Set<Long> selectedOptionIds = new LinkedHashSet<>();
+
+        if (mappings != null) {
+            for (Map.Entry<String, List<Long>> entry
+                    : mappings.entrySet()) {
+
+                String cloCode = normalizeClo(entry.getKey());
+
+                if (cloCode == null || !cloCodes.contains(cloCode)) {
+                    throw new SQLException(
+                            "CLO-PLO mapping contains an unknown CLO: "
+                            + entry.getKey()
+                    );
+                }
+
+                for (Long optionId : safe(entry.getValue())) {
+                    if (optionId == null) {
+                        continue;
+                    }
+
+                    if (!allowed.containsKey(optionId)) {
+                        throw new SQLException(
+                                "PLO option ID "
+                                + optionId
+                                + " is not part of the current "
+                                + "curriculum/course snapshot."
+                        );
+                    }
+
+                    selectedOptionIds.add(optionId);
+                }
+            }
+        }
+
+        List<String> uncovered = new ArrayList<>();
+
+        for (AllowedPloScope item : allowed.values()) {
+            if (!selectedOptionIds.contains(item.ploId)) {
+                uncovered.add(
+                        item.curriculumCode
+                        + " / "
+                        + item.ploCode
+                );
+            }
+        }
+
+        if (!uncovered.isEmpty()) {
+            throw new SQLException(
+                    "Every PLO assigned to the course must be covered by at "
+                    + "least one CLO. Missing mapping(s): "
+                    + String.join(", ", uncovered)
+            );
+        }
+    }
+    private List<String> findCurriculaWithoutAllowedPlo(
+            long versionId
+    ) throws SQLException {
+
+        List<String> values = new ArrayList<>();
+
+        String sql = """
+                SELECT
+                    scope.curriculum_code_snapshot
+                FROM syllabus_version_curriculum_scopes scope
+                WHERE scope.version_id = ?
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM syllabus_version_plo_options optionRow
+                        WHERE optionRow.version_id = scope.version_id
+                          AND optionRow.scope_id = scope.scope_id
+                  )
+                ORDER BY scope.curriculum_code_snapshot
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(sql)) {
+
+            statement.setLong(1, versionId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    values.add(
+                            resultSet.getString(
+                                    "curriculum_code_snapshot"
+                            )
+                    );
+                }
+            }
+        }
+
+        return values;
+    }
+    private List<ReviewerCurriculumMappingSnapshot>
+            buildReviewerCloPloSnapshot(
+                    long versionId
+            ) throws SQLException {
+
+        Map<Long, ReviewerCurriculumMappingSnapshot> groups
+                = new LinkedHashMap<>();
+
+        String groupSql = """
+                SELECT
+                    scope.scope_id,
+                    scope.academic_curriculum_id,
+                    scope.curriculum_code_snapshot,
+                    scope.curriculum_name_snapshot,
+                    scope.course_id,
+                    scope.course_code_snapshot,
+                    scope.course_name_snapshot,
+                    scope.semester_snapshot,
+                    optionRow.plo_option_id,
+                    optionRow.academic_plo_id,
+                    optionRow.plo_code_snapshot,
+                    optionRow.plo_description_snapshot
+                FROM syllabus_version_curriculum_scopes scope
+                LEFT JOIN syllabus_version_plo_options optionRow
+                    ON optionRow.scope_id = scope.scope_id
+                   AND optionRow.version_id = scope.version_id
+                WHERE scope.version_id = ?
+                ORDER BY
+                    scope.curriculum_code_snapshot,
+                    optionRow.plo_code_snapshot
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(groupSql)) {
+
+            statement.setLong(1, versionId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    long scopeId = resultSet.getLong("scope_id");
+
+                    ReviewerCurriculumMappingSnapshot group
+                            = groups.get(scopeId);
+
+                    if (group == null) {
+                        group = new ReviewerCurriculumMappingSnapshot();
+                        group.curriculumId = resultSet.getLong(
+                                "academic_curriculum_id"
+                        );
+                        group.curriculumCode = resultSet.getString(
+                                "curriculum_code_snapshot"
+                        );
+                        group.curriculumName = resultSet.getString(
+                                "curriculum_name_snapshot"
+                        );
+                        group.courseId = resultSet.getLong("course_id");
+                        group.courseCode = resultSet.getString(
+                                "course_code_snapshot"
+                        );
+                        group.courseName = resultSet.getString(
+                                "course_name_snapshot"
+                        );
+
+                        int semester = resultSet.getInt(
+                                "semester_snapshot"
+                        );
+
+                        if (!resultSet.wasNull()) {
+                            group.semester = semester;
+                        }
+
+                        groups.put(scopeId, group);
+                    }
+
+                    Long optionId = getNullableLong(
+                            resultSet,
+                            "plo_option_id"
+                    );
+
+                    if (optionId != null) {
+                        ReviewerAllowedPloSnapshot plo
+                                = new ReviewerAllowedPloSnapshot();
+
+                        Long academicPloId = getNullableLong(
+                                resultSet,
+                                "academic_plo_id"
+                        );
+
+                        plo.ploId = academicPloId == null
+                                ? optionId
+                                : academicPloId;
+                        plo.ploCode = resultSet.getString(
+                                "plo_code_snapshot"
+                        );
+                        plo.ploDescription = resultSet.getString(
+                                "plo_description_snapshot"
+                        );
+                        group.allowedPlos.add(plo);
+                    }
+                }
+            }
+        }
+
+        String mappingSql = """
+                SELECT
+                    scope.scope_id,
+                    outcome.code AS clo_code,
+                    outcome.description AS clo_description,
+                    optionRow.academic_plo_id,
+                    optionRow.plo_code_snapshot,
+                    optionRow.plo_description_snapshot,
+                    mapping.contribution_level
+                FROM syllabus_clo_plo_mappings mapping
+                INNER JOIN learning_outcomes outcome
+                    ON outcome.outcome_id = mapping.outcome_id
+                   AND outcome.version_id = mapping.version_id
+                INNER JOIN syllabus_version_plo_options optionRow
+                    ON optionRow.plo_option_id
+                        = mapping.plo_option_id
+                   AND optionRow.version_id = mapping.version_id
+                INNER JOIN syllabus_version_curriculum_scopes scope
+                    ON scope.scope_id = optionRow.scope_id
+                   AND scope.version_id = optionRow.version_id
+                WHERE mapping.version_id = ?
+                ORDER BY
+                    scope.curriculum_code_snapshot,
+                    outcome.code,
+                    optionRow.plo_code_snapshot
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(mappingSql)) {
+
+            statement.setLong(1, versionId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    ReviewerCurriculumMappingSnapshot group
+                            = groups.get(
+                                    resultSet.getLong("scope_id")
+                            );
+
+                    if (group == null) {
+                        continue;
+                    }
+
+                    ReviewerCloPloMappingSnapshot mapping
+                            = new ReviewerCloPloMappingSnapshot();
+                    mapping.cloCode
+                            = resultSet.getString("clo_code");
+                    mapping.cloDescription
+                            = resultSet.getString("clo_description");
+                    mapping.ploId
+                            = resultSet.getLong("academic_plo_id");
+                    mapping.ploCode
+                            = resultSet.getString(
+                                    "plo_code_snapshot"
+                            );
+                    mapping.ploDescription
+                            = resultSet.getString(
+                                    "plo_description_snapshot"
+                            );
+                    mapping.contributionLevel
+                            = resultSet.getString(
+                                    "contribution_level"
+                            );
+                    group.mappings.add(mapping);
+                }
+            }
+        }
+
+        return new ArrayList<>(groups.values());
     }
 
     private AssignmentInfo getAssignment(
@@ -2424,6 +3095,51 @@ public class DesignerSyllabusEditorDAO extends DBContext {
         return values == null
                 ? Collections.emptyList()
                 : values;
+    }
+
+
+    private static class AllowedPloScope {
+
+        private long ploId;
+        private long academicPloId;
+        private long curriculumId;
+        private long courseId;
+        private String curriculumCode;
+        private String curriculumName;
+        private String ploCode;
+        private String ploDescription;
+    }
+
+    private static class ReviewerCurriculumMappingSnapshot {
+
+        private long curriculumId;
+        private String curriculumCode;
+        private String curriculumName;
+        private long courseId;
+        private String courseCode;
+        private String courseName;
+        private Integer semester;
+        private List<ReviewerAllowedPloSnapshot> allowedPlos
+                = new ArrayList<>();
+        private List<ReviewerCloPloMappingSnapshot> mappings
+                = new ArrayList<>();
+    }
+
+    private static class ReviewerAllowedPloSnapshot {
+
+        private long ploId;
+        private String ploCode;
+        private String ploDescription;
+    }
+
+    private static class ReviewerCloPloMappingSnapshot {
+
+        private String cloCode;
+        private String cloDescription;
+        private long ploId;
+        private String ploCode;
+        private String ploDescription;
+        private String contributionLevel;
     }
 
     private static class AssignmentInfo {
