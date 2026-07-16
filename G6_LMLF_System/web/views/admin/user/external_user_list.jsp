@@ -11,7 +11,11 @@
         </div>
     </div>
 
-    <div class="filter-group first last">
+    <div class="filter-group first">
+        <div class="filter-label">Search:</div>
+        <input type="text" id="searchInput" class="search-input" onkeyup="filterData('search', this.value, null)" placeholder="Search by name, email, or username...">
+    </div>
+    <div class="filter-group last">
         <div class="filter-label">Status:</div>
         <button class="tab-btn status-btn active" onclick="filterData('status', 'ALL', this)">All Status</button>
         <button class="tab-btn status-btn" onclick="filterData('status', 'ACTIVE', this)">Active</button>
@@ -74,17 +78,24 @@
 
 <script>
     let currentStatus = 'ALL';
+    let currentSearch = '';
 
     function filterData(type, value, btnElement) {
         if (type === 'status') {
             currentStatus = value;
             document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active'));
+            if(btnElement) btnElement.classList.add('active');
+        } else if (type === 'search') {
+            currentSearch = value.toLowerCase();
         }
-        btnElement.classList.add('active');
 
         document.querySelectorAll('.external-user-row').forEach(row => {
             const matchStatus = currentStatus === 'ALL' || row.dataset.status === currentStatus;
-            row.style.display = matchStatus ? '' : 'none';
+            
+            const userInfoText = row.children[1].textContent.toLowerCase();
+            const matchSearch = currentSearch === '' || userInfoText.includes(currentSearch);
+            
+            row.style.display = (matchStatus && matchSearch) ? '' : 'none';
         });
     }
 </script>

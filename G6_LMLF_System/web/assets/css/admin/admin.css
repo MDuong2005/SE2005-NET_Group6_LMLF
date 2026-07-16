@@ -134,6 +134,22 @@
     color: #fff;
     border-color: var(--fpt-orange);
 }
+.container .search-input {
+    padding: 6px 14px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #495057;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    min-width: 260px;
+    background-color: #f8fafc;
+}
+.container .search-input:focus {
+    border-color: var(--fpt-orange);
+    background-color: #fff;
+    box-shadow: 0 0 0 3px var(--fpt-orange-light);
+}
 
 /* ===== TABLE ===== */
 .container .table-container {

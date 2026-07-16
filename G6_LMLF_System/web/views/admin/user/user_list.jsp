@@ -60,6 +60,9 @@
                 Upload an <strong>.xlsx</strong> file. Row 1 is the header (skipped). Columns in order:
                 <code>username | first_name | last_name | email | role</code>.
                 Role must match a system role (e.g. LECTURER, ACADEMIC_OFFICE, STUDENT).
+                <a href="${pageContext.request.contextPath}/assets/templates/user_import_template.xlsx" download class="btn btn-back" style="padding: 3px 10px; font-size: 12px; margin-left: 10px; text-decoration: none; vertical-align: middle;">
+                    📥 Download Template
+                </a>
             </p>
             <div class="import-controls">
                 <input type="file" name="excelFile" accept=".xlsx" required>
@@ -70,6 +73,10 @@
     </div>
 
     <div class="filter-group first">
+        <div class="filter-label">Search:</div>
+        <input type="text" id="searchInput" class="search-input" onkeyup="filterData('search', this.value, null)" placeholder="Search by name, email, or username...">
+    </div>
+    <div class="filter-group">
         <div class="filter-label">Role:</div>
         <button class="tab-btn role-btn active" onclick="filterData('role', 'ALL', this)">All Roles</button>
         <c:forEach var="role" items="${roles}">
@@ -155,21 +162,29 @@
 <script>
     let currentRole = 'ALL';
     let currentStatus = 'ALL';
+    let currentSearch = '';
 
     function filterData(type, value, btnElement) {
         if (type === 'role') {
             currentRole = value;
             document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+            if(btnElement) btnElement.classList.add('active');
         } else if (type === 'status') {
             currentStatus = value;
             document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active'));
+            if(btnElement) btnElement.classList.add('active');
+        } else if (type === 'search') {
+            currentSearch = value.toLowerCase();
         }
-        btnElement.classList.add('active');
 
         document.querySelectorAll('.user-row').forEach(row => {
             const matchRole = currentRole === 'ALL' || row.dataset.role === currentRole;
             const matchStatus = currentStatus === 'ALL' || row.dataset.status === currentStatus;
-            row.style.display = (matchRole && matchStatus) ? '' : 'none';
+            
+            const userInfoText = row.children[1].textContent.toLowerCase();
+            const matchSearch = currentSearch === '' || userInfoText.includes(currentSearch);
+            
+            row.style.display = (matchRole && matchStatus && matchSearch) ? '' : 'none';
         });
     }
 
