@@ -377,6 +377,40 @@ public class UserDAO extends DBContext {
     }
 
     /**
+     * Change user password and clear must_change_password flag
+     */
+    public boolean changePassword(long userId, String newPasswordHash) {
+        String sql = "UPDATE users SET password_hash = ?, must_change_password = 0 WHERE user_id = ?";
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, newPasswordHash);
+                ps.setLong(2, userId);
+                return ps.executeUpdate() > 0;
+            } catch (SQLException e) {
+                System.err.println("UserDAO - Error changePassword: " + e.getMessage());
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Reset user password and set must_change_password flag
+     */
+    public boolean resetPassword(long userId, String tempPasswordHash) {
+        String sql = "UPDATE users SET password_hash = ?, must_change_password = 1 WHERE user_id = ?";
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, tempPasswordHash);
+                ps.setLong(2, userId);
+                return ps.executeUpdate() > 0;
+            } catch (SQLException e) {
+                System.err.println("UserDAO - Error resetPassword: " + e.getMessage());
+            }
+        }
+        return false;
+    }
+
+    /**
      * Update user status (ban/unban)
      */
     public void updateUserStatus(long userId, String status) {

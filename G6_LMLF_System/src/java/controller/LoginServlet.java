@@ -131,8 +131,12 @@ public class LoginServlet extends HttpServlet {
                     response.addCookie(cEmail);
                 }
 
-                // Redirect to the dashboard
-                response.sendRedirect(request.getContextPath() + "/dashboard");
+                // Redirect based on must_change_password
+                if (user.isMustChangePassword()) {
+                    response.sendRedirect(request.getContextPath() + "/change-password");
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                }
             } else {
                 // Wrong password
                 request.setAttribute("errorMessage", "Invalid email or password. Please try again.");
