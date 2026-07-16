@@ -85,6 +85,9 @@ public class CurriculumServlet extends HttpServlet {
                 case "getPoPloJson":
                     getPoPloJson(request, response);
                     break;
+                case "checkCodeUnique":
+                    checkCodeUnique(request, response);
+                    break;
                 default:
                     listCurriculums(request, response);
                     break;
@@ -203,6 +206,12 @@ public class CurriculumServlet extends HttpServlet {
             Major major = majorDAO.getMajorById(majorId);
             if (major == null) {
                 request.setAttribute("error", "Selected major not found");
+                showCreateForm(request, response);
+                return;
+            }
+            
+            if (curriculumDAO.checkCodeExists(curriculumCode.trim())) {
+                request.setAttribute("error", "Curriculum Code '" + curriculumCode.trim() + "' already exists.");
                 showCreateForm(request, response);
                 return;
             }
@@ -547,6 +556,16 @@ public class CurriculumServlet extends HttpServlet {
                 return;
             }
             
+            if (data.curriculumCode == null || data.curriculumCode.trim().isEmpty()) {
+                response.getWriter().write("{\"success\":false,\"message\":\"Curriculum Code is required\"}");
+                return;
+            }
+            
+            if (curriculumDAO.checkCodeExists(data.curriculumCode.trim())) {
+                response.getWriter().write("{\"success\":false,\"message\":\"Curriculum Code '" + data.curriculumCode.trim() + "' already exists.\"}");
+                return;
+            }
+            
             Curriculum curriculum = new Curriculum();
             curriculum.setMajorId(data.majorId);
             curriculum.setCurriculumCode(data.curriculumCode);
@@ -840,6 +859,21 @@ public class CurriculumServlet extends HttpServlet {
         response.getWriter().write("{\"success\":false}");
     }
 
+    private void checkCodeUnique(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        
+        String code = request.getParameter("code");
+        if (code == null || code.trim().isEmpty()) {
+            response.getWriter().write("{\"unique\":false,\"message\":\"Code is empty\"}");
+            return;
+        }
+        
+        boolean exists = curriculumDAO.checkCodeExists(code.trim());
+        response.getWriter().write("{\"unique\":" + !exists + "}");
+    }
+    
     private static class PoPloResponse {
         boolean success;
         List<CurriculumPO> pos;

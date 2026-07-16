@@ -1602,11 +1602,12 @@
         }
 
         // Navigation
-        function goToStep(step) {
+        async function goToStep(step) {
             // Validation check when moving forward
             if (step > currentStep) {
                 for (let s = currentStep; s < step; s++) {
-                    if (!validateStep(s)) return;
+                    const isValid = await validateStepAsync(s);
+                    if (!isValid) return;
                 }
             }
             currentStep = step;
@@ -1614,7 +1615,7 @@
             updateProgressBar();
         }
 
-        function moveStep(direction) {
+        async function moveStep(direction) {
             if (currentStep === totalSteps && direction === 1) {
                 // Final submission trigger
                 handleWizardSubmit();
@@ -1624,8 +1625,9 @@
             const targetStep = currentStep + direction;
             if (targetStep < 1 || targetStep > totalSteps) return;
             
-            if (direction === 1 && !validateStep(currentStep)) {
-                return; // halt if current step is invalid
+            if (direction === 1) {
+                const isValid = await validateStepAsync(currentStep);
+                if (!isValid) return;
             }
             
             currentStep = targetStep;
@@ -1653,7 +1655,7 @@
             }
         }
 
-        function validateStep(step) {
+        async function validateStepAsync(step) {
             if (step === 1) {
                 const code = document.getElementById('curriculumCode').value.trim();
                 const name = document.getElementById('curriculumName').value.trim();
@@ -1663,6 +1665,19 @@
                 
                 if (!code || !name || !major || !decision || !date) {
                     showToast('Please enter all required fields (*) in Step 1!', false);
+                    return false;
+                }
+                
+                try {
+                    const response = await fetch('${pageContext.request.contextPath}/curriculum?action=checkCodeUnique&code=' + encodeURIComponent(code));
+                    const resData = await response.json();
+                    if (!resData.unique) {
+                        showToast('Curriculum Code "' + code + '" already exists!', false);
+                        return false;
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showToast('An error occurred during code uniqueness check.', false);
                     return false;
                 }
             }

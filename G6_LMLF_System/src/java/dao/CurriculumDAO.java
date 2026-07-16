@@ -58,8 +58,15 @@ public class CurriculumDAO extends DBContext {
                     }
                 }
             }
+            
+            // Auto-migrate: drop unique constraint uq_curriculum_version if it exists
+            try (Statement stmt = connection.createStatement()) {
+                String checkSql = "IF EXISTS (SELECT * FROM sys.objects WHERE name = 'uq_curriculum_version' AND parent_object_id = OBJECT_ID('curriculums')) " +
+                                  "ALTER TABLE curriculums DROP CONSTRAINT uq_curriculum_version;";
+                stmt.execute(checkSql);
+            }
         } catch (Exception e) {
-            System.err.println("Migration warning (knowledge_block / mapping table): " + e.getMessage());
+            System.err.println("Migration warning (knowledge_block / mapping table / uq constraint): " + e.getMessage());
         }
     }
 
@@ -105,6 +112,23 @@ public class CurriculumDAO extends DBContext {
         }
         return null;
     }
+
+    // Check if curriculum code already exists (including soft-deleted to avoid DB unique constraint error)
+    public boolean checkCodeExists(String curriculumCode) {
+        String sql = "SELECT COUNT(*) FROM curriculums WHERE curriculum_code = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, curriculumCode);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
 
     // Lấy curriculums theo major
     public List<Curriculum> getByMajorId(Long majorId) {
