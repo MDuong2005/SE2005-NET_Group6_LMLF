@@ -1,64 +1,100 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="java.util.List"%>
 <%@page import="java.util.Map"%>
+<%@page import="java.text.SimpleDateFormat"%>
+
+<%!
+    private String h(Object value) {
+        if (value == null) {
+            return "";
+        }
+
+        return String.valueOf(value)
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
+
+    private String text(Object value, String fallback) {
+        if (value == null || String.valueOf(value).trim().isEmpty()) {
+            return fallback;
+        }
+
+        return String.valueOf(value);
+    }
+%>
 
 <%
     List<Map<String, Object>> reviewHistory =
             (List<Map<String, Object>>) request.getAttribute("reviewHistory");
 
     Map<Long, List<Map<String, Object>>> sectionReviewsMap =
-            (Map<Long, List<Map<String, Object>>>) request.getAttribute("sectionReviewsMap");
+            (Map<Long, List<Map<String, Object>>>) request.getAttribute(
+                    "sectionReviewsMap"
+            );
 
-    int historyCount = reviewHistory == null ? 0 : reviewHistory.size();
+    model.User currentUser =
+            (model.User) session.getAttribute("user");
 
-    String userInitials = "RV";
-    String userEmail = "";
-    model.User user = (model.User) session.getAttribute("user");
+    String userEmail = currentUser == null
+            || currentUser.getEmail() == null
+            ? "reviewer"
+            : currentUser.getEmail();
 
-    if (user != null && user.getEmail() != null) {
-        userEmail = user.getEmail();
+    String userInitials = userEmail.length() >= 2
+            ? userEmail.substring(0, 2).toUpperCase()
+            : userEmail.toUpperCase();
 
-        if (userEmail.length() >= 2) {
-            userInitials = userEmail.substring(0, 2).toUpperCase();
-        } else {
-            userInitials = userEmail.toUpperCase();
-        }
-    }
+    String submitted = request.getParameter("submitted");
+    String workflow = request.getParameter("workflow");
+
+    int historyCount = reviewHistory == null
+            ? 0
+            : reviewHistory.size();
+
+    SimpleDateFormat dateFormat =
+            new SimpleDateFormat("dd/MM/yyyy HH:mm");
 %>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Review History - LMLF</title>
 
     <style>
         :root {
-            --primary: #FF6B00;
-            --primary-light: #FFF0E6;
-            --bg-main: #F8FAFC;
-            --bg-card: #FFFFFF;
-            --border: #E2E8F0;
-            --text-dark: #1E293B;
-            --text-muted: #64748B;
-            --success: #16A34A;
-            --danger: #EF4444;
-            --warning: #D97706;
+            --primary: #f97316;
+            --primary-soft: #fff7ed;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --muted: #64748b;
+            --success: #15803d;
+            --success-soft: #dcfce7;
+            --danger: #b91c1c;
+            --danger-soft: #fee2e2;
+            --blue: #1d4ed8;
+            --blue-soft: #dbeafe;
         }
 
         * {
             box-sizing: border-box;
-            margin: 0;
-            padding: 0;
         }
 
         body {
+            margin: 0;
             font-family: "Segoe UI", Arial, sans-serif;
-            background: var(--bg-main);
-            color: var(--text-dark);
+            background: var(--background);
+            color: var(--text);
         }
 
         a {
+            color: inherit;
             text-decoration: none;
         }
 
@@ -68,314 +104,325 @@
         }
 
         .sidebar {
-            width: 280px;
-            background: #FFFFFF;
-            border-right: 1px solid var(--border);
+            width: 270px;
+            flex: 0 0 270px;
             display: flex;
             flex-direction: column;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
         }
 
-        .sidebar-header {
+        .brand {
             padding: 24px;
-            border-bottom: 1px solid #F1F5F9;
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
+            border-bottom: 1px solid var(--border);
         }
 
-        .sidebar-logo {
-            width: 42px;
-            height: 42px;
+        .brand-logo {
+            width: 48px;
+            height: 48px;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
             background: var(--primary);
-            color: #FFFFFF;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
+            color: white;
+            font-weight: 900;
         }
 
-        .sidebar-title h1 {
-            font-size: 20px;
+        .brand h1 {
+            margin: 0;
             color: var(--primary);
+            font-size: 24px;
         }
 
-        .sidebar-title p {
+        .brand p {
+            margin: 2px 0 0;
+            color: var(--muted);
             font-size: 12px;
-            color: var(--text-muted);
             font-weight: 700;
             text-transform: uppercase;
         }
 
-        .sidebar-nav {
+        .navigation {
             flex: 1;
-            padding: 24px;
+            padding: 22px;
         }
 
-        .nav-title {
+        .navigation-title {
+            margin-bottom: 10px;
+            color: var(--muted);
             font-size: 12px;
             font-weight: 800;
-            color: var(--text-muted);
             text-transform: uppercase;
-            margin-bottom: 12px;
         }
 
-        .nav-menu {
-            list-style: none;
-        }
-
-        .nav-menu li {
-            margin-bottom: 8px;
-        }
-
-        .nav-menu a {
+        .nav-link {
             display: block;
+            margin-bottom: 8px;
             padding: 13px 14px;
             border-radius: 12px;
-            color: var(--text-muted);
+            color: var(--muted);
             font-weight: 700;
         }
 
-        .nav-menu a.active {
-            background: var(--primary-light);
+        .nav-link.active {
             color: var(--primary);
-            border: 1px solid #FBD6C4;
+            background: var(--primary-soft);
+            border: 1px solid #fed7aa;
         }
 
         .sidebar-footer {
-            padding: 24px;
-            border-top: 1px solid #F1F5F9;
+            padding: 22px;
+            border-top: 1px solid var(--border);
         }
 
-        .logout-btn {
+        .logout-link {
             color: var(--danger);
             font-weight: 700;
         }
 
-        .main-wrapper {
+        .main {
             flex: 1;
             min-width: 0;
         }
 
-        .top-header {
-            height: 70px;
-            background: #FFFFFF;
-            border-bottom: 1px solid var(--border);
+        .topbar {
+            height: 72px;
+            padding: 0 34px;
             display: flex;
             align-items: center;
             justify-content: flex-end;
-            padding: 0 36px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
         }
 
-        .profile-menu {
+        .profile {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 11px;
         }
 
         .avatar {
             width: 42px;
             height: 42px;
-            background: var(--primary);
-            color: #FFFFFF;
+            display: grid;
+            place-items: center;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
+            background: var(--primary);
+            color: white;
+            font-weight: 900;
         }
 
         .profile-email {
-            font-weight: 800;
-            font-size: 14px;
-        }
-
-        .profile-role {
-            color: var(--text-muted);
-            font-size: 12px;
-            text-transform: uppercase;
-        }
-
-        main {
-            padding: 36px 42px;
-        }
-
-        .content-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 24px;
-            gap: 20px;
-        }
-
-        .content-header h2 {
-            font-size: 30px;
-            font-weight: 800;
-        }
-
-        .content-header p {
-            color: var(--text-muted);
-            margin-top: 6px;
-        }
-
-        .btn-secondary {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            height: 42px;
-            padding: 0 18px;
-            border-radius: 10px;
-            background: #FFFFFF;
-            color: var(--text-muted);
-            border: 1px solid var(--border);
-            font-weight: 700;
-        }
-
-        .stat-card {
-            background: #FFFFFF;
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 22px;
-            width: 300px;
-            margin-bottom: 24px;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: var(--text-muted);
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-
-        .stat-value {
-            font-size: 32px;
-            font-weight: 800;
-            margin-top: 6px;
-        }
-
-        .history-card {
-            background: #FFFFFF;
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            margin-bottom: 22px;
+            max-width: 260px;
             overflow: hidden;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-        }
-
-        .history-head {
-            padding: 20px 24px;
-            background: #F8FAFC;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            gap: 18px;
-        }
-
-        .history-title {
-            font-size: 18px;
-            font-weight: 800;
-            margin-bottom: 6px;
-        }
-
-        .history-meta {
-            color: var(--text-muted);
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .history-body {
-            padding: 22px 24px;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 12px;
+            text-overflow: ellipsis;
             font-weight: 800;
             white-space: nowrap;
         }
 
-        .badge-approved {
-            background: #DCFCE7;
-            color: #166534;
+        .profile-role {
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
         }
 
-        .badge-comment {
-            background: #FEF3C7;
-            color: #92400E;
+        .content {
+            padding: 34px;
         }
 
-        .badge-rejected {
-            background: #FEE2E2;
-            color: #991B1B;
+        .page-header {
+            margin-bottom: 22px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
         }
 
-        .summary-box {
-            padding: 14px;
-            background: #F8FAFC;
-            border: 1px dashed #CBD5E1;
-            border-radius: 12px;
+        .page-header h2 {
+            margin: 0;
+            font-size: 30px;
+        }
+
+        .page-header p {
+            margin: 7px 0 0;
+            color: var(--muted);
+        }
+
+        .count-card {
+            min-width: 170px;
+            padding: 18px 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+
+        .count-card span {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .count-card strong {
+            display: block;
+            margin-top: 5px;
+            font-size: 30px;
+        }
+
+        .success-message {
             margin-bottom: 18px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            color: var(--success);
+            background: var(--success-soft);
+            border: 1px solid #bbf7d0;
+            font-weight: 700;
+        }
+
+        .history-card {
+            margin-bottom: 18px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        }
+
+        .history-header {
+            padding: 20px 22px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+            background: #fcfcfd;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .history-header h3 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .history-meta {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 18px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .badge {
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .badge.approved {
+            color: var(--success);
+            background: var(--success-soft);
+        }
+
+        .badge.rejected {
+            color: var(--danger);
+            background: var(--danger-soft);
+        }
+
+        .badge.version {
+            color: var(--blue);
+            background: var(--blue-soft);
+        }
+
+        .history-body {
+            padding: 22px;
+        }
+
+        .summary {
+            margin-bottom: 16px;
+            padding: 14px;
             color: #334155;
+            background: #f8fafc;
+            border-radius: 12px;
             line-height: 1.6;
+        }
+
+        .section-table-wrapper {
+            overflow-x: auto;
         }
 
         .section-table {
             width: 100%;
+            min-width: 720px;
             border-collapse: collapse;
         }
 
-        .section-table th {
-            text-align: left;
+        .section-table th,
+        .section-table td {
             padding: 12px;
-            background: #F8FAFC;
-            border-bottom: 1px solid var(--border);
+            border: 1px solid var(--border);
+            text-align: left;
+            vertical-align: top;
+            line-height: 1.5;
+        }
+
+        .section-table th {
+            color: #475569;
+            background: #f8fafc;
             font-size: 12px;
-            color: var(--text-muted);
             text-transform: uppercase;
         }
 
-        .section-table td {
-            padding: 12px;
-            border-bottom: 1px solid #F1F5F9;
-            vertical-align: top;
-            font-size: 14px;
-        }
-
         .empty-state {
+            padding: 60px 25px;
             text-align: center;
-            padding: 60px 20px;
-            background: #FFFFFF;
-            border: 1px solid var(--border);
+            background: var(--surface);
+            border: 1px dashed #cbd5e1;
             border-radius: 18px;
-            color: var(--text-muted);
         }
 
         .empty-state h3 {
-            color: var(--text-dark);
-            margin-bottom: 8px;
+            margin: 0 0 8px;
         }
 
-        @media (max-width: 900px) {
+        .empty-state p {
+            margin: 0;
+            color: var(--muted);
+        }
+
+        @media (max-width: 760px) {
             .layout {
-                flex-direction: column;
+                display: block;
             }
 
             .sidebar {
                 width: 100%;
             }
 
-            main {
-                padding: 24px;
+            .content {
+                padding: 22px;
             }
 
-            .content-header {
-                flex-direction: column;
+            .page-header {
+                display: block;
             }
 
-            .history-head {
-                flex-direction: column;
+            .count-card {
+                margin-top: 15px;
+            }
+
+            .history-header {
+                display: block;
+            }
+
+            .history-header .badge {
+                display: inline-block;
+                margin-top: 13px;
             }
         }
     </style>
@@ -384,196 +431,221 @@
 <body>
 <div class="layout">
     <aside class="sidebar">
-        <div class="sidebar-header">
-            <div class="sidebar-logo">LM</div>
-
-            <div class="sidebar-title">
+        <div class="brand">
+            <div class="brand-logo">LM</div>
+            <div>
                 <h1>LMLF</h1>
                 <p>Reviewer Portal</p>
             </div>
         </div>
 
-        <div class="sidebar-nav">
-            <div class="nav-title">Review Workflow</div>
+        <nav class="navigation">
+            <div class="navigation-title">Review Workflow</div>
 
-            <ul class="nav-menu">
-                <li>
-                    <a href="${pageContext.request.contextPath}/review?action=pending">
-                        Pending Reviews
-                    </a>
-                </li>
+            <a class="nav-link"
+               href="${pageContext.request.contextPath}/review?action=pending">
+                Pending Reviews
+            </a>
 
-                <li>
-                    <a class="active" href="${pageContext.request.contextPath}/review-history">
-                        Review History
-                    </a>
-                </li>
-            </ul>
-        </div>
+            <a class="nav-link active"
+               href="${pageContext.request.contextPath}/review-history">
+                Review History
+            </a>
+        </nav>
 
         <div class="sidebar-footer">
-            <a class="logout-btn" href="${pageContext.request.contextPath}/logout">
+            <a class="logout-link"
+               href="${pageContext.request.contextPath}/logout">
                 Logout
             </a>
         </div>
     </aside>
 
-    <div class="main-wrapper">
-        <header class="top-header">
-            <div class="profile-menu">
-                <div class="avatar"><%= userInitials %></div>
-
+    <div class="main">
+        <header class="topbar">
+            <div class="profile">
+                <div class="avatar"><%= h(userInitials) %></div>
                 <div>
-                    <div class="profile-email">
-                        <%= userEmail.isEmpty() ? "reviewer@test.com" : userEmail %>
-                    </div>
+                    <div class="profile-email"><%= h(userEmail) %></div>
                     <div class="profile-role">Reviewer</div>
                 </div>
             </div>
         </header>
 
-        <main>
-            <div class="content-header">
+        <main class="content">
+            <div class="page-header">
                 <div>
                     <h2>Review History</h2>
-                    <p>View your completed syllabus reviews and section comments.</p>
+                    <p>View your final decision and comments for every section.</p>
                 </div>
 
-                <a href="${pageContext.request.contextPath}/review?action=pending" class="btn-secondary">
-                    Back to Pending Reviews
-                </a>
+                <div class="count-card">
+                    <span>Completed reviews</span>
+                    <strong><%= historyCount %></strong>
+                </div>
             </div>
 
-            <div class="stat-card">
-                <div class="stat-label">Total Reviews</div>
-                <div class="stat-value"><%= historyCount %></div>
-            </div>
+            <% if ("1".equals(submitted)) { %>
+                <div class="success-message">
+                    <% if ("REJECTED".equalsIgnoreCase(workflow)) { %>
+                        Review submitted. The syllabus version was rejected
+                        because at least one section was rejected.
+                    <% } else if ("ALL_APPROVED".equalsIgnoreCase(workflow)) { %>
+                        Review submitted. All assigned reviewers approved the
+                        version, so it was sent to Academic Office.
+                    <% } else { %>
+                        Review submitted. The version is waiting for the
+                        remaining assigned reviewers.
+                    <% } %>
+                </div>
+            <% } %>
 
-            <% if (reviewHistory != null && !reviewHistory.isEmpty()) { %>
+            <% if (reviewHistory == null || reviewHistory.isEmpty()) { %>
+                <div class="empty-state">
+                    <h3>No completed reviews</h3>
+                    <p>Your submitted reviews will appear here.</p>
+                </div>
+            <% } else {
+                for (Map<String, Object> review : reviewHistory) {
+                    long reviewId =
+                            ((Number) review.get("review_id")).longValue();
 
-                <%
-                    for (Map<String, Object> review : reviewHistory) {
-                        Long reviewId = ((Number) review.get("review_id")).longValue();
+                    String decision = text(
+                            review.get("decision"),
+                            "-"
+                    );
 
-                        String decision = review.get("decision") == null
-                                ? ""
-                                : review.get("decision").toString();
+                    Object reviewedAtObject = review.get("reviewed_at");
+                    String reviewedAt = reviewedAtObject instanceof java.util.Date
+                            ? dateFormat.format((java.util.Date) reviewedAtObject)
+                            : text(reviewedAtObject, "-");
 
-                        List<Map<String, Object>> sectionList = null;
-
-                        if (sectionReviewsMap != null) {
-                            sectionList = sectionReviewsMap.get(reviewId);
-                        }
-                %>
-
-                <div class="history-card">
-                    <div class="history-head">
+                    List<Map<String, Object>> sectionReviews =
+                            sectionReviewsMap == null
+                            ? null
+                            : sectionReviewsMap.get(reviewId);
+            %>
+                <article class="history-card">
+                    <div class="history-header">
                         <div>
-                            <div class="history-title">
-                                <%= review.get("syllabus_title") == null ? "-" : review.get("syllabus_title") %>
-                            </div>
+                            <h3>
+                                <%= h(text(review.get("course_code"), "-")) %>
+                                -
+                                <%= h(text(review.get("course_name"), "Unnamed course")) %>
+                            </h3>
 
                             <div class="history-meta">
-                                Course:
-                                <strong><%= review.get("course_code") == null ? "-" : review.get("course_code") %></strong>
-                                -
-                                <%= review.get("course_name") == null ? "-" : review.get("course_name") %>
-                                <br>
-                                Version:
-                                <strong>v<%= review.get("version_number") == null ? "-" : review.get("version_number") %></strong>
-                                |
-                                Reviewed At:
-                                <%= review.get("reviewed_at") == null ? "-" : review.get("reviewed_at") %>
+                                <span>
+                                    Syllabus:
+                                    <strong>
+                                        <%= h(text(
+                                                review.get("syllabus_title"),
+                                                "-"
+                                        )) %>
+                                    </strong>
+                                </span>
+
+                                <span>
+                                    Version:
+                                    <strong>
+                                        v<%= h(text(
+                                                review.get("version_number"),
+                                                "-"
+                                        )) %>
+                                    </strong>
+                                </span>
+
+                                <span>
+                                    Reviewed:
+                                    <strong><%= h(reviewedAt) %></strong>
+                                </span>
+
+                                <span class="badge version">
+                                    Version status:
+                                    <%= h(text(
+                                            review.get("version_status"),
+                                            "-"
+                                    )) %>
+                                </span>
                             </div>
                         </div>
 
-                        <div>
-                            <% if ("APPROVED".equalsIgnoreCase(decision)) { %>
-                                <span class="badge badge-approved">APPROVED</span>
-                            <% } else if ("APPROVED_WITH_COMMENT".equalsIgnoreCase(decision)) { %>
-                                <span class="badge badge-comment">APPROVED WITH COMMENT</span>
-                            <% } else if ("REJECTED".equalsIgnoreCase(decision)) { %>
-                                <span class="badge badge-rejected">REJECTED</span>
-                            <% } else { %>
-                                <span class="badge badge-comment"><%= decision %></span>
-                            <% } %>
-                        </div>
+                        <span class="badge <%= "REJECTED".equalsIgnoreCase(decision)
+                                ? "rejected"
+                                : "approved" %>">
+                            <%= h(decision) %>
+                        </span>
                     </div>
 
                     <div class="history-body">
-                        <div class="summary-box">
-                            <strong>Summary Comment:</strong><br>
-                            <%= review.get("summary_comment") == null
-                                    || review.get("summary_comment").toString().trim().isEmpty()
-                                    ? "-"
-                                    : review.get("summary_comment") %>
+                        <div class="summary">
+                            <strong>Summary comment:</strong>
+                            <%= h(text(
+                                    review.get("comment"),
+                                    "No summary comment."
+                            )) %>
                         </div>
 
-                        <table class="section-table">
-                            <thead>
-                            <tr>
-                                <th>Section</th>
-                                <th>Decision</th>
-                                <th>Comment</th>
-                            </tr>
-                            </thead>
+                        <% if (sectionReviews == null
+                                || sectionReviews.isEmpty()) { %>
+                            <div class="empty-state">
+                                <p>No section review details were found.</p>
+                            </div>
+                        <% } else { %>
+                            <div class="section-table-wrapper">
+                                <table class="section-table">
+                                    <thead>
+                                    <tr>
+                                        <th>Section</th>
+                                        <th>Decision</th>
+                                        <th>Comment</th>
+                                    </tr>
+                                    </thead>
 
-                            <tbody>
-                            <% if (sectionList != null && !sectionList.isEmpty()) { %>
+                                    <tbody>
+                                    <% for (Map<String, Object> section
+                                            : sectionReviews) {
+                                        String sectionDecision = text(
+                                                section.get("decision"),
+                                                "-"
+                                        );
+                                    %>
+                                        <tr>
+                                            <td>
+                                                <strong>
+                                                    <%= h(text(
+                                                            section.get(
+                                                                    "criteria_name"
+                                                            ),
+                                                            "-"
+                                                    )) %>
+                                                </strong>
+                                            </td>
 
-                                <% for (Map<String, Object> section : sectionList) {
-                                    String sectionDecision = section.get("decision") == null
-                                            ? ""
-                                            : section.get("decision").toString();
-                                %>
+                                            <td>
+                                                <span class="badge <%= "REJECTED".equalsIgnoreCase(
+                                                        sectionDecision
+                                                ) ? "rejected" : "approved" %>">
+                                                    <%= h(sectionDecision) %>
+                                                </span>
+                                            </td>
 
-                                <tr>
-                                    <td>
-                                        <strong>
-                                            <%= section.get("criteria_name") == null ? "-" : section.get("criteria_name") %>
-                                        </strong>
-                                    </td>
-
-                                    <td>
-                                        <% if ("APPROVED".equalsIgnoreCase(sectionDecision)) { %>
-                                            <span class="badge badge-approved">APPROVED</span>
-                                        <% } else { %>
-                                            <span class="badge badge-rejected">REJECTED</span>
-                                        <% } %>
-                                    </td>
-
-                                    <td>
-                                        <%= section.get("comment") == null
-                                                || section.get("comment").toString().trim().isEmpty()
-                                                ? "-"
-                                                : section.get("comment") %>
-                                    </td>
-                                </tr>
-
-                                <% } %>
-
-                            <% } else { %>
-
-                                <tr>
-                                    <td colspan="3">No section review details found.</td>
-                                </tr>
-
-                            <% } %>
-                            </tbody>
-                        </table>
+                                            <td>
+                                                <%= h(text(
+                                                        section.get("comment"),
+                                                        "-"
+                                                )) %>
+                                            </td>
+                                        </tr>
+                                    <% } %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <% } %>
                     </div>
-                </div>
-
-                <% } %>
-
-            <% } else { %>
-
-                <div class="empty-state">
-                    <h3>No Review History</h3>
-                    <p>You have not completed any syllabus review yet.</p>
-                </div>
-
-            <% } %>
+                </article>
+            <%  }
+               } %>
         </main>
     </div>
 </div>

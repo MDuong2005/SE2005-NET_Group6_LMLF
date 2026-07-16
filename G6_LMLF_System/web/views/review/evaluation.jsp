@@ -1,847 +1,1202 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="java.util.List"%>
 <%@page import="java.util.Map"%>
+<%@page import="java.text.SimpleDateFormat"%>
+
+<%!
+    private String h(Object value) {
+        if (value == null) {
+            return "";
+        }
+
+        return String.valueOf(value)
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
+
+    private String text(Object value, String fallback) {
+        if (value == null || String.valueOf(value).trim().isEmpty()) {
+            return fallback;
+        }
+
+        return String.valueOf(value);
+    }
+%>
+
 <%
-    List<Map<String, Object>> allImportedSections =
-            (List<Map<String, Object>>) request.getAttribute("allImportedSections");
     Map<String, Object> versionDetail =
             (Map<String, Object>) request.getAttribute("versionDetail");
-    
+
     List<Map<String, Object>> criteriaList =
             (List<Map<String, Object>>) request.getAttribute("criteriaList");
 
     Map<String, String> sectionContentMap =
             (Map<String, String>) request.getAttribute("sectionContentMap");
-    
+
+    model.User currentUser =
+            (model.User) session.getAttribute("user");
+
+    String userEmail = currentUser == null
+            || currentUser.getEmail() == null
+            ? "reviewer"
+            : currentUser.getEmail();
+
+    String userInitials = userEmail.length() >= 2
+            ? userEmail.substring(0, 2).toUpperCase()
+            : userEmail.toUpperCase();
+
     String error = request.getParameter("error");
-
-    String userInitials = "RV";
-    String userEmail = "";
-    model.User user = (model.User) session.getAttribute("user");
-
-    if (user != null && user.getEmail() != null) {
-        userEmail = user.getEmail();
-
-        if (userEmail.length() >= 2) {
-            userInitials = userEmail.substring(0, 2).toUpperCase();
-        } else {
-            userInitials = userEmail.toUpperCase();
-        }
-    }
+    SimpleDateFormat dateFormat =
+            new SimpleDateFormat("dd/MM/yyyy HH:mm");
 %>
 
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Syllabus Section Evaluation - LMLF</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Section Evaluation - LMLF</title>
 
-        <style>
-            :root {
-                --primary: #FF6B00;
-                --primary-light: #FFF0E6;
-                --bg-main: #F8FAFC;
-                --bg-card: #FFFFFF;
-                --border: #E2E8F0;
-                --text-dark: #1E293B;
-                --text-muted: #64748B;
-                --success: #16A34A;
-                --danger: #EF4444;
-            }
+    <style>
+        :root {
+            --primary: #f97316;
+            --primary-soft: #fff7ed;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --muted: #64748b;
+            --success: #15803d;
+            --success-soft: #dcfce7;
+            --danger: #b91c1c;
+            --danger-soft: #fee2e2;
+            --blue: #1d4ed8;
+            --blue-soft: #dbeafe;
+        }
 
-            * {
-                box-sizing: border-box;
-                margin: 0;
-                padding: 0;
-            }
+        * {
+            box-sizing: border-box;
+        }
 
-            body {
-                font-family: "Segoe UI", Arial, sans-serif;
-                background: var(--bg-main);
-                color: var(--text-dark);
-            }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: var(--background);
+            color: var(--text);
+        }
 
-            a {
-                text-decoration: none;
-            }
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
 
-            .layout {
-                display: flex;
-                min-height: 100vh;
-            }
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
 
+        .sidebar {
+            width: 270px;
+            flex: 0 0 270px;
+            display: flex;
+            flex-direction: column;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+        }
+
+        .brand {
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand-logo {
+            width: 48px;
+            height: 48px;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
+            background: var(--primary);
+            color: white;
+            font-weight: 900;
+        }
+
+        .brand h1 {
+            margin: 0;
+            color: var(--primary);
+            font-size: 24px;
+        }
+
+        .brand p {
+            margin: 2px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .navigation {
+            flex: 1;
+            padding: 22px;
+        }
+
+        .navigation-title {
+            margin-bottom: 10px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .nav-link {
+            display: block;
+            margin-bottom: 8px;
+            padding: 13px 14px;
+            border-radius: 12px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .nav-link.active {
+            color: var(--primary);
+            background: var(--primary-soft);
+            border: 1px solid #fed7aa;
+        }
+
+        .sidebar-footer {
+            padding: 22px;
+            border-top: 1px solid var(--border);
+        }
+
+        .logout-link {
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        .main {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .topbar {
+            height: 72px;
+            padding: 0 34px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+
+        .avatar {
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            font-weight: 900;
+        }
+
+        .profile-email {
+            max-width: 260px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .profile-role {
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .content {
+            padding: 34px;
+        }
+
+        .page-header {
+            margin-bottom: 22px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .page-header h2 {
+            margin: 0;
+            font-size: 30px;
+        }
+
+        .page-header p {
+            margin: 7px 0 0;
+            color: var(--muted);
+        }
+
+        .back-button {
+            padding: 11px 15px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface);
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        .alert {
+            margin-bottom: 18px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            color: var(--danger);
+            background: var(--danger-soft);
+            border: 1px solid #fecaca;
+            font-weight: 700;
+        }
+
+        .version-panel,
+        .review-card,
+        .submit-panel {
+            margin-bottom: 18px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        }
+
+        .panel-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border);
+            background: #fcfcfd;
+        }
+
+        .panel-header h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .panel-header p {
+            margin: 6px 0 0;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .panel-body {
+            padding: 22px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(145px, 1fr));
+            gap: 13px;
+        }
+
+        .detail {
+            padding: 13px;
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+        }
+
+        .detail-label {
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .detail-value {
+            margin-top: 5px;
+            font-weight: 800;
+        }
+
+        .change-description {
+            margin-top: 14px;
+            padding: 14px;
+            color: #334155;
+            background: #f8fafc;
+            border-radius: 12px;
+            line-height: 1.6;
+        }
+
+        .section-content {
+            overflow-x: auto;
+        }
+
+        .section-content table {
+            width: 100%;
+            min-width: 720px;
+            border-collapse: collapse;
+        }
+
+        .section-content th,
+        .section-content td {
+            padding: 11px 12px;
+            border: 1px solid var(--border);
+            text-align: left;
+            vertical-align: top;
+            line-height: 1.45;
+        }
+
+        .section-content th {
+            background: #f8fafc;
+            color: #475569;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .section-content .key-value-table {
+            min-width: 0;
+        }
+
+        .section-content .key-value-table th {
+            width: 230px;
+        }
+
+        .empty-content {
+            padding: 22px;
+            color: var(--muted);
+            text-align: center;
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+        }
+
+        .render-error {
+            padding: 13px;
+            color: var(--danger);
+            background: var(--danger-soft);
+            border-radius: 10px;
+        }
+
+        .decision-area {
+            margin-top: 20px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
+        }
+
+        .decision-title {
+            margin-bottom: 10px;
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .decision-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .decision-option {
+            min-width: 150px;
+            padding: 13px 15px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            border: 1px solid var(--border);
+            border-radius: 11px;
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .decision-option.approve {
+            color: var(--success);
+            background: var(--success-soft);
+        }
+
+        .decision-option.reject {
+            color: var(--danger);
+            background: var(--danger-soft);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 96px;
+            margin-top: 13px;
+            padding: 12px 13px;
+            resize: vertical;
+            border: 1px solid #cbd5e1;
+            border-radius: 11px;
+            font: inherit;
+        }
+
+        textarea:focus {
+            outline: 2px solid #fed7aa;
+            border-color: var(--primary);
+        }
+
+        .comment-hint {
+            margin-top: 7px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .submit-panel .panel-body {
+            display: grid;
+            gap: 13px;
+        }
+
+        .submit-button {
+            justify-self: end;
+            min-width: 210px;
+            padding: 13px 18px;
+            border: 0;
+            border-radius: 11px;
+            color: white;
+            background: var(--primary);
+            font-size: 15px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .submit-button:disabled {
+            opacity: 0.65;
+            cursor: wait;
+        }
+
+
+        .section-json-fallback {
+            margin: 0;
+            padding: 16px;
+            max-height: 420px;
+            overflow: auto;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+            color: #334155;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 1050px) {
             .sidebar {
-                width: 280px;
-                min-width: 280px;
-                background: #FFFFFF;
-                border-right: 1px solid var(--border);
-                display: flex;
-                flex-direction: column;
-            }
-
-            .sidebar-header {
-                padding: 20px 18px;
-                border-bottom: 1px solid #F1F5F9;
-                background: #FFFFFF;
-            }
-
-            .brand {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-
-            .brand-icon {
-                width: 52px;
-                height: 52px;
-                min-width: 52px;
-                border-radius: 15px;
-                background: var(--primary);
-                color: #FFFFFF;
-                font-size: 22px;
-                font-weight: 900;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .brand-text {
-                min-width: 0;
-                line-height: 1.15;
-            }
-
-            .brand-title {
-                font-size: 26px;
-                font-weight: 900;
-                color: var(--primary);
-            }
-
-            .brand-subtitle {
-                margin-top: 3px;
-                font-size: 11px;
-                font-weight: 800;
-                color: var(--text-muted);
-                text-transform: uppercase;
-                letter-spacing: 0.4px;
-            }
-
-            .sidebar-nav {
-                flex: 1;
-                padding: 24px;
-            }
-
-            .nav-title {
-                font-size: 12px;
-                font-weight: 800;
-                color: var(--text-muted);
-                text-transform: uppercase;
-                margin-bottom: 12px;
-            }
-
-            .nav-menu {
-                list-style: none;
-            }
-
-            .nav-menu li {
-                margin-bottom: 8px;
-            }
-
-            .nav-menu a {
-                display: block;
-                padding: 13px 14px;
-                border-radius: 12px;
-                color: var(--text-muted);
-                font-weight: 700;
-            }
-
-            .nav-menu a.active {
-                background: var(--primary-light);
-                color: var(--primary);
-                border: 1px solid #FBD6C4;
-            }
-
-            .sidebar-footer {
-                padding: 24px;
-                border-top: 1px solid #F1F5F9;
-            }
-
-            .logout-btn {
-                color: var(--danger);
-                font-weight: 700;
-            }
-
-            .main-wrapper {
-                flex: 1;
-                min-width: 0;
-            }
-
-            .top-header {
-                height: 70px;
-                background: #FFFFFF;
-                border-bottom: 1px solid var(--border);
-                display: flex;
-                align-items: center;
-                justify-content: flex-end;
-                padding: 0 36px;
-            }
-
-            .profile-menu {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-
-            .avatar {
-                width: 42px;
-                height: 42px;
-                background: var(--primary);
-                color: #FFFFFF;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 800;
-            }
-
-            .profile-email {
-                font-weight: 800;
-                font-size: 14px;
-            }
-
-            .profile-role {
-                color: var(--text-muted);
-                font-size: 12px;
-                text-transform: uppercase;
-            }
-
-            main {
-                padding: 36px 42px;
-            }
-
-            .content-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                margin-bottom: 24px;
-                gap: 20px;
-            }
-
-            .content-header h2 {
-                font-size: 30px;
-                font-weight: 800;
-            }
-
-            .content-header p {
-                color: var(--text-muted);
-                margin-top: 6px;
-            }
-
-            .btn-secondary {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                min-height: 42px;
-                padding: 0 18px;
-                border-radius: 10px;
-                background: #FFFFFF;
-                color: var(--text-muted);
-                border: 1px solid var(--border);
-                font-weight: 700;
-            }
-
-            .panel {
-                background: var(--bg-card);
-                border: 1px solid var(--border);
-                border-radius: 18px;
-                margin-bottom: 24px;
-                overflow: hidden;
-                box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-            }
-
-            .panel-header {
-                padding: 20px 24px;
-                border-bottom: 1px solid #F1F5F9;
-            }
-
-            .panel-title {
-                font-size: 18px;
-                font-weight: 800;
-            }
-
-            .panel-body {
-                padding: 24px;
+                width: 220px;
+                flex-basis: 220px;
             }
 
             .detail-grid {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 18px 28px;
+                grid-template-columns: repeat(2, minmax(145px, 1fr));
+            }
+        }
+
+        @media (max-width: 760px) {
+            .layout {
+                display: block;
             }
 
-            .detail-label {
-                font-size: 12px;
-                color: var(--text-muted);
-                text-transform: uppercase;
-                font-weight: 800;
-                margin-bottom: 5px;
+            .sidebar {
+                width: 100%;
             }
 
-            .detail-value {
-                font-weight: 700;
-                line-height: 1.5;
-                word-break: break-word;
+            .content {
+                padding: 22px;
             }
 
-            .badge {
+            .page-header {
+                display: block;
+            }
+
+            .back-button {
                 display: inline-block;
-                padding: 6px 10px;
-                border-radius: 999px;
-                background: var(--primary-light);
-                color: var(--primary);
-                font-size: 12px;
-                font-weight: 800;
-                word-break: break-word;
+                margin-top: 15px;
             }
 
-            .alert-error {
-                background: #FEF2F2;
-                border: 1px solid #FCA5A5;
-                color: #B91C1C;
-                padding: 14px 16px;
-                border-radius: 12px;
-                margin-bottom: 20px;
-                font-weight: 700;
+            .detail-grid {
+                grid-template-columns: 1fr;
             }
+        }
+    </style>
+</head>
 
-            .criteria-card {
-                border: 1px solid var(--border);
-                border-radius: 16px;
-                background: #FFFFFF;
-                margin-bottom: 22px;
-                overflow: hidden;
-            }
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-logo">LM</div>
+            <div>
+                <h1>LMLF</h1>
+                <p>Reviewer Portal</p>
+            </div>
+        </div>
 
-            .criteria-head {
-                padding: 18px 20px;
-                background: #F8FAFC;
-                border-bottom: 1px solid var(--border);
-            }
+        <nav class="navigation">
+            <div class="navigation-title">Review Workflow</div>
 
-            .criteria-head h3 {
-                font-size: 20px;
-                margin-bottom: 6px;
-                font-weight: 800;
-            }
+            <a class="nav-link"
+               href="${pageContext.request.contextPath}/review?action=pending">
+                Pending Reviews
+            </a>
 
-            .criteria-head p {
-                color: var(--text-muted);
-                font-size: 14px;
-                line-height: 1.5;
-            }
+            <a class="nav-link active" href="#">
+                Evaluation Screen
+            </a>
 
-            .criteria-body {
-                padding: 20px;
-            }
+            <a class="nav-link"
+               href="${pageContext.request.contextPath}/review-history">
+                Review History
+            </a>
+        </nav>
 
-            .content-preview {
-                background: #F8FAFC;
-                border: 1px dashed #CBD5E1;
-                padding: 14px;
-                border-radius: 12px;
-                color: #334155;
-                margin-bottom: 18px;
-                line-height: 1.6;
-                max-width: 100%;
-                overflow: hidden;
-            }
+        <div class="sidebar-footer">
+            <a class="logout-link"
+               href="${pageContext.request.contextPath}/logout">
+                Logout
+            </a>
+        </div>
+    </aside>
 
-            .section-content-box {
-                margin-top: 12px;
-                background: #FFFFFF;
-                border: 1px solid #CBD5E1;
-                border-radius: 12px;
-                padding: 14px;
-                max-height: 500px;
-                overflow: auto;
-                max-width: 100%;
-            }
+    <div class="main">
+        <header class="topbar">
+            <div class="profile">
+                <div class="avatar"><%= h(userInitials) %></div>
+                <div>
+                    <div class="profile-email"><%= h(userEmail) %></div>
+                    <div class="profile-role">Reviewer</div>
+                </div>
+            </div>
+        </header>
 
-            .excel-table-wrapper {
-                width: 100%;
-                overflow-x: auto;
-                overflow-y: auto;
-            }
+        <main class="content">
+            <div class="page-header">
+                <div>
+                    <h2>Section Evaluation</h2>
+                    <p>
+                        Approve or reject every section. Rejecting one section
+                        rejects the whole review.
+                    </p>
+                </div>
 
-            .excel-table {
-                border-collapse: collapse;
-                background: #FFFFFF;
-                font-size: 14px;
-                table-layout: fixed;
-            }
+                <a class="back-button"
+                   href="${pageContext.request.contextPath}/review?action=pending">
+                    Back to Pending Reviews
+                </a>
+            </div>
 
-            .excel-table td {
-                border: 1px solid #D8E0EA;
-                padding: 9px 10px;
-                vertical-align: top;
-                text-align: left;
-                white-space: pre-wrap;
-                line-height: 1.5;
-                color: #1E293B;
-                background: #FFFFFF;
-                word-break: normal;
-                overflow-wrap: break-word;
-                font-weight: 400;
-            }
+            <% if ("missing_decision".equals(error)) { %>
+                <div class="alert">
+                    Select Approve or Reject for every section.
+                </div>
+            <% } else if ("reject_comment_required".equals(error)) { %>
+                <div class="alert">
+                    A comment is required for every rejected section.
+                </div>
+            <% } else if ("criteria_not_found".equals(error)) { %>
+                <div class="alert">
+                    No active review criteria were found.
+                </div>
+            <% } else if ("save_failed".equals(error)) { %>
+                <div class="alert">
+                    The review could not be saved. Please try again.
+                </div>
+            <% } else if ("review_closed".equals(error)) { %>
+                <div class="alert">
+                    This review assignment is already closed.
+                </div>
+            <% } %>
 
-            .excel-table tr:nth-child(even) td {
-                background: #F8FAFC;
-            }
-            .decision-row {
-                display: flex;
-                gap: 18px;
-                margin-bottom: 14px;
-                flex-wrap: wrap;
-            }
-
-            .decision-option {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                font-weight: 700;
-            }
-
-            .decision-option.approve {
-                color: var(--success);
-            }
-
-            .decision-option.reject {
-                color: var(--danger);
-            }
-
-            textarea {
-                width: 100%;
-                min-height: 90px;
-                border: 1px solid #CBD5E1;
-                border-radius: 12px;
-                padding: 12px 14px;
-                font-family: inherit;
-                resize: vertical;
-                outline: none;
-            }
-
-            textarea:focus {
-                border-color: var(--primary);
-                box-shadow: 0 0 0 4px var(--primary-light);
-            }
-
-            .summary-box {
-                margin-top: 20px;
-            }
-
-            .submit-btn {
-                width: 100%;
-                height: 48px;
-                border: none;
-                border-radius: 12px;
-                background: var(--primary);
-                color: #FFFFFF;
-                font-size: 15px;
-                font-weight: 800;
-                cursor: pointer;
-                margin-top: 20px;
-            }
-
-            .submit-btn:hover {
-                background: #E05E00;
-            }
-
-            .empty-state {
-                text-align: center;
-                padding: 50px 20px;
-                color: var(--text-muted);
-            }
-
-            @media (max-width: 900px) {
-                .layout {
-                    flex-direction: column;
-                }
-
-                .sidebar {
-                    width: 100%;
-                    min-width: 0;
-                }
-
-                main {
-                    padding: 24px;
-                }
-
-                .content-header {
-                    flex-direction: column;
-                }
-
-                .detail-grid {
-                    grid-template-columns: 1fr;
-                }
-                .reference-card {
-                    border: 1px solid #E2E8F0;
-                    border-radius: 16px;
-                    background: #FFFFFF;
-                    margin-bottom: 22px;
-                    overflow: hidden;
-                }
-
-                .reference-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    background: #F8FAFC;
-                    border-bottom: 1px solid #E2E8F0;
-                    padding: 18px;
-                }
-
-                .reference-header h3 {
-                    margin: 0;
-                    color: #0F172A;
-                    font-size: 20px;
-                    font-weight: 800;
-                }
-
-                .reference-header span {
-                    display: inline-block;
-                    margin-top: 5px;
-                    color: #64748B;
-                    font-size: 13px;
-                    font-weight: 700;
-                }
-
-                .reference-badge {
-                    padding: 6px 12px;
-                    border-radius: 999px;
-                    background: #DBEAFE;
-                    color: #1D4ED8;
-                    font-size: 12px;
-                    font-weight: 800;
-                }
-            }
-        </style>
-    </head>
-
-    <body>
-        <div class="layout">
-            <aside class="sidebar">
-                <div class="sidebar-header">
-                    <div class="brand">
-                        <div class="brand-icon">LM</div>
-                        <div class="brand-text">
-                            <div class="brand-title">LMLF</div>
-                            <div class="brand-subtitle">Reviewer Portal</div>
+            <% if (versionDetail == null) { %>
+                <div class="version-panel">
+                    <div class="panel-body">
+                        <div class="empty-content">
+                            The syllabus version could not be loaded.
                         </div>
                     </div>
                 </div>
+            <% } else {
+                Object submittedAtObject = versionDetail.get("submitted_at");
+                String submittedAt = submittedAtObject instanceof java.util.Date
+                        ? dateFormat.format((java.util.Date) submittedAtObject)
+                        : text(submittedAtObject, "-");
+            %>
+                <section class="version-panel">
+                    <div class="panel-header">
+                        <h3>Syllabus Version Information</h3>
+                    </div>
 
-                <div class="sidebar-nav">
-                    <div class="nav-title">Review Workflow</div>
-                    <ul class="nav-menu">
-                        <li>
-                            <a href="${pageContext.request.contextPath}/review?action=pending">
-                                Pending Reviews
-                            </a>
-                        </li>
-                        <li>
-                            <a class="active" href="#">
-                                Evaluation Screen
-                            </a>
-                        </li>
-                        <li>
-                            <a href="${pageContext.request.contextPath}/review-history">
-                                Review History
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="sidebar-footer">
-                    <a class="logout-btn" href="${pageContext.request.contextPath}/logout">
-                        Logout
-                    </a>
-                </div>
-            </aside>
-
-            <div class="main-wrapper">
-                <header class="top-header">
-                    <div class="profile-menu">
-                        <div class="avatar"><%= userInitials %></div>
-                        <div>
-                            <div class="profile-email">
-                                <%= userEmail.isEmpty() ? "reviewer@test.com" : userEmail %>
+                    <div class="panel-body">
+                        <div class="detail-grid">
+                            <div class="detail">
+                                <div class="detail-label">Course code</div>
+                                <div class="detail-value">
+                                    <%= h(text(versionDetail.get("course_code"), "-")) %>
+                                </div>
                             </div>
-                            <div class="profile-role">Reviewer</div>
+
+                            <div class="detail">
+                                <div class="detail-label">Course name</div>
+                                <div class="detail-value">
+                                    <%= h(text(versionDetail.get("course_name"), "-")) %>
+                                </div>
+                            </div>
+
+                            <div class="detail">
+                                <div class="detail-label">Version</div>
+                                <div class="detail-value">
+                                    v<%= h(text(versionDetail.get("version_number"), "-")) %>
+                                </div>
+                            </div>
+
+                            <div class="detail">
+                                <div class="detail-label">Submitted</div>
+                                <div class="detail-value"><%= h(submittedAt) %></div>
+                            </div>
+
+                            <div class="detail">
+                                <div class="detail-label">Reviewers</div>
+                                <div class="detail-value">
+                                    <%= h(text(
+                                            versionDetail.get("assigned_reviewer_count"),
+                                            "0"
+                                    )) %>
+                                </div>
+                            </div>
+
+                            <div class="detail">
+                                <div class="detail-label">Completed reviews</div>
+                                <div class="detail-value">
+                                    <%= h(text(
+                                            versionDetail.get("completed_reviewer_count"),
+                                            "0"
+                                    )) %>
+                                </div>
+                            </div>
+
+                            <div class="detail">
+                                <div class="detail-label">Approved reviews</div>
+                                <div class="detail-value">
+                                    <%= h(text(
+                                            versionDetail.get("approved_reviewer_count"),
+                                            "0"
+                                    )) %>
+                                </div>
+                            </div>
+
+                            <div class="detail">
+                                <div class="detail-label">Status</div>
+                                <div class="detail-value">
+                                    <%= h(text(versionDetail.get("version_status"), "-")) %>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="change-description">
+                            <strong>Description of changes:</strong>
+                            <%= h(text(
+                                    versionDetail.get("description_of_changes"),
+                                    "No description was provided."
+                            )) %>
                         </div>
                     </div>
-                </header>
+                </section>
 
-                <main>
-                    <div class="content-header">
-                        <div>
-                            <h2>Section Evaluation</h2>
-                            <p>Review each syllabus section and provide comments where needed.</p>
+                <form id="reviewForm"
+                      action="${pageContext.request.contextPath}/review?action=submitEvaluation"
+                      method="post">
+
+                    <input type="hidden"
+                           name="versionId"
+                           value="<%= h(versionDetail.get("version_id")) %>">
+
+                    <% if (criteriaList == null || criteriaList.isEmpty()) { %>
+                        <div class="review-card">
+                            <div class="panel-body">
+                                <div class="empty-content">
+                                    No active review criteria were found.
+                                </div>
+                            </div>
                         </div>
+                    <% } else {
+                        for (Map<String, Object> criteria : criteriaList) {
+                            long criteriaId =
+                                    ((Number) criteria.get("criteria_id")).longValue();
 
-                        <a class="btn-secondary" href="${pageContext.request.contextPath}/review?action=pending">
-                            Back to Pending Reviews
-                        </a>
-                    </div>
+                            String criteriaCode = text(
+                                    criteria.get("criteria_code"),
+                                    ""
+                            );
 
-                    <% if ("missing_decision".equals(error)) { %>
-                    <div class="alert-error">Please select Approve or Reject for every section.</div>
-                    <% } else if ("reject_comment_required".equals(error)) { %>
-                    <div class="alert-error">Reject comment is required for rejected sections.</div>
-                    <% } else if ("save_failed".equals(error)) { %>
-                    <div class="alert-error">Failed to save review. Please try again.</div>
-                    <% } %>
+                            String criteriaName = text(
+                                    criteria.get("criteria_name"),
+                                    criteriaCode
+                            );
 
-                    <% if (versionDetail != null) { %>
+                            String criteriaDescription = text(
+                                    criteria.get("description"),
+                                    ""
+                            );
 
-                    <div class="panel">
+                            String sectionJson = sectionContentMap == null
+                                    ? null
+                                    : sectionContentMap.get(criteriaCode);
+                    %>
+                        <section class="review-card"
+                                 data-review-card="<%= criteriaId %>">
+                            <div class="panel-header">
+                                <h3><%= h(criteriaName) %></h3>
+                                <p><%= h(criteriaDescription) %></p>
+                            </div>
+
+                            <div class="panel-body">
+                                <textarea class="section-json-source"
+                                          style="display:none;"><%= h(sectionJson) %></textarea>
+
+                                <div class="section-content"
+                                     data-section-code="<%= h(criteriaCode) %>">
+                                    <% if (sectionJson == null
+                                            || sectionJson.trim().isEmpty()) { %>
+                                        <div class="empty-content">
+                                            No content was submitted for this section.
+                                        </div>
+                                    <% } else { %>
+                                        <pre class="section-json-fallback"><%= h(sectionJson) %></pre>
+                                    <% } %>
+                                </div>
+
+                                <div class="decision-area">
+                                    <div class="decision-title">
+                                        Section decision
+                                    </div>
+
+                                    <div class="decision-options">
+                                        <label class="decision-option approve">
+                                            <input type="radio"
+                                                   name="decision_<%= criteriaId %>"
+                                                   value="APPROVED"
+                                                   required>
+                                            Approve
+                                        </label>
+
+                                        <label class="decision-option reject">
+                                            <input type="radio"
+                                                   name="decision_<%= criteriaId %>"
+                                                   value="REJECTED"
+                                                   required>
+                                            Reject
+                                        </label>
+                                    </div>
+
+                                    <textarea name="comment_<%= criteriaId %>"
+                                              data-comment-for="<%= criteriaId %>"
+                                              placeholder="Comment for this section. Required when rejected."></textarea>
+
+                                    <div class="comment-hint">
+                                        Comment is optional for Approve and required for Reject.
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    <%  }
+                       } %>
+
+                    <section class="submit-panel">
                         <div class="panel-header">
-                            <h3 class="panel-title">Syllabus Version Information</h3>
+                            <h3>Final Review</h3>
+                            <p>
+                                The system calculates the final result. One
+                                rejected section makes this review rejected.
+                            </p>
                         </div>
 
                         <div class="panel-body">
-                            <div class="detail-grid">
-                                <div>
-                                    <div class="detail-label">Course Code</div>
-                                    <div class="detail-value">
-                                        <span class="badge">
-                                            <%= versionDetail.get("course_code") == null ? "-" : versionDetail.get("course_code") %>
-                                        </span>
-                                    </div>
-                                </div>
+                            <textarea name="summaryComment"
+                                      placeholder="Optional overall summary comment..."></textarea>
 
-                                <div>
-                                    <div class="detail-label">Course Name</div>
-                                    <div class="detail-value">
-                                        <%= versionDetail.get("course_name") == null ? "-" : versionDetail.get("course_name") %>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div class="detail-label">Syllabus Title</div>
-                                    <div class="detail-value">
-                                        <%= versionDetail.get("syllabus_title") == null ? "-" : versionDetail.get("syllabus_title") %>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div class="detail-label">Version</div>
-                                    <div class="detail-value">
-                                        <span class="badge">
-                                            v<%= versionDetail.get("version_number") == null ? "-" : versionDetail.get("version_number") %>
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div class="detail-label">Change Type</div>
-                                    <div class="detail-value">
-                                        <%= versionDetail.get("change_type") == null ? "-" : versionDetail.get("change_type") %>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div class="detail-label">Submitted At</div>
-                                    <div class="detail-value">
-                                        <%= versionDetail.get("submitted_at") == null ? "-" : versionDetail.get("submitted_at") %>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style="margin-top: 20px;">
-                                <div class="detail-label">Description of Changes</div>
-                                <div class="detail-value">
-                                    <%= versionDetail.get("description_of_changes") == null ? "-" : versionDetail.get("description_of_changes") %>
-                                </div>
-                            </div>
+                            <button id="submitReviewButton"
+                                    class="submit-button"
+                                    type="submit"
+                                    <%= criteriaList == null
+                                            || criteriaList.isEmpty()
+                                            ? "disabled"
+                                            : "" %>>
+                                Submit Evaluation
+                            </button>
                         </div>
-                    </div>
+                    </section>
+                </form>
+            <% } %>
+        </main>
+    </div>
+</div>
 
-                    <form action="${pageContext.request.contextPath}/review?action=submitEvaluation" method="post">
-                        <input type="hidden" name="versionId" value="<%= versionDetail.get("version_id") %>">
-                        <div class="panel">
-                            <div class="panel-header">
-                                <h2>Reference Information</h2>
-                                <p>These imported sheets are for reference only. Reviewer does not need to approve or reject them.</p>
-                            </div>
+<script>
+(function () {
+    "use strict";
 
-                            <div class="panel-body">
-                                <%
-                                    if (allImportedSections == null || allImportedSections.isEmpty()) {
-                                %>
-                                <div class="section-content-box">
-                                    <em>No imported reference content found.</em>
-                                </div>
-                                <%
-                                    } else {
-                                        for (Map<String, Object> section : allImportedSections) {
-                                            String sectionCode = String.valueOf(section.get("section_code"));
-                                            String sectionName = String.valueOf(section.get("section_name"));
-                                            String contentText = (String) section.get("content_text");
+    function humanizeKey(key) {
+        if (key === null || key === undefined) {
+            return "";
+        }
 
-                                            boolean isReviewSection =
-                                                    "LEARNING_OUTCOMES".equals(sectionCode)
-                                                    || "STUDENT_TASKS".equals(sectionCode)
-                                                    || "LEARNING_MATERIALS".equals(sectionCode)
-                                                    || "COURSE_SCHEDULE".equals(sectionCode)
-                                                    || "COURSE_ASSESSMENT".equals(sectionCode);
+        return String(key)
+                .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, function (character) {
+                    return character.toUpperCase();
+                });
+    }
 
-                                            if (!isReviewSection) {
-                                %>
+    function displayValue(value) {
+        if (value === null
+                || value === undefined
+                || value === "") {
+            return "-";
+        }
 
-                                <div class="reference-card">
-                                    <div class="reference-header">
-                                        <div>
-                                            <h3><%= sectionName %></h3>
-                                            <span><%= sectionCode %></span>
-                                        </div>
+        if (Array.isArray(value)) {
+            if (value.length === 0) {
+                return "-";
+            }
 
-                                        <div class="reference-badge">
-                                            View Only
-                                        </div>
-                                    </div>
+            return value.map(function (item) {
+                return displayValue(item);
+            }).join(", ");
+        }
 
-                                    <div class="section-content-box">
-                                        <%
-                                            if (contentText == null || contentText.trim().isEmpty()) {
-                                        %>
-                                        <em>No imported content found for this sheet.</em>
-                                        <%
-                                            } else {
-                                        %>
-                                        <%= contentText %>
-                                        <%
-                                            }
-                                        %>
-                                    </div>
-                                </div>
+        if (typeof value === "object") {
+            var parts = [];
 
-                                <%
-                                            }
-                                        }
-                                    }
-                                %>
-                            </div>
-                        </div>
-                        <div class="panel">
-                            <div class="panel-header">
-                                <h3 class="panel-title">Review Sections</h3>
-                            </div>
+            Object.keys(value).forEach(function (key) {
+                parts.push(
+                        humanizeKey(key)
+                        + ": "
+                        + displayValue(value[key])
+                );
+            });
 
-                            <div class="panel-body">
-                                <%
-                                    if (criteriaList != null && !criteriaList.isEmpty()) {
-                                        for (Map<String, Object> criteria : criteriaList) {
-                                            Object criteriaId = criteria.get("criteria_id");
+            return parts.join("; ");
+        }
 
-                                            String criteriaCode = criteria.get("criteria_code") == null
-                                                    ? ""
-                                                    : criteria.get("criteria_code").toString();
+        if (typeof value === "boolean") {
+            return value ? "Yes" : "No";
+        }
 
-                                            String criteriaName = criteria.get("criteria_name") == null
-                                                    ? "-"
-                                                    : criteria.get("criteria_name").toString();
+        return String(value);
+    }
 
-                                            String description = criteria.get("description") == null
-                                                    ? ""
-                                                    : criteria.get("description").toString();
+    function createCell(tagName, value) {
+        var cell = document.createElement(tagName);
+        cell.textContent = displayValue(value);
+        return cell;
+    }
 
-                                            String sectionContent = "";
+    function showEmpty(target) {
+        target.innerHTML = "";
 
-                                            if (sectionContentMap != null && sectionContentMap.get(criteriaCode) != null) {
-                                                sectionContent = sectionContentMap.get(criteriaCode);
-                                            }
-                                %>
+        var empty = document.createElement("div");
+        empty.className = "empty-content";
+        empty.textContent =
+                "No content was submitted for this section.";
 
-                                <div class="criteria-card">
-                                    <div class="criteria-head">
-                                        <h3><%= criteriaName %></h3>
-                                        <p><%= description %></p>
-                                    </div>
+        target.appendChild(empty);
+    }
 
-                                    <div class="criteria-body">
-                                        <div class="content-preview">
-                                            <strong>Imported Section Content:</strong>
+    function showError(target, message) {
+        target.innerHTML = "";
 
-                                            <% if (sectionContent == null || sectionContent.trim().isEmpty()) { %>
-                                            <div class="section-content-box">
-                                                <em>No imported content found for this section.</em>
-                                            </div>
-                                            <% } else { %>
-                                            <div class="section-content-box">
-                                                <%= sectionContent %>
-                                            </div>
-                                            <% } %>
-                                        </div>
+        var error = document.createElement("div");
+        error.className = "render-error";
+        error.textContent = message;
 
-                                        <div class="decision-row">
-                                            <label class="decision-option approve">
-                                                <input type="radio"
-                                                       name="decision_<%= criteriaId %>"
-                                                       value="APPROVED"
-                                                       required>
-                                                Approve
-                                            </label>
+        target.appendChild(error);
+    }
 
-                                            <label class="decision-option reject">
-                                                <input type="radio"
-                                                       name="decision_<%= criteriaId %>"
-                                                       value="REJECTED"
-                                                       required>
-                                                Reject
-                                            </label>
-                                        </div>
+    function renderObject(target, data) {
+        var table = document.createElement("table");
+        table.className = "key-value-table";
 
-                                        <textarea name="comment_<%= criteriaId %>"
-                                                  placeholder="Enter comment for this section. Required if rejected."></textarea>
-                                    </div>
-                                </div>
+        var tbody = document.createElement("tbody");
 
-                                <%
-                                        }
-                                    } else {
-                                %>
+        Object.keys(data).forEach(function (key) {
+            var row = document.createElement("tr");
 
-                                <div class="empty-state">
-                                    No review criteria found. Please check review_criteria table.
-                                </div>
+            row.appendChild(
+                    createCell("th", humanizeKey(key))
+            );
 
-                                <% } %>
+            row.appendChild(
+                    createCell("td", data[key])
+            );
 
-                                <div class="summary-box">
-                                    <div class="detail-label">Summary Comment</div>
-                                    <textarea name="summaryComment"
-                                              placeholder="Enter overall comment for this syllabus version..."></textarea>
-                                </div>
+            tbody.appendChild(row);
+        });
 
-                                <button type="submit" class="submit-btn">
-                                    Submit Evaluation
-                                </button>
-                            </div>
-                        </div>
-                    </form>
+        table.appendChild(tbody);
+        target.appendChild(table);
+    }
 
-                    <% } else { %>
+    function getColumns(rows) {
+        var columns = [];
+        var found = {};
 
-                    <div class="panel">
-                        <div class="empty-state">
-                            <h3>No Version Detail Found</h3>
-                            <p>This syllabus version does not exist or cannot be loaded.</p>
-                        </div>
-                    </div>
+        rows.forEach(function (row) {
+            if (row === null
+                    || typeof row !== "object"
+                    || Array.isArray(row)) {
+                return;
+            }
 
-                    <% } %>
-                </main>
-            </div>
-        </div>
-    </body>
+            Object.keys(row).forEach(function (key) {
+                if (!found[key]) {
+                    found[key] = true;
+                    columns.push(key);
+                }
+            });
+        });
+
+        return columns;
+    }
+
+    function renderArray(target, data) {
+        if (data.length === 0) {
+            showEmpty(target);
+            return;
+        }
+
+        var allObjects = data.every(function (item) {
+            return item !== null
+                    && typeof item === "object"
+                    && !Array.isArray(item);
+        });
+
+        if (!allObjects) {
+            var list = document.createElement("ol");
+
+            data.forEach(function (item) {
+                var listItem = document.createElement("li");
+                listItem.textContent = displayValue(item);
+                list.appendChild(listItem);
+            });
+
+            target.appendChild(list);
+            return;
+        }
+
+        var columns = getColumns(data);
+
+        if (columns.length === 0) {
+            showEmpty(target);
+            return;
+        }
+
+        var table = document.createElement("table");
+
+        var thead = document.createElement("thead");
+        var headerRow = document.createElement("tr");
+
+        columns.forEach(function (column) {
+            headerRow.appendChild(
+                    createCell("th", humanizeKey(column))
+            );
+        });
+
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        var tbody = document.createElement("tbody");
+
+        data.forEach(function (item) {
+            var row = document.createElement("tr");
+
+            columns.forEach(function (column) {
+                row.appendChild(
+                        createCell("td", item[column])
+                );
+            });
+
+            tbody.appendChild(row);
+        });
+
+        table.appendChild(tbody);
+        target.appendChild(table);
+    }
+
+    function renderSection(card) {
+        var source = card.querySelector(".section-json-source");
+        var target = card.querySelector(".section-content");
+
+        if (!source || !target) {
+            return;
+        }
+
+        var rawJson = source.value;
+
+        if (!rawJson || !rawJson.trim()) {
+            showEmpty(target);
+            return;
+        }
+
+        try {
+            var data = JSON.parse(rawJson);
+
+            target.innerHTML = "";
+
+            if (data === null || data === undefined) {
+                showEmpty(target);
+                return;
+            }
+
+            if (Array.isArray(data)) {
+                renderArray(target, data);
+                return;
+            }
+
+            if (typeof data === "object") {
+                if (Object.keys(data).length === 0) {
+                    showEmpty(target);
+                    return;
+                }
+
+                renderObject(target, data);
+                return;
+            }
+
+            target.textContent = displayValue(data);
+
+        } catch (error) {
+            console.error("Invalid section JSON:", rawJson, error);
+
+            showError(
+                    target,
+                    "Cannot display this section because its JSON data is invalid."
+            );
+        }
+    }
+
+    function updateCommentRequirement(card) {
+        var rejectedInput = card.querySelector(
+                'input[type="radio"][value="REJECTED"]'
+        );
+
+        var comment = card.querySelector("[data-comment-for]");
+
+        if (!rejectedInput || !comment) {
+            return;
+        }
+
+        comment.required = rejectedInput.checked;
+
+        if (rejectedInput.checked) {
+            comment.placeholder =
+                    "Required: explain why this section is rejected.";
+        } else {
+            comment.placeholder =
+                    "Comment for this section. Optional when approved.";
+        }
+    }
+
+    function bindDecisionEvents(card) {
+        var decisions = card.querySelectorAll(
+                'input[type="radio"][name^="decision_"]'
+        );
+
+        decisions.forEach(function (decision) {
+            decision.addEventListener("change", function () {
+                updateCommentRequirement(card);
+            });
+        });
+    }
+
+    function validateForm(form) {
+        var cards = form.querySelectorAll("[data-review-card]");
+
+        for (var index = 0; index < cards.length; index++) {
+            var card = cards[index];
+
+            var selectedDecision = card.querySelector(
+                    'input[type="radio"][name^="decision_"]:checked'
+            );
+
+            var comment = card.querySelector("[data-comment-for]");
+
+            if (!selectedDecision) {
+                window.alert(
+                        "Please select Approve or Reject for every section."
+                );
+
+                card.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+
+                return false;
+            }
+
+            if (selectedDecision.value === "REJECTED"
+                    && (!comment || !comment.value.trim())) {
+                window.alert(
+                        "A comment is required for each rejected section."
+                );
+
+                if (comment) {
+                    comment.focus();
+                }
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function initializeReviewerEvaluation() {
+        var cards = document.querySelectorAll("[data-review-card]");
+
+        cards.forEach(function (card) {
+            renderSection(card);
+            bindDecisionEvents(card);
+            updateCommentRequirement(card);
+        });
+
+        var form = document.getElementById("reviewForm");
+        var submitButton =
+                document.getElementById("submitReviewButton");
+
+        if (!form) {
+            return;
+        }
+
+        form.addEventListener("submit", function (event) {
+            if (!validateForm(form)) {
+                event.preventDefault();
+                return;
+            }
+
+            var confirmed = window.confirm(
+                    "Submit this evaluation? "
+                    + "You cannot edit it after submission."
+            );
+
+            if (!confirmed) {
+                event.preventDefault();
+                return;
+            }
+
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = "Submitting...";
+            }
+        });
+    }
+
+    initializeReviewerEvaluation();
+}());
+</script>
+</body>
 </html>

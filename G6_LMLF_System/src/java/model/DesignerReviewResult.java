@@ -1,52 +1,79 @@
 package model;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DesignerReviewResult {
 
-    private long reviewId;
-    private long versionId;
+    private Long reviewId;
+    private Long versionId;
+    private String versionNumber;
     private String versionStatus;
-    private long reviewerId;
+    private String syllabusTitle;
+    private String courseCode;
+    private String courseName;
     private String reviewerName;
     private String reviewerEmail;
-
-    private String overallDecision;
-    private String overallComment;
+    private String decision;
+    private String comment;
     private Timestamp reviewedAt;
+    private List<DesignerReviewSection> sections = new ArrayList<>();
 
-    private long criteriaId;
-    private String criteriaCode;
-    private String criteriaName;
-
-    private String sectionDecision;
-    private String sectionComment;
-
-    public DesignerReviewResult() {
-    }
-
-    public long getReviewId() {
+    public Long getReviewId() {
         return reviewId;
     }
 
-    public void setReviewId(long reviewId) {
+    public void setReviewId(Long reviewId) {
         this.reviewId = reviewId;
     }
 
-    public long getVersionId() {
+    public Long getVersionId() {
         return versionId;
     }
 
-    public void setVersionId(long versionId) {
+    public void setVersionId(Long versionId) {
         this.versionId = versionId;
     }
 
-    public long getReviewerId() {
-        return reviewerId;
+    public String getVersionNumber() {
+        return versionNumber;
     }
 
-    public void setReviewerId(long reviewerId) {
-        this.reviewerId = reviewerId;
+    public void setVersionNumber(String versionNumber) {
+        this.versionNumber = versionNumber;
+    }
+
+    public String getVersionStatus() {
+        return versionStatus;
+    }
+
+    public void setVersionStatus(String versionStatus) {
+        this.versionStatus = versionStatus;
+    }
+
+    public String getSyllabusTitle() {
+        return syllabusTitle;
+    }
+
+    public void setSyllabusTitle(String syllabusTitle) {
+        this.syllabusTitle = syllabusTitle;
+    }
+
+    public String getCourseCode() {
+        return courseCode;
+    }
+
+    public void setCourseCode(String courseCode) {
+        this.courseCode = courseCode;
+    }
+
+    public String getCourseName() {
+        return courseName;
+    }
+
+    public void setCourseName(String courseName) {
+        this.courseName = courseName;
     }
 
     public String getReviewerName() {
@@ -65,20 +92,20 @@ public class DesignerReviewResult {
         this.reviewerEmail = reviewerEmail;
     }
 
-    public String getOverallDecision() {
-        return overallDecision;
+    public String getDecision() {
+        return decision;
     }
 
-    public void setOverallDecision(String overallDecision) {
-        this.overallDecision = overallDecision;
+    public void setDecision(String decision) {
+        this.decision = decision;
     }
 
-    public String getOverallComment() {
-        return overallComment;
+    public String getComment() {
+        return comment;
     }
 
-    public void setOverallComment(String overallComment) {
-        this.overallComment = overallComment;
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 
     public Timestamp getReviewedAt() {
@@ -89,51 +116,13 @@ public class DesignerReviewResult {
         this.reviewedAt = reviewedAt;
     }
 
-    public long getCriteriaId() {
-        return criteriaId;
+    public List<DesignerReviewSection> getSections() {
+        return sections;
     }
 
-    public void setCriteriaId(long criteriaId) {
-        this.criteriaId = criteriaId;
-    }
-
-    public String getCriteriaCode() {
-        return criteriaCode;
-    }
-
-    public void setCriteriaCode(String criteriaCode) {
-        this.criteriaCode = criteriaCode;
-    }
-
-    public String getCriteriaName() {
-        return criteriaName;
-    }
-
-    public void setCriteriaName(String criteriaName) {
-        this.criteriaName = criteriaName;
-    }
-
-    public String getSectionDecision() {
-        return sectionDecision;
-    }
-
-    public void setSectionDecision(String sectionDecision) {
-        this.sectionDecision = sectionDecision;
-    }
-
-    public String getSectionComment() {
-        return sectionComment;
-    }
-
-    public void setSectionComment(String sectionComment) {
-        this.sectionComment = sectionComment;
-    }
-
-    public String getVersionStatus() {
-        return versionStatus;
-    }
-
-    public void setVersionStatus(String versionStatus) {
-        this.versionStatus = versionStatus;
+    public void setSections(List<DesignerReviewSection> sections) {
+        this.sections = sections == null
+                ? new ArrayList<>()
+                : sections;
     }
 }

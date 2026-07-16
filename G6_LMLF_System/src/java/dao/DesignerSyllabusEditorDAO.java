@@ -84,7 +84,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                         """;
 
                 try (PreparedStatement statement
-                             = connection.prepareStatement(updateAssignmentSql)) {
+                        = connection.prepareStatement(updateAssignmentSql)) {
 
                     statement.setLong(1, syllabusId);
                     statement.setLong(2, assignmentId);
@@ -134,7 +134,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(versionSql)) {
+                = connection.prepareStatement(versionSql)) {
 
             statement.setLong(1, versionId);
 
@@ -241,7 +241,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     """;
 
             try (PreparedStatement statement
-                         = connection.prepareStatement(updateVersionSql)) {
+                    = connection.prepareStatement(updateVersionSql)) {
 
                 statement.setLong(1, designerId);
                 statement.setLong(2, versionId);
@@ -266,7 +266,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     """;
 
             try (PreparedStatement statement
-                         = connection.prepareStatement(updateAssignmentSql)) {
+                    = connection.prepareStatement(updateAssignmentSql)) {
 
                 statement.setLong(1, assignmentId);
                 statement.setLong(2, designerId);
@@ -317,7 +317,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     """;
 
             try (PreparedStatement statement
-                         = connection.prepareStatement(lockVersionSql)) {
+                    = connection.prepareStatement(lockVersionSql)) {
 
                 statement.setLong(1, versionId);
                 statement.setLong(2, designerId);
@@ -355,13 +355,13 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     """;
 
             try (PreparedStatement statement
-                         = connection.prepareStatement(updateVersionSql)) {
+                    = connection.prepareStatement(updateVersionSql)) {
 
                 statement.setString(
                         1,
                         "1.0".equals(versionNumber)
-                                ? "NEW"
-                                : "MINOR"
+                        ? "NEW"
+                        : "MINOR"
                 );
                 statement.setString(2, finalDescription);
                 statement.setLong(3, designerId);
@@ -384,7 +384,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     """;
 
             try (PreparedStatement statement
-                         = connection.prepareStatement(updateAssignmentSql)) {
+                    = connection.prepareStatement(updateAssignmentSql)) {
 
                 statement.setLong(1, versionId);
                 statement.setLong(2, assignmentId);
@@ -405,14 +405,18 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     """;
 
             try (PreparedStatement statement
-                         = connection.prepareStatement(updateSyllabusSql)) {
+                    = connection.prepareStatement(updateSyllabusSql)) {
 
                 statement.setString(1, versionNumber);
                 statement.setLong(2, designerId);
                 statement.setLong(3, syllabusId);
                 statement.executeUpdate();
             }
-
+            assignReviewersForSubmittedVersion(
+                    versionId,
+                    syllabusId,
+                    designerId
+            );
             connection.commit();
 
         } catch (SQLException exception) {
@@ -453,7 +457,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(versionSql)) {
+                = connection.prepareStatement(versionSql)) {
 
             statement.setLong(1, versionId);
             statement.setLong(2, designerId);
@@ -476,7 +480,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(deactivateSql)) {
+                = connection.prepareStatement(deactivateSql)) {
 
             statement.setLong(1, versionId);
             statement.executeUpdate();
@@ -512,32 +516,173 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(
-                             insertSql,
-                             Statement.RETURN_GENERATED_KEYS
-                     )) {
+                = connection.prepareStatement(
+                        insertSql,
+                        Statement.RETURN_GENERATED_KEYS
+                )) {
 
-            statement.setLong(1, assignmentId);
-            statement.setLong(2, syllabusId);
-            statement.setLong(3, versionId);
-            statement.setString(4, originalName);
-            statement.setString(5, path);
-            statement.setLong(6, size);
-            setNullableString(statement, 7, mimeType);
-            statement.setLong(8, designerId);
+                    statement.setLong(1, assignmentId);
+                    statement.setLong(2, syllabusId);
+                    statement.setLong(3, versionId);
+                    statement.setString(4, originalName);
+                    statement.setString(5, path);
+                    statement.setLong(6, size);
+                    setNullableString(statement, 7, mimeType);
+                    statement.setLong(8, designerId);
 
-            statement.executeUpdate();
+                    statement.executeUpdate();
 
-            try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    return generatedKeys.getLong(1);
+                    try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                        if (generatedKeys.next()) {
+                            return generatedKeys.getLong(1);
+                        }
+                    }
                 }
-            }
-        }
 
-        throw new SQLException("Cannot save imported file.");
+                throw new SQLException("Cannot save imported file.");
+    }
+private void assignReviewersForSubmittedVersion(
+        long newVersionId,
+        long syllabusId,
+        long designerId
+) throws SQLException {
+
+    int existingReviewerCount
+            = countReviewAssignments(newVersionId);
+
+    if (existingReviewerCount >= 2) {
+        return;
     }
 
+    Long previousVersionId
+            = findPreviousVersionWithReviewers(
+                    newVersionId,
+                    syllabusId
+            );
+
+    if (previousVersionId == null) {
+        throw new SQLException(
+                "Cannot submit this version because at least "
+                + "two Reviewers have not been assigned."
+        );
+    }
+
+    String copyReviewersSql = """
+            INSERT INTO syllabus_version_review_assignments (
+                version_id,
+                reviewer_id,
+                assigned_by,
+                status,
+                assigned_at,
+                completed_at
+            )
+            SELECT
+                ?,
+                previousAssignment.reviewer_id,
+                COALESCE(
+                    previousAssignment.assigned_by,
+                    ?
+                ),
+                'PENDING',
+                SYSDATETIME(),
+                NULL
+            FROM syllabus_version_review_assignments previousAssignment
+            WHERE previousAssignment.version_id = ?
+              AND NOT EXISTS (
+                    SELECT 1
+                    FROM syllabus_version_review_assignments currentAssignment
+                    WHERE currentAssignment.version_id = ?
+                      AND currentAssignment.reviewer_id
+                            = previousAssignment.reviewer_id
+              )
+            """;
+
+    try (PreparedStatement statement
+                 = connection.prepareStatement(copyReviewersSql)) {
+
+        statement.setLong(1, newVersionId);
+        statement.setLong(2, designerId);
+        statement.setLong(3, previousVersionId);
+        statement.setLong(4, newVersionId);
+
+        statement.executeUpdate();
+    }
+
+    int assignedReviewerCount
+            = countReviewAssignments(newVersionId);
+
+    if (assignedReviewerCount < 2) {
+        throw new SQLException(
+                "At least two Reviewers are required. "
+                + "Current assigned Reviewer count: "
+                + assignedReviewerCount
+        );
+    }
+}
+private Long findPreviousVersionWithReviewers(
+        long newVersionId,
+        long syllabusId
+) throws SQLException {
+
+    String sql = """
+            SELECT TOP 1
+                previousVersion.version_id
+            FROM syllabus_versions previousVersion
+            WHERE previousVersion.syllabus_id = ?
+              AND previousVersion.version_id <> ?
+              AND EXISTS (
+                    SELECT 1
+                    FROM syllabus_version_review_assignments reviewAssignment
+                    WHERE reviewAssignment.version_id
+                            = previousVersion.version_id
+              )
+            ORDER BY
+                previousVersion.version_id DESC
+            """;
+
+    try (PreparedStatement statement
+                 = connection.prepareStatement(sql)) {
+
+        statement.setLong(1, syllabusId);
+        statement.setLong(2, newVersionId);
+
+        try (ResultSet resultSet
+                     = statement.executeQuery()) {
+
+            if (resultSet.next()) {
+                return resultSet.getLong("version_id");
+            }
+        }
+    }
+
+    return null;
+}
+private int countReviewAssignments(
+        long versionId
+) throws SQLException {
+
+    String sql = """
+            SELECT COUNT(*) AS total
+            FROM syllabus_version_review_assignments
+            WHERE version_id = ?
+            """;
+
+    try (PreparedStatement statement
+                 = connection.prepareStatement(sql)) {
+
+        statement.setLong(1, versionId);
+
+        try (ResultSet resultSet
+                     = statement.executeQuery()) {
+
+            if (resultSet.next()) {
+                return resultSet.getInt("total");
+            }
+        }
+    }
+
+    return 0;
+}
     public void logImport(
             long assignmentId,
             long versionId,
@@ -570,7 +715,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     """;
 
             try (PreparedStatement statement
-                         = connection.prepareStatement(sql)) {
+                    = connection.prepareStatement(sql)) {
 
                 statement.setLong(1, assignmentId);
                 statement.setLong(2, versionId);
@@ -701,7 +846,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
 
         for (String sql : statements) {
             try (PreparedStatement statement
-                         = connection.prepareStatement(sql)) {
+                    = connection.prepareStatement(sql)) {
 
                 statement.setLong(1, versionId);
                 statement.executeUpdate();
@@ -733,7 +878,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             statement.setLong(1, versionId);
             setNullableString(
@@ -818,41 +963,41 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             }
 
             try (PreparedStatement statement
-                         = connection.prepareStatement(
-                                 sql,
-                                 Statement.RETURN_GENERATED_KEYS
-                         )) {
+                    = connection.prepareStatement(
+                            sql,
+                            Statement.RETURN_GENERATED_KEYS
+                    )) {
 
-                statement.setLong(1, versionId);
-                statement.setString(2, code);
-                setNullableString(
-                        statement,
-                        3,
-                        item.getDescription()
-                );
-                setNullableString(
-                        statement,
-                        4,
-                        item.getBloomLevel()
-                );
+                        statement.setLong(1, versionId);
+                        statement.setString(2, code);
+                        setNullableString(
+                                statement,
+                                3,
+                                item.getDescription()
+                        );
+                        setNullableString(
+                                statement,
+                                4,
+                                item.getBloomLevel()
+                        );
 
-                statement.executeUpdate();
+                        statement.executeUpdate();
 
-                try (ResultSet generatedKeys
-                             = statement.getGeneratedKeys()) {
+                        try (ResultSet generatedKeys
+                                = statement.getGeneratedKeys()) {
 
-                    if (!generatedKeys.next()) {
-                        throw new SQLException("Cannot create CLO: " + code);
+                            if (!generatedKeys.next()) {
+                                throw new SQLException("Cannot create CLO: " + code);
+                            }
+
+                            long outcomeId = generatedKeys.getLong(1);
+                            outcomeIds.put(code, outcomeId);
+                            item.setOutcomeId(outcomeId);
+                            item.setCode(code);
+                        }
                     }
 
-                    long outcomeId = generatedKeys.getLong(1);
-                    outcomeIds.put(code, outcomeId);
-                    item.setOutcomeId(outcomeId);
-                    item.setCode(code);
-                }
-            }
-
-            generatedNumber++;
+                    generatedNumber++;
         }
 
         return outcomeIds;
@@ -875,7 +1020,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
         int taskOrder = 1;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             for (SyllabusEditorData.TextItem item : safe(items)) {
                 if (item == null || blank(item.getContent())) {
@@ -923,7 +1068,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             }
 
             try (PreparedStatement statement
-                         = connection.prepareStatement(sql)) {
+                    = connection.prepareStatement(sql)) {
 
                 statement.setLong(1, versionId);
                 statement.setString(
@@ -976,53 +1121,53 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             long scheduleItemId;
 
             try (PreparedStatement statement
-                         = connection.prepareStatement(
-                                 insertScheduleSql,
-                                 Statement.RETURN_GENERATED_KEYS
-                         )) {
+                    = connection.prepareStatement(
+                            insertScheduleSql,
+                            Statement.RETURN_GENERATED_KEYS
+                    )) {
 
-                statement.setLong(1, versionId);
+                        statement.setLong(1, versionId);
 
-                if (item.getSessionNumber() == null) {
-                    statement.setNull(2, Types.NVARCHAR);
-                } else {
-                    statement.setString(
-                            2,
-                            String.valueOf(item.getSessionNumber())
-                    );
-                }
+                        if (item.getSessionNumber() == null) {
+                            statement.setNull(2, Types.NVARCHAR);
+                        } else {
+                            statement.setString(
+                                    2,
+                                    String.valueOf(item.getSessionNumber())
+                            );
+                        }
 
-                setNullableString(statement, 3, item.getCategory());
-                setNullableString(statement, 4, item.getTopic());
-                setNullableString(statement, 5, item.getMaterials());
-                setNullableString(statement, 6, item.getActivities());
-                statement.setInt(7, displayOrder++);
-                statement.executeUpdate();
+                        setNullableString(statement, 3, item.getCategory());
+                        setNullableString(statement, 4, item.getTopic());
+                        setNullableString(statement, 5, item.getMaterials());
+                        setNullableString(statement, 6, item.getActivities());
+                        statement.setInt(7, displayOrder++);
+                        statement.executeUpdate();
 
-                try (ResultSet generatedKeys
-                             = statement.getGeneratedKeys()) {
+                        try (ResultSet generatedKeys
+                                = statement.getGeneratedKeys()) {
 
-                    if (!generatedKeys.next()) {
-                        throw new SQLException(
-                                "Cannot insert course schedule item."
-                        );
+                            if (!generatedKeys.next()) {
+                                throw new SQLException(
+                                        "Cannot insert course schedule item."
+                                );
+                            }
+
+                            scheduleItemId = generatedKeys.getLong(1);
+                        }
                     }
 
-                    scheduleItemId = generatedKeys.getLong(1);
-                }
-            }
+                    insertScheduleCloMappings(
+                            scheduleItemId,
+                            item.getCloCodes(),
+                            cloIds
+                    );
 
-            insertScheduleCloMappings(
-                    scheduleItemId,
-                    item.getCloCodes(),
-                    cloIds
-            );
-
-            insertScheduleItuMappings(
-                    versionId,
-                    scheduleItemId,
-                    item.getItuLevel()
-            );
+                    insertScheduleItuMappings(
+                            versionId,
+                            scheduleItemId,
+                            item.getItuLevel()
+                    );
         }
     }
 
@@ -1074,7 +1219,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     """;
 
             try (PreparedStatement statement
-                         = connection.prepareStatement(sql)) {
+                    = connection.prepareStatement(sql)) {
 
                 statement.setLong(1, scheduleItemId);
                 statement.setLong(2, ituTermId);
@@ -1098,7 +1243,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             statement.setLong(1, versionId);
             statement.setString(2, ituCode);
@@ -1145,31 +1290,31 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(
-                             sql,
-                             Statement.RETURN_GENERATED_KEYS
-                     )) {
+                = connection.prepareStatement(
+                        sql,
+                        Statement.RETURN_GENERATED_KEYS
+                )) {
 
-            statement.setLong(1, versionId);
-            statement.setString(2, normalizedCode);
-            statement.setString(3, name);
-            statement.setInt(
-                    4,
-                    getNextItuDisplayOrder(versionId)
-            );
+                    statement.setLong(1, versionId);
+                    statement.setString(2, normalizedCode);
+                    statement.setString(3, name);
+                    statement.setInt(
+                            4,
+                            getNextItuDisplayOrder(versionId)
+                    );
 
-            statement.executeUpdate();
+                    statement.executeUpdate();
 
-            try (ResultSet generatedKeys
-                         = statement.getGeneratedKeys()) {
+                    try (ResultSet generatedKeys
+                            = statement.getGeneratedKeys()) {
 
-                if (generatedKeys.next()) {
-                    return generatedKeys.getLong(1);
+                        if (generatedKeys.next()) {
+                            return generatedKeys.getLong(1);
+                        }
+                    }
                 }
-            }
-        }
 
-        throw new SQLException("Cannot create ITU term: " + normalizedCode);
+                throw new SQLException("Cannot create ITU term: " + normalizedCode);
     }
 
     private int getNextItuDisplayOrder(
@@ -1183,7 +1328,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             statement.setLong(1, versionId);
 
@@ -1237,54 +1382,54 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             long assessmentId;
 
             try (PreparedStatement statement
-                         = connection.prepareStatement(
-                                 insertAssessmentSql,
-                                 Statement.RETURN_GENERATED_KEYS
-                         )) {
+                    = connection.prepareStatement(
+                            insertAssessmentSql,
+                            Statement.RETURN_GENERATED_KEYS
+                    )) {
 
-                statement.setLong(1, versionId);
-                setNullableString(statement, 2, item.getCategory());
-                setNullableIntegerFromString(
-                        statement,
-                        3,
-                        item.getPartNumber()
-                );
+                        statement.setLong(1, versionId);
+                        setNullableString(statement, 2, item.getCategory());
+                        setNullableIntegerFromString(
+                                statement,
+                                3,
+                                item.getPartNumber()
+                        );
 
-                if (item.getWeight() == null) {
-                    statement.setNull(4, Types.DECIMAL);
-                } else {
-                    statement.setDouble(4, item.getWeight());
-                }
+                        if (item.getWeight() == null) {
+                            statement.setNull(4, Types.DECIMAL);
+                        } else {
+                            statement.setDouble(4, item.getWeight());
+                        }
 
-                setNullableString(statement, 5, item.getDuration());
-                setNullableString(statement, 6, item.getQuestionType());
-                setNullableIntegerFromString(
-                        statement,
-                        7,
-                        item.getNumberOfQuestions()
-                );
-                setNullableString(statement, 8, item.getKnowledgeScope());
-                setNullableString(statement, 9, item.getAssessmentMethod());
-                setNullableString(statement, 10, item.getNote());
-                statement.setInt(11, displayOrder++);
-                statement.executeUpdate();
+                        setNullableString(statement, 5, item.getDuration());
+                        setNullableString(statement, 6, item.getQuestionType());
+                        setNullableIntegerFromString(
+                                statement,
+                                7,
+                                item.getNumberOfQuestions()
+                        );
+                        setNullableString(statement, 8, item.getKnowledgeScope());
+                        setNullableString(statement, 9, item.getAssessmentMethod());
+                        setNullableString(statement, 10, item.getNote());
+                        statement.setInt(11, displayOrder++);
+                        statement.executeUpdate();
 
-                try (ResultSet generatedKeys
-                             = statement.getGeneratedKeys()) {
+                        try (ResultSet generatedKeys
+                                = statement.getGeneratedKeys()) {
 
-                    if (!generatedKeys.next()) {
-                        throw new SQLException("Cannot insert assessment.");
+                            if (!generatedKeys.next()) {
+                                throw new SQLException("Cannot insert assessment.");
+                            }
+
+                            assessmentId = generatedKeys.getLong(1);
+                        }
                     }
 
-                    assessmentId = generatedKeys.getLong(1);
-                }
-            }
-
-            insertAssessmentCloMappings(
-                    assessmentId,
-                    item.getCloCodes(),
-                    cloIds
-            );
+                    insertAssessmentCloMappings(
+                            assessmentId,
+                            item.getCloCodes(),
+                            cloIds
+                    );
         }
     }
 
@@ -1320,7 +1465,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
         }
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             for (String cloCode : splitCloCodes(rawCloCodes)) {
                 Long outcomeId = cloIds.get(cloCode);
@@ -1382,7 +1527,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 }
 
                 try (PreparedStatement statement
-                             = connection.prepareStatement(sql)) {
+                        = connection.prepareStatement(sql)) {
 
                     statement.setLong(1, outcomeId);
                     statement.setLong(2, ploId);
@@ -1446,16 +1591,16 @@ public class DesignerSyllabusEditorDAO extends DBContext {
         };
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(
-                             "DELETE FROM syllabus_version_sections "
-                             + "WHERE version_id = ?"
-                     )) {
+                = connection.prepareStatement(
+                        "DELETE FROM syllabus_version_sections "
+                        + "WHERE version_id = ?"
+                )) {
 
-            statement.setLong(1, versionId);
-            statement.executeUpdate();
-        }
+                    statement.setLong(1, versionId);
+                    statement.executeUpdate();
+                }
 
-        String insertSql = """
+                String insertSql = """
                 INSERT INTO syllabus_version_sections (
                     version_id,
                     section_code,
@@ -1466,18 +1611,18 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 VALUES (?, ?, ?, ?, ?)
                 """;
 
-        for (String[] section : sections) {
-            try (PreparedStatement statement
-                         = connection.prepareStatement(insertSql)) {
+                for (String[] section : sections) {
+                    try (PreparedStatement statement
+                            = connection.prepareStatement(insertSql)) {
 
-                statement.setLong(1, versionId);
-                statement.setString(2, section[0]);
-                statement.setString(3, section[1]);
-                statement.setString(4, section[2]);
-                statement.setInt(5, Integer.parseInt(section[3]));
-                statement.executeUpdate();
-            }
-        }
+                        statement.setLong(1, versionId);
+                        statement.setString(2, section[0]);
+                        statement.setString(3, section[1]);
+                        statement.setString(4, section[2]);
+                        statement.setInt(5, Integer.parseInt(section[3]));
+                        statement.executeUpdate();
+                    }
+                }
     }
 
     private void loadGeneral(
@@ -1499,7 +1644,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             statement.setLong(1, versionId);
 
@@ -1558,7 +1703,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             statement.setLong(1, versionId);
 
@@ -1594,7 +1739,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             statement.setLong(1, versionId);
 
@@ -1634,7 +1779,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             statement.setLong(1, versionId);
 
@@ -1711,7 +1856,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             statement.setLong(1, versionId);
 
@@ -1783,7 +1928,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             statement.setLong(1, versionId);
 
@@ -1871,7 +2016,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             statement.setLong(1, versionId);
 
@@ -1911,7 +2056,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             statement.setLong(1, versionId);
 
@@ -1955,7 +2100,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """.formatted(lockHint);
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             statement.setLong(1, assignmentId);
             statement.setLong(2, designerId);
@@ -2005,26 +2150,26 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(
-                             sql,
-                             Statement.RETURN_GENERATED_KEYS
-                     )) {
+                = connection.prepareStatement(
+                        sql,
+                        Statement.RETURN_GENERATED_KEYS
+                )) {
 
-            statement.setLong(1, courseId);
-            statement.setString(2, title);
-            statement.setLong(3, designerId);
-            statement.executeUpdate();
+                    statement.setLong(1, courseId);
+                    statement.setString(2, title);
+                    statement.setLong(3, designerId);
+                    statement.executeUpdate();
 
-            try (ResultSet generatedKeys
-                         = statement.getGeneratedKeys()) {
+                    try (ResultSet generatedKeys
+                            = statement.getGeneratedKeys()) {
 
-                if (generatedKeys.next()) {
-                    return generatedKeys.getLong(1);
+                        if (generatedKeys.next()) {
+                            return generatedKeys.getLong(1);
+                        }
+                    }
                 }
-            }
-        }
 
-        throw new SQLException("Cannot create syllabus.");
+                throw new SQLException("Cannot create syllabus.");
     }
 
     private Long findDraftVersion(
@@ -2042,7 +2187,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             statement.setLong(1, syllabusId);
             statement.setLong(2, designerId);
@@ -2075,33 +2220,33 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(
-                             sql,
-                             Statement.RETURN_GENERATED_KEYS
-                     )) {
+                = connection.prepareStatement(
+                        sql,
+                        Statement.RETURN_GENERATED_KEYS
+                )) {
 
-            statement.setLong(1, syllabusId);
-            statement.setString(2, versionNumber);
-            statement.setString(
-                    3,
-                    "1.0".equals(versionNumber)
+                    statement.setLong(1, syllabusId);
+                    statement.setString(2, versionNumber);
+                    statement.setString(
+                            3,
+                            "1.0".equals(versionNumber)
                             ? "NEW"
                             : "MINOR"
-            );
-            statement.setLong(4, designerId);
-            statement.setLong(5, designerId);
-            statement.executeUpdate();
+                    );
+                    statement.setLong(4, designerId);
+                    statement.setLong(5, designerId);
+                    statement.executeUpdate();
 
-            try (ResultSet generatedKeys
-                         = statement.getGeneratedKeys()) {
+                    try (ResultSet generatedKeys
+                            = statement.getGeneratedKeys()) {
 
-                if (generatedKeys.next()) {
-                    return generatedKeys.getLong(1);
+                        if (generatedKeys.next()) {
+                            return generatedKeys.getLong(1);
+                        }
+                    }
                 }
-            }
-        }
 
-        throw new SQLException("Cannot create draft version.");
+                throw new SQLException("Cannot create draft version.");
     }
 
     private String nextVersionNumber(
@@ -2116,7 +2261,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             statement.setLong(1, syllabusId);
 
@@ -2171,7 +2316,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             statement.setLong(1, assignmentId);
             statement.setLong(2, designerId);
@@ -2204,7 +2349,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
+                = connection.prepareStatement(sql)) {
 
             statement.setLong(1, versionId);
             statement.setLong(2, designerId);
@@ -2427,6 +2572,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
     }
 
     private static class AssignmentInfo {
+
         private long courseId;
         private Long syllabusId;
         private Long submittedVersionId;

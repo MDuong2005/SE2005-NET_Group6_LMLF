@@ -1,333 +1,444 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@taglib prefix="c" uri="jakarta.tags.core"%>
+<%@taglib prefix="fmt" uri="jakarta.tags.fmt"%>
 
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Review Result - LMLF Designer</title>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
-        <style>
-            body {
-                margin: 0;
-                font-family: Arial, sans-serif;
-                background: #F8FAFC;
-                color: #0F172A;
+    <title>Review Result - LMLF</title>
+
+    <link rel="stylesheet"
+          href="${pageContext.request.contextPath}/assets/css/designer/designer.css">
+
+    <style>
+        .review-result-page {
+            padding: 28px;
+        }
+
+        .review-result-header {
+            margin-bottom: 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .review-result-header h1 {
+            margin: 0;
+            font-size: 30px;
+            color: #0f172a;
+        }
+
+        .review-result-header p {
+            margin: 7px 0 0;
+            color: #64748b;
+        }
+
+        .back-link {
+            padding: 10px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #475569;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .empty-review {
+            padding: 55px 24px;
+            text-align: center;
+            background: #ffffff;
+            border: 1px dashed #cbd5e1;
+            border-radius: 16px;
+            color: #64748b;
+        }
+
+        .review-card {
+            margin-bottom: 20px;
+            overflow: hidden;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+        }
+
+        .review-card-header {
+            padding: 20px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .review-title {
+            margin: 0;
+            font-size: 20px;
+            color: #0f172a;
+        }
+
+        .review-meta {
+            margin-top: 9px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 18px;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .badge-approved {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .badge-rejected {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .badge-submitted {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .badge-neutral {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .review-card-body {
+            padding: 22px;
+        }
+
+        .summary-box {
+            margin-bottom: 18px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            background: #f8fafc;
+            color: #334155;
+            line-height: 1.6;
+        }
+
+        .section-table-wrapper {
+            overflow-x: auto;
+        }
+
+        .section-table {
+            width: 100%;
+            min-width: 760px;
+            border-collapse: collapse;
+        }
+
+        .section-table th,
+        .section-table td {
+            padding: 12px 13px;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+            vertical-align: top;
+            line-height: 1.5;
+        }
+
+        .section-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .no-section-review {
+            padding: 18px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+            color: #64748b;
+            text-align: center;
+        }
+
+
+        /* Review Result page scroll fix */
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden !important;
+        }
+
+        .dashboard-wrapper {
+            width: 100%;
+            height: 100vh !important;
+            min-height: 100vh;
+            overflow: hidden !important;
+        }
+
+        .dashboard-main {
+            height: 100vh !important;
+            min-height: 0 !important;
+            min-width: 0;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            overscroll-behavior: contain;
+            scrollbar-gutter: stable;
+        }
+
+        .top-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .review-result-page {
+            min-height: max-content;
+            padding-bottom: 72px;
+        }
+
+        @media (max-width: 760px) {
+            .review-result-page {
+                padding: 20px;
             }
 
-            .main-content {
-                padding: 32px;
+            .review-result-header,
+            .review-card-header {
+                display: block;
             }
 
             .back-link {
                 display: inline-block;
-                margin-bottom: 20px;
-                color: #0F172A;
-                text-decoration: none;
-                font-weight: 600;
+                margin-top: 14px;
             }
 
-            .page-card {
-                background: #FFFFFF;
-                border: 1px solid #E2E8F0;
-                border-radius: 18px;
-                padding: 28px;
-                box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+            .review-card-header > .badge {
+                margin-top: 14px;
             }
+        }
+    </style>
+</head>
 
-            .page-title {
-                font-size: 32px;
-                font-weight: 800;
-                margin-bottom: 6px;
-            }
+<body>
+<div class="dashboard-wrapper">
 
-            .version-id {
-                color: #64748B;
-                margin-bottom: 24px;
-                font-size: 16px;
-            }
+    <jsp:include page="../layout_designer/sidebar_designer.jsp"/>
 
-            .final-box {
-                background: #FFF7ED;
-                border: 1px solid #FED7AA;
-                border-radius: 16px;
-                padding: 18px;
-                margin-bottom: 24px;
-            }
+    <main class="dashboard-main">
 
-            .final-title {
-                color: #C2410C;
-                font-size: 18px;
-                font-weight: 800;
-                margin-bottom: 10px;
-            }
+        <header class="top-header">
+            <strong>Designer Workspace</strong>
+            <span class="text-muted small">
+                Reviewer Feedback
+            </span>
+        </header>
 
-            .final-note {
-                margin-top: 10px;
-                color: #475569;
-                line-height: 1.5;
-            }
+        <section class="review-result-page">
 
-            .reviewer-card {
-                border: 1px solid #E2E8F0;
-                border-radius: 16px;
-                margin-bottom: 24px;
-                overflow: hidden;
-                background: #FFFFFF;
-            }
+            <div class="review-result-header">
+                <div>
+                    <h1>Review Result</h1>
+                    <p>
+                        View the final decision and feedback for each reviewed section.
+                    </p>
+                </div>
 
-            .reviewer-header {
-                display: grid;
-                grid-template-columns: 1.3fr 1fr 2fr 1.3fr;
-                gap: 18px;
-                padding: 18px;
-                background: #F8FAFC;
-                border-bottom: 1px solid #E2E8F0;
-                align-items: start;
-            }
+                <a class="back-link"
+                   href="${pageContext.request.contextPath}/designer/tasks">
+                    Back to Assigned Tasks
+                </a>
+            </div>
 
-            .reviewer-name {
-                font-weight: 800;
-                font-size: 17px;
-            }
+            <c:choose>
 
-            .reviewer-email {
-                color: #64748B;
-                margin-top: 4px;
-            }
+                <c:when test="${empty reviewResults}">
+                    <div class="empty-review">
+                        No Reviewer has submitted a result for this version yet.
+                    </div>
+                </c:when>
 
-            .overall-label {
-                font-size: 12px;
-                font-weight: 800;
-                color: #64748B;
-                text-transform: uppercase;
-                margin-bottom: 6px;
-            }
+                <c:otherwise>
 
-            .overall-comment {
-                color: #334155;
-                line-height: 1.5;
-            }
+                    <c:forEach var="review"
+                               items="${reviewResults}">
 
-            .reviewed-at {
-                color: #334155;
-            }
+                        <article class="review-card">
 
-            .review-table {
-                width: 100%;
-                border-collapse: collapse;
-                background: #FFFFFF;
-            }
+                            <div class="review-card-header">
 
-            .review-table th {
-                background: #FFF7ED;
-                color: #C2410C;
-                padding: 14px;
-                text-align: left;
-                font-weight: 800;
-                border-bottom: 1px solid #FED7AA;
-            }
+                                <div>
+                                    <h2 class="review-title">
+                                        <c:out value="${review.courseCode}"/>
+                                        -
+                                        <c:out value="${review.courseName}"/>
+                                    </h2>
 
-            .review-table td {
-                padding: 14px;
-                border-bottom: 1px solid #E2E8F0;
-                vertical-align: top;
-                color: #1E293B;
-            }
+                                    <div class="review-meta">
+                                        <span>
+                                            Syllabus:
+                                            <strong>
+                                                <c:out value="${review.syllabusTitle}"/>
+                                            </strong>
+                                        </span>
 
-            .review-table tr:last-child td {
-                border-bottom: none;
-            }
+                                        <span>
+                                            Version:
+                                            <strong>
+                                                <c:out value="${review.versionNumber}"/>
+                                            </strong>
+                                        </span>
 
-            .badge {
-                display: inline-block;
-                padding: 5px 10px;
-                border-radius: 999px;
-                font-size: 12px;
-                font-weight: 800;
-            }
+                                        <span>
+                                            Version status:
+                                            <strong>
+                                                <c:out value="${review.versionStatus}"/>
+                                            </strong>
+                                        </span>
 
-            .badge.APPROVED {
-                background: #DCFCE7;
-                color: #15803D;
-            }
+                                        <span>
+                                            Reviewer:
+                                            <strong>
+                                                <c:out value="${review.reviewerName}"/>
+                                            </strong>
+                                        </span>
 
-            .badge.REJECTED {
-                background: #FEE2E2;
-                color: #B91C1C;
-            }
+                                        <span>
+                                            <c:out value="${review.reviewerEmail}"/>
+                                        </span>
 
-            .badge.APPROVED_WITH_COMMENT {
-                background: #FEF3C7;
-                color: #B45309;
-            }
+                                        <span>
+                                            Reviewed:
+                                            <strong>
+                                                <fmt:formatDate
+                                                    value="${review.reviewedAt}"
+                                                    pattern="dd/MM/yyyy HH:mm"/>
+                                            </strong>
+                                        </span>
+                                    </div>
+                                </div>
 
-            .badge.SUBMITTED {
-                background: #DBEAFE;
-                color: #1D4ED8;
-            }
-
-            .badge.DRAFT {
-                background: #E2E8F0;
-                color: #334155;
-            }
-
-            .comment-text {
-                white-space: pre-wrap;
-                line-height: 1.5;
-            }
-
-            .empty-box {
-                padding: 30px;
-                text-align: center;
-                color: #64748B;
-                background: #FFFFFF;
-                border: 1px solid #E2E8F0;
-                border-radius: 12px;
-            }
-
-            small {
-                color: #64748B;
-            }
-        </style>
-    </head>
-
-    <body>
-        <div class="main-content">
-
-            <a class="back-link" href="${pageContext.request.contextPath}/designer/tasks">
-                ← Back to tasks
-            </a>
-
-            <div class="page-card">
-                <div class="page-title">Review Result</div>
-                <div class="version-id">Version ID: ${versionId}</div>
-
-                <c:choose>
-                    <c:when test="${empty reviews}">
-                        <div class="empty-box">
-                            Chưa có kết quả review cho version này.
-                        </div>
-                    </c:when>
-
-                    <c:otherwise>
-                        <c:set var="first" value="${reviews[0]}" />
-
-                        <div class="final-box">
-                            <div class="final-title">Final Version Status</div>
-
-                            <span class="badge ${first.versionStatus}">
-                                ${first.versionStatus}
-                            </span>
-
-                            <div class="final-note">
                                 <c:choose>
-                                    <c:when test="${first.versionStatus == 'REJECTED'}">
-                                        At least one reviewer rejected this syllabus. Designer needs to revise and resubmit.
+                                    <c:when test="${review.decision == 'REJECTED'}">
+                                        <span class="badge badge-rejected">
+                                            REJECTED
+                                        </span>
                                     </c:when>
-                                    <c:when test="${first.versionStatus == 'APPROVED'}">
-                                        All required reviewers approved this syllabus. Academic Office can process the next step.
-                                    </c:when>
+
                                     <c:otherwise>
-                                        This syllabus is still waiting for reviewer decisions.
+                                        <span class="badge badge-approved">
+                                            <c:out value="${review.decision}"/>
+                                        </span>
                                     </c:otherwise>
                                 </c:choose>
+
                             </div>
-                        </div>
 
-                        <c:set var="currentReviewId" value="-1" />
+                            <div class="review-card-body">
 
-                        <c:forEach var="r" items="${reviews}" varStatus="loop">
+                                <div class="summary-box">
+                                    <strong>Overall comment:</strong>
 
-                            <c:if test="${currentReviewId != r.reviewId}">
-                                <c:if test="${!loop.first}">
-                                    </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </c:if>
-
-                        <div class="reviewer-card">
-                            <div class="reviewer-header">
-                                <div>
-                                    <div class="reviewer-name">${r.reviewerName}</div>
-                                    <div class="reviewer-email">${r.reviewerEmail}</div>
-                                </div>
-
-                                <div class="overall-area">
-                                    <div class="overall-label">Overall Result</div>
-                                    <span class="badge ${r.overallDecision}">
-                                        ${r.overallDecision}
-                                    </span>
-                                </div>
-
-                                <div class="overall-comment-area">
-                                    <div class="overall-label">Overall Comment</div>
                                     <c:choose>
-                                        <c:when test="${not empty r.overallComment}">
-                                            <div class="overall-comment">${r.overallComment}</div>
+                                        <c:when test="${empty review.comment}">
+                                            No overall comment.
                                         </c:when>
+
                                         <c:otherwise>
-                                            <em>No overall comment</em>
+                                            <c:out value="${review.comment}"/>
                                         </c:otherwise>
                                     </c:choose>
                                 </div>
 
-                                <div>
-                                    <div class="overall-label">Reviewed At</div>
-                                    <div class="reviewed-at">${r.reviewedAt}</div>
-                                </div>
+                                <c:choose>
+
+                                    <c:when test="${empty review.sections}">
+                                        <div class="no-section-review">
+                                            No section review details were found.
+                                        </div>
+                                    </c:when>
+
+                                    <c:otherwise>
+                                        <div class="section-table-wrapper">
+                                            <table class="section-table">
+                                                <thead>
+                                                <tr>
+                                                    <th>Section</th>
+                                                    <th>Decision</th>
+                                                    <th>Reviewer Comment</th>
+                                                </tr>
+                                                </thead>
+
+                                                <tbody>
+                                                <c:forEach var="section"
+                                                           items="${review.sections}">
+                                                    <tr>
+                                                        <td>
+                                                            <strong>
+                                                                <c:out value="${section.criteriaName}"/>
+                                                            </strong>
+
+                                                            <div style="margin-top:4px;color:#64748b;font-size:12px;">
+                                                                <c:out value="${section.criteriaCode}"/>
+                                                            </div>
+                                                        </td>
+
+                                                        <td>
+                                                            <c:choose>
+                                                                <c:when test="${section.decision == 'REJECTED'}">
+                                                                    <span class="badge badge-rejected">
+                                                                        REJECTED
+                                                                    </span>
+                                                                </c:when>
+
+                                                                <c:otherwise>
+                                                                    <span class="badge badge-approved">
+                                                                        <c:out value="${section.decision}"/>
+                                                                    </span>
+                                                                </c:otherwise>
+                                                            </c:choose>
+                                                        </td>
+
+                                                        <td>
+                                                            <c:choose>
+                                                                <c:when test="${empty section.comment}">
+                                                                    -
+                                                                </c:when>
+
+                                                                <c:otherwise>
+                                                                    <c:out value="${section.comment}"/>
+                                                                </c:otherwise>
+                                                            </c:choose>
+                                                        </td>
+                                                    </tr>
+                                                </c:forEach>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </c:otherwise>
+
+                                </c:choose>
+
                             </div>
 
-                            <div class="section-table-wrap">
-                                <table class="review-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Section</th>
-                                            <th>Section Result</th>
-                                            <th>Comment</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                        </article>
 
-                                        <c:set var="currentReviewId" value="${r.reviewId}" />
-                                    </c:if>
+                    </c:forEach>
 
-                                    <tr>
-                                        <td>
-                                            <strong>${r.criteriaName}</strong><br>
-                                            <small>${r.criteriaCode}</small>
-                                        </td>
+                </c:otherwise>
 
-                                        <td>
-                                            <span class="badge ${r.sectionDecision}">
-                                                ${r.sectionDecision}
-                                            </span>
-                                        </td>
+            </c:choose>
 
-                                        <td>
-                                            <c:choose>
-                                                <c:when test="${not empty r.sectionComment}">
-                                                    <div class="comment-text">${r.sectionComment}</div>
-                                                </c:when>
-                                                <c:otherwise>
-                                                    <em>No comment</em>
-                                                </c:otherwise>
-                                            </c:choose>
-                                        </td>
-                                    </tr>
+        </section>
 
-                                    <c:if test="${loop.last}">
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </c:if>
-
-                </c:forEach>
-            </c:otherwise>
-        </c:choose>
-    </div>
+    </main>
 </div>
 </body>
 </html>

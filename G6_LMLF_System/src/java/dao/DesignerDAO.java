@@ -5,7 +5,7 @@ import model.DesignerFile;
 import model.DesignerReviewResult;
 import model.DesignerTask;
 import model.DesignerVersion;
-
+import model.DesignerReviewSection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -516,73 +516,6 @@ public class DesignerDAO extends DBContext {
 
         return list;
     }
-
-    public List<DesignerReviewResult> getReviewResults(long versionId, long designerId) {
-        List<DesignerReviewResult> list = new ArrayList<>();
-
-        String sql = """
-                SELECT
-                    sr.review_id,
-                    sr.version_id,
-                    sv.version_number,
-                    s.title AS syllabus_title,
-                    c.code AS course_code,
-                    c.name AS course_name,
-                    CONCAT(u.first_name, ' ', u.last_name) AS reviewer_name,
-                    u.email AS reviewer_email,
-                    sr.decision,
-                    sr.comment,
-                    sr.reviewed_at
-                FROM syllabus_reviews sr
-                JOIN syllabus_versions sv ON sr.version_id = sv.version_id
-                JOIN syllabuses s ON sv.syllabus_id = s.syllabus_id
-                JOIN courses c ON s.course_id = c.course_id
-                JOIN users u ON sr.reviewer_id = u.user_id
-                WHERE sr.version_id = ?
-                  AND (
-                        sv.created_by = ?
-                        OR EXISTS (
-                            SELECT 1
-                            FROM syllabus_assignments sa
-                            WHERE sa.submitted_version_id = sv.version_id
-                              AND sa.designer_id = ?
-                        )
-                      )
-                ORDER BY sr.reviewed_at DESC
-                """;
-
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setLong(1, versionId);
-            ps.setLong(2, designerId);
-            ps.setLong(3, designerId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    DesignerReviewResult review = new DesignerReviewResult();
-
-                    review.setReviewId(rs.getLong("review_id"));
-                    review.setVersionId(rs.getLong("version_id"));
-                    review.setVersionNumber(rs.getString("version_number"));
-                    review.setSyllabusTitle(rs.getString("syllabus_title"));
-                    review.setCourseCode(rs.getString("course_code"));
-                    review.setCourseName(rs.getString("course_name"));
-                    review.setReviewerName(rs.getString("reviewer_name"));
-                    review.setReviewerEmail(rs.getString("reviewer_email"));
-                    review.setDecision(rs.getString("decision"));
-                    review.setComment(rs.getString("comment"));
-                    review.setReviewedAt(rs.getTimestamp("reviewed_at"));
-
-                    list.add(review);
-                }
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return list;
-    }
-
     private AssignmentRecord getAssignmentForSubmit(long assignmentId, long designerId) throws SQLException {
         String sql = """
                 SELECT
@@ -1136,5 +1069,186 @@ public class DesignerDAO extends DBContext {
     }
 
     return list;
+}
+    public List<DesignerReviewResult> getReviewResults(
+        long versionId,
+        long designerId
+) {
+    List<DesignerReviewResult> reviews = new ArrayList<>();
+
+    String sql = """
+            SELECT
+                sr.review_id,
+                sr.version_id,
+                sv.version_number,
+                sv.status AS version_status,
+                s.title AS syllabus_title,
+                c.code AS course_code,
+                c.name AS course_name,
+                CONCAT(
+                    COALESCE(u.first_name, ''),
+                    CASE
+                        WHEN u.first_name IS NOT NULL
+                             AND u.last_name IS NOT NULL
+                        THEN ' '
+                        ELSE ''
+                    END,
+                    COALESCE(u.last_name, '')
+                ) AS reviewer_name,
+                u.email AS reviewer_email,
+                sr.decision,
+                sr.comment,
+                sr.reviewed_at
+            FROM syllabus_reviews sr
+            INNER JOIN syllabus_versions sv
+                ON sv.version_id = sr.version_id
+            INNER JOIN syllabuses s
+                ON s.syllabus_id = sv.syllabus_id
+            INNER JOIN courses c
+                ON c.course_id = s.course_id
+            INNER JOIN users u
+                ON u.user_id = sr.reviewer_id
+            WHERE sr.version_id = ?
+              AND (
+                    sv.created_by = ?
+                    OR EXISTS (
+                        SELECT 1
+                        FROM syllabus_assignments sa
+                        WHERE sa.syllabus_id = sv.syllabus_id
+                          AND sa.designer_id = ?
+                    )
+                  )
+            ORDER BY
+                sr.reviewed_at DESC,
+                sr.review_id DESC
+            """;
+
+    try (PreparedStatement statement
+                 = connection.prepareStatement(sql)) {
+
+        statement.setLong(1, versionId);
+        statement.setLong(2, designerId);
+        statement.setLong(3, designerId);
+
+        try (ResultSet resultSet = statement.executeQuery()) {
+
+            while (resultSet.next()) {
+                DesignerReviewResult review
+                        = new DesignerReviewResult();
+
+                long reviewId = resultSet.getLong("review_id");
+
+                review.setReviewId(reviewId);
+                review.setVersionId(
+                        resultSet.getLong("version_id")
+                );
+                review.setVersionNumber(
+                        resultSet.getString("version_number")
+                );
+                review.setVersionStatus(
+                        resultSet.getString("version_status")
+                );
+                review.setSyllabusTitle(
+                        resultSet.getString("syllabus_title")
+                );
+                review.setCourseCode(
+                        resultSet.getString("course_code")
+                );
+                review.setCourseName(
+                        resultSet.getString("course_name")
+                );
+                review.setReviewerName(
+                        resultSet.getString("reviewer_name")
+                );
+                review.setReviewerEmail(
+                        resultSet.getString("reviewer_email")
+                );
+                review.setDecision(
+                        resultSet.getString("decision")
+                );
+                review.setComment(
+                        resultSet.getString("comment")
+                );
+                review.setReviewedAt(
+                        resultSet.getTimestamp("reviewed_at")
+                );
+                review.setSections(
+                        getReviewSections(reviewId)
+                );
+
+                reviews.add(review);
+            }
+        }
+
+    } catch (SQLException exception) {
+        exception.printStackTrace();
+    }
+
+    return reviews;
+}
+
+private List<DesignerReviewSection> getReviewSections(
+        long reviewId
+) throws SQLException {
+
+    List<DesignerReviewSection> sections = new ArrayList<>();
+
+    String sql = """
+            SELECT
+                srs.section_review_id,
+                srs.criteria_id,
+                rc.criteria_code,
+                rc.criteria_name,
+                srs.decision,
+                srs.comment,
+                srs.created_at
+            FROM syllabus_review_sections srs
+            INNER JOIN review_criteria rc
+                ON rc.criteria_id = srs.criteria_id
+            WHERE srs.review_id = ?
+            ORDER BY
+                rc.display_order,
+                srs.section_review_id
+            """;
+
+    try (PreparedStatement statement
+                 = connection.prepareStatement(sql)) {
+
+        statement.setLong(1, reviewId);
+
+        try (ResultSet resultSet = statement.executeQuery()) {
+
+            while (resultSet.next()) {
+                DesignerReviewSection section
+                        = new DesignerReviewSection();
+
+                section.setSectionReviewId(
+                        resultSet.getLong("section_review_id")
+                );
+                section.setCriteriaId(
+                        resultSet.getLong("criteria_id")
+                );
+                section.setCriteriaCode(
+                        resultSet.getString("criteria_code")
+                );
+                section.setCriteriaName(
+                        resultSet.getString("criteria_name")
+                );
+                section.setDecision(
+                        resultSet.getString("decision")
+                );
+                section.setComment(
+                        resultSet.getString("comment")
+                );
+                section.setCreatedAt(
+                        resultSet.getTimestamp("created_at")
+                );
+
+                sections.add(section);
+            }
+        }
+    }
+
+    return sections;
 }
 }

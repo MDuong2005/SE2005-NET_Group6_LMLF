@@ -2,18 +2,21 @@ package controller;
 
 import dao.ReviewAssignmentDAO;
 import dao.ReviewCriteriaDAO;
-import dao.ReviewerSyllabusDAO;
-import dao.SyllabusReviewDAO;
-import dao.ReviewerVersionDAO;
-import dao.ReviewerSectionDAO;
 import dao.ReviewerNotificationDAO;
+import dao.ReviewerSectionDAO;
+import dao.ReviewerVersionDAO;
+import dao.SyllabusReviewDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.*;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import model.User;
 
 @WebServlet(name = "ReviewServlet", urlPatterns = {"/review"})
@@ -23,9 +26,8 @@ public class ReviewServlet extends HttpServlet {
     private SyllabusReviewDAO reviewDAO;
     private ReviewCriteriaDAO criteriaDAO;
     private ReviewAssignmentDAO assignmentDAO;
-    private ReviewerSyllabusDAO syllabusDAO;
     private ReviewerSectionDAO sectionDAO;
-    private ReviewerNotificationDAO reviewerNotificationDAO;
+    private ReviewerNotificationDAO notificationDAO;
 
     @Override
     public void init() {
@@ -33,14 +35,15 @@ public class ReviewServlet extends HttpServlet {
         reviewDAO = new SyllabusReviewDAO();
         criteriaDAO = new ReviewCriteriaDAO();
         assignmentDAO = new ReviewAssignmentDAO();
-        syllabusDAO = new ReviewerSyllabusDAO();
         sectionDAO = new ReviewerSectionDAO();
-        reviewerNotificationDAO = new ReviewerNotificationDAO();
+        notificationDAO = new ReviewerNotificationDAO();
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+    protected void doGet(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws ServletException, IOException {
 
         String action = request.getParameter("action");
 
@@ -49,14 +52,11 @@ public class ReviewServlet extends HttpServlet {
         }
 
         switch (action) {
-            case "pending":
-                showPendingReviews(request, response);
-                break;
-
             case "evaluate":
                 showEvaluationScreen(request, response);
                 break;
 
+            case "pending":
             default:
                 showPendingReviews(request, response);
                 break;
@@ -64,15 +64,315 @@ public class ReviewServlet extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+    protected void doPost(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws ServletException, IOException {
 
         String action = request.getParameter("action");
 
         if ("submitEvaluation".equals(action)) {
             submitEvaluation(request, response);
-        } else {
-            response.sendRedirect(request.getContextPath() + "/review?action=pending");
+            return;
+        }
+
+        response.sendRedirect(
+                request.getContextPath()
+                + "/review?action=pending"
+        );
+    }
+
+    private void showPendingReviews(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws ServletException, IOException {
+
+        Long reviewerId = getCurrentUserId(request);
+
+        if (reviewerId == null) {
+            redirectToLogin(request, response);
+            return;
+        }
+
+        List<Map<String, Object>> pendingReviews
+                = versionDAO.getPendingReviewsByAssignedReviewer(
+                        reviewerId
+                );
+
+        request.setAttribute("pendingReviews", pendingReviews);
+
+        request.getRequestDispatcher(
+                "/views/review/pending-reviews.jsp"
+        ).forward(request, response);
+    }
+
+    private void showEvaluationScreen(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws ServletException, IOException {
+
+        Long reviewerId = getCurrentUserId(request);
+
+        if (reviewerId == null) {
+            redirectToLogin(request, response);
+            return;
+        }
+
+        Long versionId = parsePositiveLong(
+                request.getParameter("versionId")
+        );
+
+        if (versionId == null) {
+            redirectPending(
+                    request,
+                    response,
+                    "invalid_version"
+            );
+            return;
+        }
+
+        if (reviewDAO.hasReviewerReviewed(versionId, reviewerId)) {
+            response.sendRedirect(
+                    request.getContextPath()
+                    + "/review-history"
+            );
+            return;
+        }
+
+        if (!assignmentDAO.isReviewerAssigned(
+                versionId,
+                reviewerId
+        )) {
+            redirectPending(
+                    request,
+                    response,
+                    "not_assigned_or_closed"
+            );
+            return;
+        }
+
+        if (!assignmentDAO.markInProgress(
+                versionId,
+                reviewerId
+        )) {
+            redirectPending(
+                    request,
+                    response,
+                    "cannot_start_review"
+            );
+            return;
+        }
+
+        Map<String, Object> versionDetail
+                = versionDAO.getReviewDetailByVersionId(versionId);
+
+        if (versionDetail == null) {
+            redirectPending(
+                    request,
+                    response,
+                    "version_not_found"
+            );
+            return;
+        }
+
+        List<Map<String, Object>> criteriaList
+                = criteriaDAO.getActiveCriteria();
+
+        Map<String, String> sectionContentMap
+                = sectionDAO.getSectionContentMap(versionId);
+
+        List<Map<String, Object>> allImportedSections
+                = sectionDAO.getAllSectionsByVersionId(versionId);
+
+        request.setAttribute("versionDetail", versionDetail);
+        request.setAttribute("criteriaList", criteriaList);
+        request.setAttribute("sectionContentMap", sectionContentMap);
+        request.setAttribute(
+                "allImportedSections",
+                allImportedSections
+        );
+
+        request.getRequestDispatcher(
+                "/views/review/evaluation.jsp"
+        ).forward(request, response);
+    }
+
+    private void submitEvaluation(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws IOException {
+
+        Long reviewerId = getCurrentUserId(request);
+
+        if (reviewerId == null) {
+            redirectToLogin(request, response);
+            return;
+        }
+
+        Long versionId = parsePositiveLong(
+                request.getParameter("versionId")
+        );
+
+        if (versionId == null) {
+            redirectPending(
+                    request,
+                    response,
+                    "invalid_version"
+            );
+            return;
+        }
+
+        if (reviewDAO.hasReviewerReviewed(versionId, reviewerId)) {
+            response.sendRedirect(
+                    request.getContextPath()
+                    + "/review-history"
+            );
+            return;
+        }
+
+        if (!assignmentDAO.isReviewerAssigned(
+                versionId,
+                reviewerId
+        )) {
+            redirectPending(
+                    request,
+                    response,
+                    "not_assigned_or_closed"
+            );
+            return;
+        }
+
+        List<Map<String, Object>> criteriaList
+                = criteriaDAO.getActiveCriteria();
+
+        if (criteriaList == null || criteriaList.isEmpty()) {
+            redirectEvaluation(
+                    request,
+                    response,
+                    versionId,
+                    "criteria_not_found"
+            );
+            return;
+        }
+
+        List<SyllabusReviewDAO.SectionDecision> sectionDecisions
+                = new ArrayList<>();
+
+        for (Map<String, Object> criteria : criteriaList) {
+            Object criteriaIdObject = criteria.get("criteria_id");
+
+            if (!(criteriaIdObject instanceof Number)) {
+                redirectEvaluation(
+                        request,
+                        response,
+                        versionId,
+                        "invalid_criteria"
+                );
+                return;
+            }
+
+            long criteriaId
+                    = ((Number) criteriaIdObject).longValue();
+
+            String decision = trimToNull(
+                    request.getParameter(
+                            "decision_" + criteriaId
+                    )
+            );
+
+            String comment = trimToNull(
+                    request.getParameter(
+                            "comment_" + criteriaId
+                    )
+            );
+
+            if (!"APPROVED".equalsIgnoreCase(decision)
+                    && !"REJECTED".equalsIgnoreCase(decision)) {
+                redirectEvaluation(
+                        request,
+                        response,
+                        versionId,
+                        "missing_decision"
+                );
+                return;
+            }
+
+            if ("REJECTED".equalsIgnoreCase(decision)
+                    && comment == null) {
+                redirectEvaluation(
+                        request,
+                        response,
+                        versionId,
+                        "reject_comment_required"
+                );
+                return;
+            }
+
+            sectionDecisions.add(
+                    new SyllabusReviewDAO.SectionDecision(
+                            criteriaId,
+                            decision.toUpperCase(),
+                            comment
+                    )
+            );
+        }
+
+        String summaryComment = trimToNull(
+                request.getParameter("summaryComment")
+        );
+
+        try {
+            SyllabusReviewDAO.ReviewSubmissionResult result
+                    = reviewDAO.submitEvaluation(
+                            versionId,
+                            reviewerId,
+                            summaryComment,
+                            sectionDecisions
+                    );
+
+            if (result.isRejected()) {
+                notificationDAO.notifyDesignerAfterReview(
+                        versionId,
+                        reviewerId,
+                        "REJECTED"
+                );
+
+            } else if (result.isAllApproved()) {
+                notificationDAO.notifyAcademicWhenAllReviewersApproved(
+                        versionId,
+                        reviewerId
+                );
+            }
+
+            response.sendRedirect(
+                    request.getContextPath()
+                    + "/review-history"
+                    + "?submitted=1"
+                    + "&decision="
+                    + result.getReviewerDecision()
+                    + "&workflow="
+                    + result.getWorkflowStatus()
+            );
+
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+
+            String message = exception.getMessage();
+            String errorCode = "save_failed";
+
+            if (message != null
+                    && message.toLowerCase().contains(
+                            "already closed"
+                    )) {
+                errorCode = "review_closed";
+            }
+
+            redirectEvaluation(
+                    request,
+                    response,
+                    versionId,
+                    errorCode
+            );
         }
     }
 
@@ -83,219 +383,70 @@ public class ReviewServlet extends HttpServlet {
             return null;
         }
 
-        User user = (User) session.getAttribute("user");
+        Object userObject = session.getAttribute("user");
 
-        if (user == null) {
+        if (!(userObject instanceof User)) {
             return null;
         }
 
+        User user = (User) userObject;
         return user.getUserId();
     }
 
-    private void showPendingReviews(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-
-        Long reviewerId = getCurrentUserId(request);
-
-        if (reviewerId == null) {
-            response.sendRedirect(request.getContextPath() + "/login");
-            return;
-        }
-
-        List<Map<String, Object>> pendingReviews
-                = versionDAO.getPendingReviewsByAssignedReviewer(reviewerId);
-
-        request.setAttribute("pendingReviews", pendingReviews);
-
-        request.getRequestDispatcher("/views/review/pending-reviews.jsp")
-                .forward(request, response);
-    }
-
-    private void showEvaluationScreen(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-
-        Long reviewerId = getCurrentUserId(request);
-
-        if (reviewerId == null) {
-            response.sendRedirect(request.getContextPath() + "/login");
-            return;
-        }
-
-        String versionIdStr = request.getParameter("versionId");
-
-        if (versionIdStr == null || versionIdStr.trim().isEmpty()) {
-            response.sendRedirect(request.getContextPath() + "/review?action=pending&error=missing_version");
-            return;
+    private Long parsePositiveLong(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
         }
 
         try {
-            Long versionId = Long.parseLong(versionIdStr);
+            long parsed = Long.parseLong(value.trim());
+            return parsed > 0 ? parsed : null;
 
-            if (!assignmentDAO.isReviewerAssigned(versionId, reviewerId)) {
-                response.sendRedirect(request.getContextPath() + "/review?action=pending&error=not_assigned");
-                return;
-            }
-
-            if (reviewDAO.hasReviewerReviewed(versionId, reviewerId)) {
-                response.sendRedirect(request.getContextPath() + "/review-history");
-                return;
-            }
-
-            Map<String, Object> versionDetail = versionDAO.getReviewDetailByVersionId(versionId);
-            List<Map<String, Object>> criteriaList = criteriaDAO.getActiveCriteria();
-            Map<String, String> sectionContentMap = sectionDAO.getSectionContentMap(versionId);
-            List<Map<String, Object>> allImportedSections = sectionDAO.getAllSectionsByVersionId(versionId);
-            request.setAttribute("versionDetail", versionDetail);
-            request.setAttribute("criteriaList", criteriaList);
-            request.setAttribute("sectionContentMap", sectionContentMap);
-            request.setAttribute("allImportedSections", allImportedSections);
-            request.getRequestDispatcher("/views/review/evaluation.jsp")
-                    .forward(request, response);
-            
-            
-        } catch (NumberFormatException e) {
-            response.sendRedirect(request.getContextPath() + "/review?action=pending&error=invalid_version");
+        } catch (NumberFormatException exception) {
+            return null;
         }
     }
 
-    private void submitEvaluation(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-
-        Long reviewerId = getCurrentUserId(request);
-
-        if (reviewerId == null) {
-            response.sendRedirect(request.getContextPath() + "/login");
-            return;
+    private String trimToNull(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
         }
 
-        String versionIdStr = request.getParameter("versionId");
-        String summaryComment = request.getParameter("summaryComment");
+        return value.trim();
+    }
 
-        if (versionIdStr == null || versionIdStr.trim().isEmpty()) {
-            response.sendRedirect(request.getContextPath() + "/review?action=pending&error=missing_version");
-            return;
-        }
+    private void redirectToLogin(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws IOException {
+        response.sendRedirect(
+                request.getContextPath() + "/login"
+        );
+    }
 
-        try {
-            Long versionId = Long.parseLong(versionIdStr);
+    private void redirectPending(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            String errorCode
+    ) throws IOException {
+        response.sendRedirect(
+                request.getContextPath()
+                + "/review?action=pending&error="
+                + errorCode
+        );
+    }
 
-            if (!assignmentDAO.isReviewerAssigned(versionId, reviewerId)) {
-                response.sendRedirect(request.getContextPath() + "/review?action=pending&error=not_assigned");
-                return;
-            }
-
-            if (reviewDAO.hasReviewerReviewed(versionId, reviewerId)) {
-                response.sendRedirect(request.getContextPath() + "/review-history");
-                return;
-            }
-
-            List<Map<String, Object>> criteriaList = criteriaDAO.getActiveCriteria();
-
-            boolean hasReject = false;
-            boolean hasComment = false;
-
-            for (Map<String, Object> criteria : criteriaList) {
-                Long criteriaId = ((Number) criteria.get("criteria_id")).longValue();
-
-                String decision = request.getParameter("decision_" + criteriaId);
-                String comment = request.getParameter("comment_" + criteriaId);
-
-                if (decision == null || decision.trim().isEmpty()) {
-                    response.sendRedirect(request.getContextPath()
-                            + "/review?action=evaluate&versionId=" + versionId
-                            + "&error=missing_decision");
-                    return;
-                }
-
-                if ("REJECTED".equalsIgnoreCase(decision)) {
-                    hasReject = true;
-
-                    if (comment == null || comment.trim().isEmpty()) {
-                        response.sendRedirect(request.getContextPath()
-                                + "/review?action=evaluate&versionId=" + versionId
-                                + "&error=reject_comment_required");
-                        return;
-                    }
-                }
-
-                if (comment != null && !comment.trim().isEmpty()) {
-                    hasComment = true;
-                }
-            }
-
-            String finalDecision;
-
-            if (hasReject) {
-                finalDecision = "REJECTED";
-            } else if (hasComment) {
-                finalDecision = "APPROVED_WITH_COMMENT";
-            } else {
-                finalDecision = "APPROVED";
-            }
-
-            Long reviewId = reviewDAO.insertReviewAndReturnId(
-                    versionId,
-                    reviewerId,
-                    finalDecision,
-                    summaryComment
-            );
-
-            if (reviewId == null) {
-                response.sendRedirect(request.getContextPath()
-                        + "/review?action=evaluate&versionId=" + versionId
-                        + "&error=save_failed");
-                return;
-            }
-
-            for (Map<String, Object> criteria : criteriaList) {
-                Long criteriaId = ((Number) criteria.get("criteria_id")).longValue();
-
-                String decision = request.getParameter("decision_" + criteriaId);
-                String comment = request.getParameter("comment_" + criteriaId);
-
-                reviewDAO.insertSectionReview(reviewId, criteriaId, decision, comment);
-            }
-
-            assignmentDAO.markCompleted(versionId, reviewerId);
-
-            int assignedCount = assignmentDAO.countAssignedReviewers(versionId);
-            int approvedCount = reviewDAO.countApprovedReviews(versionId);
-            int rejectedCount = reviewDAO.countRejectedReviews(versionId);
-
-            if (rejectedCount > 0) {
-                versionDAO.updateStatus(versionId, "REJECTED");
-                syllabusDAO.markRevisionRequiredByVersionId(versionId);
-
-                reviewerNotificationDAO.notifyDesignerAfterReview(
-                        versionId,
-                        reviewerId,
-                        finalDecision
-                );
-
-            } else if (assignedCount >= 2 && approvedCount == assignedCount) {
-                versionDAO.updateStatus(versionId, "APPROVED");
-
-                reviewerNotificationDAO.notifyAcademicWhenAllReviewersApproved(
-                        versionId,
-                        reviewerId
-                );
-
-            } else {
-                reviewerNotificationDAO.notifyDesignerAfterReview(
-                        versionId,
-                        reviewerId,
-                        finalDecision
-                );
-            }
-            reviewerNotificationDAO.createReviewCompletedNotification(
-                    versionId,
-                    reviewerId,
-                    finalDecision
-            );
-            response.sendRedirect(request.getContextPath() + "/review-history");
-
-        } catch (NumberFormatException e) {
-            response.sendRedirect(request.getContextPath() + "/review?action=pending&error=invalid_version");
-        }
+    private void redirectEvaluation(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long versionId,
+            String errorCode
+    ) throws IOException {
+        response.sendRedirect(
+                request.getContextPath()
+                + "/review?action=evaluate"
+                + "&versionId=" + versionId
+                + "&error=" + errorCode
+        );
     }
 }
