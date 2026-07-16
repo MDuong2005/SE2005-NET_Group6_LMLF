@@ -1,49 +1,64 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@taglib prefix="c" uri="jakarta.tags.core"%>
+
+<c:set var="currentURI"
+       value="${pageContext.request.requestURI}"/>
 
 <aside class="sidebar">
+
     <div class="sidebar-header">
-        <div class="sidebar-logo-icon">LM</div>
+
+        <div class="sidebar-logo-icon">
+            LM
+        </div>
+
         <div class="sidebar-title">
             <h1>LMLF Designer</h1>
             <p>Syllabus Management</p>
         </div>
+
     </div>
 
     <nav class="sidebar-nav">
-        <c:set var="currentURI" value="${pageContext.request.requestURI}" />
 
-        <div class="nav-section-title">CÔNG VIỆC</div>
+        <div class="nav-section-title">
+            Designer
+        </div>
 
         <a href="${pageContext.request.contextPath}/designer/tasks"
-           class="nav-item ${currentURI.contains('/designer/tasks') ? 'active' : ''}">
-            <span>Công việc được giao</span>
+           class="nav-item
+           ${currentURI.contains('/designer/tasks')
+           || currentURI.contains('/designer/design')
+           || currentURI.contains('/designer/review-result')
+           ? 'active' : ''}">
+
+            <i class="bi bi-list-task"></i>
+
+            <span>Assigned Tasks</span>
         </a>
 
-        <a href="${pageContext.request.contextPath}/designer/drafts"
-           class="nav-item ${currentURI.contains('/designer/drafts') || currentURI.contains('/designer/design') ? 'active' : ''}">
-            <span>Đang chỉnh sửa</span>
+        <a href="${pageContext.request.contextPath}/designer/version-history"
+           class="nav-item
+           ${currentURI.contains('/designer/version-history')
+           ? 'active' : ''}">
+
+            <i class="bi bi-clock-history"></i>
+
+            <span>Version History</span>
         </a>
 
-        <a href="${pageContext.request.contextPath}/designer/submitted"
-           class="nav-item ${currentURI.contains('/designer/submitted') ? 'active' : ''}">
-            <span>Đã Submit</span>
-        </a>
-
-        <div class="nav-section-title">ACCOUNT</div>
-
-        <a href="${pageContext.request.contextPath}/dashboard" class="nav-item">
-            <span>Dashboard</span>
-        </a>
-
-        <a href="${pageContext.request.contextPath}/logout" class="nav-item">
-            <span>Logout</span>
-        </a>
     </nav>
 
     <div class="sidebar-footer">
-        <a href="${pageContext.request.contextPath}/logout" class="logout-btn">
+
+        <a href="${pageContext.request.contextPath}/logout"
+           class="logout-btn">
+
+            <i class="bi bi-box-arrow-right"></i>
+
             <span>Logout</span>
         </a>
+
     </div>
+
 </aside>

@@ -61,11 +61,20 @@ public class DesignerTask {
         if (assignmentStatus == null) {
             return false;
         }
-
-        return "ACCEPTED".equalsIgnoreCase(assignmentStatus)
-                || "ACTIVE".equalsIgnoreCase(assignmentStatus)
-                || "IN_PROGRESS".equalsIgnoreCase(assignmentStatus)
-                || "SUBMITTED".equalsIgnoreCase(assignmentStatus);
+        if ("CANCELLED".equalsIgnoreCase(assignmentStatus)
+                || "COMPLETED".equalsIgnoreCase(assignmentStatus)
+                || "REJECTED".equalsIgnoreCase(assignmentStatus)) {
+            return false;
+        }
+        if ("SUBMITTED".equalsIgnoreCase(versionStatus)
+                || "APPROVED".equalsIgnoreCase(versionStatus)
+                || "ARCHIVED".equalsIgnoreCase(versionStatus)) {
+            return false;
+        }
+        return submittedVersionId == null
+                || versionStatus == null
+                || "DRAFT".equalsIgnoreCase(versionStatus)
+                || "REJECTED".equalsIgnoreCase(versionStatus);
     }
 
     public Long getAssignmentId() {
