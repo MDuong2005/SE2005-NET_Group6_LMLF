@@ -70,7 +70,7 @@
 
                     <section class="editor-section" id="assessments"><div class="section-head"><h2>6. Course Assessment</h2><button type="button" class="btn-add" onclick="addAssessment()"><i class="bi bi-plus"></i> Add Assessment</button></div><div class="section-body"><div class="editor-table-wrap"><table class="editor-table" style="min-width:1450px"><thead><tr><th>Category</th><th>Part</th><th style="width:90px">Weight</th><th>Duration</th><th>CLOs</th><th>Question Type</th><th>No. Questions</th><th>Knowledge Scope</th><th>Assessment Method</th><th>Note</th><th style="width:55px"></th></tr></thead><tbody id="assessmentBody"></tbody></table></div><div class="mt-2 small fw-bold">Total assessment weight: <span id="weightTotal">0%</span></div></div></section>
 
-                    <section class="editor-section" id="mapping"><div class="section-head"><h2>7. Mapping CLOs to PLOs by Curriculum</h2></div><div class="section-body"><p class="muted small">Each active curriculum containing this course has a separate mapping table. Only PLOs assigned to the course by Academic Office are selectable. Every assigned PLO must be covered by at least one CLO before submission.</p><div id="mappingContainer"></div></div></section>
+                    <section class="editor-section" id="mapping"><div class="section-head"><h2>7. Mapping CLOs to PLOs by Curriculum</h2></div><div class="section-body"><p class="muted small">Each curriculum containing this course and having Academic Office Course-PLO mappings has a separate mapping table. While this version is DRAFT, the list is synchronized from the current Academic Office Course-PLO mapping whenever the editor is opened. Every assigned PLO must be covered by at least one CLO before submission.</p><div id="mappingContainer"></div></div></section>
 
                     <div class="sticky-actions"><a class="btn btn-light" href="${pageContext.request.contextPath}/designer/tasks"><i class="bi bi-arrow-left"></i> Back to Tasks</a><div class="action-right"><button type="button" class="btn-draft" onclick="submitEditor('save')"><i class="bi bi-save"></i> Save Draft</button><button type="button" class="btn-submit" onclick="submitEditor('submit')"><i class="bi bi-send-check"></i> Submit for Review</button></div></div>
                     <div class="field mt-3"><label>Description of Changes</label><textarea name="description" id="description" placeholder="Describe the initial submission or revisions made."></textarea></div>
@@ -79,5 +79,5 @@
         </section>
     </main>
 </div>
-<script src="${pageContext.request.contextPath}/assets/js/designer/designer-editor.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/designer/designer-editor.js?v=20260717-curriculum-sync-v2"></script>
 </body></html>

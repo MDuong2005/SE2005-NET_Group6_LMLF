@@ -133,10 +133,18 @@ public class DesignerSyllabusEditorDAO extends DBContext {
         SyllabusEditorData data = new SyllabusEditorData();
 
         String versionSql = """
-                SELECT version_number, status
-                FROM syllabus_versions
-                WHERE version_id = ?
+                SELECT
+                    versionRow.version_number,
+                    versionRow.status,
+                    syllabus.course_id
+                FROM syllabus_versions versionRow
+                INNER JOIN syllabuses syllabus
+                    ON syllabus.syllabus_id = versionRow.syllabus_id
+                WHERE versionRow.version_id = ?
                 """;
+
+        long courseId;
+        String versionStatus;
 
         try (PreparedStatement statement
                      = connection.prepareStatement(versionSql)) {
@@ -148,14 +156,28 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     throw new SQLException("Version not found.");
                 }
 
+                courseId = resultSet.getLong("course_id");
+                versionStatus = resultSet.getString("status");
+
                 data.setVersionId(versionId);
                 data.setVersionNumber(
                         resultSet.getString("version_number")
                 );
-                data.setStatus(
-                        resultSet.getString("status")
-                );
+                data.setStatus(versionStatus);
             }
+        }
+
+        /*
+         * Always synchronize a DRAFT immediately before loading the editor.
+         * This guarantees that a Curriculum or Course-PLO mapping newly
+         * created by Academic Office appears without deleting snapshots
+         * manually and without depending only on getOrCreateDraftVersion().
+         */
+        if ("DRAFT".equalsIgnoreCase(versionStatus)) {
+            captureVersionCurriculumScope(
+                    versionId,
+                    courseId
+            );
         }
 
         loadGeneral(versionId, data);
@@ -2061,45 +2083,24 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             long courseId
     ) throws SQLException {
 
-        String countSql = """
-                SELECT COUNT(*) AS total
-                FROM syllabus_version_curriculum_scopes
-                WHERE version_id = ?
-                """;
-
-        try (PreparedStatement statement
-                     = connection.prepareStatement(countSql)) {
-
-            statement.setLong(1, versionId);
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()
-                        && resultSet.getInt("total") > 0) {
-                    return;
-                }
-            }
-        }
-
         /*
-         * These four tables belong to Academic Office. This DAO only reads
-         * them. It never creates, alters, inserts, updates, or deletes rows
-         * in any Academic Office table.
+         * Academic Office owns the four source tables below. This method
+         * only reads them. All INSERT, UPDATE and DELETE statements target
+         * Designer-owned snapshot/mapping tables.
+         *
+         * Designer visibility is driven by actual Academic Course-PLO
+         * mappings. A Curriculum is included when it contains this Course
+         * and Academic Office has mapped at least one PLO to the Course.
+         *
+         * The is_active flag is deliberately not used here because the
+         * Academic detail page and curriculums.is_active can be inconsistent.
          */
         String prerequisiteSql = """
                 SELECT
                     CASE
-                        WHEN OBJECT_ID(
-                                'dbo.curriculums',
-                                'U'
-                             ) IS NOT NULL
-                         AND OBJECT_ID(
-                                'dbo.curriculum_courses',
-                                'U'
-                             ) IS NOT NULL
-                         AND OBJECT_ID(
-                                'dbo.curriculum_plos',
-                                'U'
-                             ) IS NOT NULL
+                        WHEN OBJECT_ID('dbo.curriculums', 'U') IS NOT NULL
+                         AND OBJECT_ID('dbo.curriculum_courses', 'U') IS NOT NULL
+                         AND OBJECT_ID('dbo.curriculum_plos', 'U') IS NOT NULL
                          AND OBJECT_ID(
                                 'dbo.curriculum_course_plo_mappings',
                                 'U'
@@ -2124,11 +2125,73 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             }
         }
 
+        String versionStatusSql = """
+                SELECT status
+                FROM syllabus_versions
+                WHERE version_id = ?
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(versionStatusSql)) {
+
+            statement.setLong(1, versionId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new SQLException("Syllabus version not found.");
+                }
+
+                if (!"DRAFT".equalsIgnoreCase(
+                        resultSet.getString("status")
+                )) {
+                    return;
+                }
+            }
+        }
+
         /*
-         * Only columns shared by the current database dump and the merged
-         * Academic Office module are used here. No dependency is placed on
-         * optional columns such as curriculum_code, name, or is_active.
+         * Update existing Curriculum snapshots. Keeping the same scope_id
+         * preserves existing valid Designer mappings.
          */
+        String updateScopeSql = """
+                UPDATE scopeRow
+                SET scopeRow.curriculum_code_snapshot
+                        = curriculum.curriculum_code,
+                    scopeRow.curriculum_name_snapshot
+                        = curriculum.name,
+                    scopeRow.curriculum_version_snapshot
+                        = curriculum.version,
+                    scopeRow.major_code_snapshot = major.code,
+                    scopeRow.major_name_snapshot = major.name,
+                    scopeRow.course_code_snapshot = course.code,
+                    scopeRow.course_name_snapshot = course.name,
+                    scopeRow.semester_snapshot
+                        = curriculumCourse.semester
+                FROM syllabus_version_curriculum_scopes scopeRow
+                INNER JOIN curriculum_courses curriculumCourse
+                    ON curriculumCourse.curriculum_id
+                        = scopeRow.academic_curriculum_id
+                   AND curriculumCourse.course_id = scopeRow.course_id
+                INNER JOIN curriculums curriculum
+                    ON curriculum.curriculum_id
+                        = curriculumCourse.curriculum_id
+                INNER JOIN courses course
+                    ON course.course_id = curriculumCourse.course_id
+                LEFT JOIN majors major
+                    ON major.major_id = curriculum.major_id
+                WHERE scopeRow.version_id = ?
+                  AND scopeRow.course_id = ?
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(updateScopeSql)) {
+
+            statement.setLong(1, versionId);
+            statement.setLong(2, courseId);
+            statement.executeUpdate();
+        }
+
+        /* Add every newly active Curriculum that now contains the Course. */
         String insertScopeSql = """
                 INSERT INTO syllabus_version_curriculum_scopes (
                     version_id,
@@ -2144,20 +2207,12 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     semester_snapshot,
                     captured_at
                 )
-                SELECT DISTINCT
+                SELECT
                     ?,
                     curriculum.curriculum_id,
                     curriculumCourse.course_id,
-                    CONCAT(
-                        COALESCE(NULLIF(major.code, ''), 'CURRICULUM'),
-                        '-',
-                        curriculum.version
-                    ),
-                    CONCAT(
-                        COALESCE(NULLIF(major.name, ''), 'Curriculum'),
-                        ' - Version ',
-                        curriculum.version
-                    ),
+                    curriculum.curriculum_code,
+                    curriculum.name,
                     curriculum.version,
                     major.code,
                     major.name,
@@ -2174,8 +2229,14 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 LEFT JOIN majors major
                     ON major.major_id = curriculum.major_id
                 WHERE curriculumCourse.course_id = ?
-                  AND curriculum.deleted_at IS NULL
-                  AND course.deleted_at IS NULL
+                  AND EXISTS (
+                        SELECT 1
+                        FROM curriculum_course_plo_mappings mappedPlo
+                        WHERE mappedPlo.curriculum_id
+                                = curriculumCourse.curriculum_id
+                          AND mappedPlo.course_id
+                                = curriculumCourse.course_id
+                  )
                   AND NOT EXISTS (
                         SELECT 1
                         FROM syllabus_version_curriculum_scopes existingScope
@@ -2196,7 +2257,45 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             statement.executeUpdate();
         }
 
-        String insertOptionsSql = """
+        /*
+         * Refresh the text of PLO options that are still valid. Keeping the
+         * same plo_option_id preserves checked CLO-PLO mappings.
+         */
+        String updateOptionSql = """
+                UPDATE optionRow
+                SET optionRow.plo_code_snapshot = academicPlo.code,
+                    optionRow.plo_description_snapshot
+                        = academicPlo.description
+                FROM syllabus_version_plo_options optionRow
+                INNER JOIN syllabus_version_curriculum_scopes scopeRow
+                    ON scopeRow.scope_id = optionRow.scope_id
+                   AND scopeRow.version_id = optionRow.version_id
+                INNER JOIN curriculum_course_plo_mappings coursePlo
+                    ON coursePlo.curriculum_id
+                        = scopeRow.academic_curriculum_id
+                   AND coursePlo.course_id = scopeRow.course_id
+                   AND coursePlo.plo_id = optionRow.academic_plo_id
+                INNER JOIN curriculum_plos academicPlo
+                    ON academicPlo.plo_id = coursePlo.plo_id
+                   AND academicPlo.curriculum_id
+                        = scopeRow.academic_curriculum_id
+                INNER JOIN curriculums curriculum
+                    ON curriculum.curriculum_id
+                        = scopeRow.academic_curriculum_id
+                WHERE optionRow.version_id = ?
+                  AND scopeRow.course_id = ?
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(updateOptionSql)) {
+
+            statement.setLong(1, versionId);
+            statement.setLong(2, courseId);
+            statement.executeUpdate();
+        }
+
+        /* Add PLOs newly assigned to the Course by Academic Office. */
+        String insertOptionSql = """
                 INSERT INTO syllabus_version_plo_options (
                     scope_id,
                     version_id,
@@ -2206,34 +2305,164 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     captured_at
                 )
                 SELECT
-                    scope.scope_id,
-                    scope.version_id,
+                    scopeRow.scope_id,
+                    scopeRow.version_id,
                     academicPlo.plo_id,
                     academicPlo.code,
                     academicPlo.description,
                     SYSDATETIME()
-                FROM syllabus_version_curriculum_scopes scope
+                FROM syllabus_version_curriculum_scopes scopeRow
+                INNER JOIN curriculums curriculum
+                    ON curriculum.curriculum_id
+                        = scopeRow.academic_curriculum_id
                 INNER JOIN curriculum_course_plo_mappings coursePlo
                     ON coursePlo.curriculum_id
-                        = scope.academic_curriculum_id
-                   AND coursePlo.course_id = scope.course_id
+                        = scopeRow.academic_curriculum_id
+                   AND coursePlo.course_id = scopeRow.course_id
                 INNER JOIN curriculum_plos academicPlo
                     ON academicPlo.plo_id = coursePlo.plo_id
                    AND academicPlo.curriculum_id
-                        = scope.academic_curriculum_id
-                WHERE scope.version_id = ?
+                        = scopeRow.academic_curriculum_id
+                WHERE scopeRow.version_id = ?
+                  AND scopeRow.course_id = ?
                   AND NOT EXISTS (
                         SELECT 1
                         FROM syllabus_version_plo_options existingOption
-                        WHERE existingOption.version_id = scope.version_id
-                          AND existingOption.scope_id = scope.scope_id
+                        WHERE existingOption.version_id
+                                = scopeRow.version_id
+                          AND existingOption.scope_id = scopeRow.scope_id
                           AND existingOption.academic_plo_id
                                 = academicPlo.plo_id
                   )
                 """;
 
         try (PreparedStatement statement
-                     = connection.prepareStatement(insertOptionsSql)) {
+                     = connection.prepareStatement(insertOptionSql)) {
+
+            statement.setLong(1, versionId);
+            statement.setLong(2, courseId);
+            statement.executeUpdate();
+        }
+
+        /*
+         * Remove only Designer mappings whose Academic Course-PLO link is no
+         * longer valid. Valid checked mappings remain unchanged.
+         */
+        String deleteInvalidMappingSql = """
+                DELETE mappingRow
+                FROM syllabus_clo_plo_mappings mappingRow
+                INNER JOIN syllabus_version_plo_options optionRow
+                    ON optionRow.plo_option_id
+                        = mappingRow.plo_option_id
+                   AND optionRow.version_id = mappingRow.version_id
+                INNER JOIN syllabus_version_curriculum_scopes scopeRow
+                    ON scopeRow.scope_id = optionRow.scope_id
+                   AND scopeRow.version_id = optionRow.version_id
+                WHERE mappingRow.version_id = ?
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM curriculum_courses curriculumCourse
+                        INNER JOIN curriculums curriculum
+                            ON curriculum.curriculum_id
+                                = curriculumCourse.curriculum_id
+                        INNER JOIN curriculum_course_plo_mappings coursePlo
+                            ON coursePlo.curriculum_id
+                                = curriculumCourse.curriculum_id
+                           AND coursePlo.course_id
+                                = curriculumCourse.course_id
+                        INNER JOIN curriculum_plos academicPlo
+                            ON academicPlo.plo_id = coursePlo.plo_id
+                           AND academicPlo.curriculum_id
+                                = curriculumCourse.curriculum_id
+                        INNER JOIN courses course
+                            ON course.course_id
+                                = curriculumCourse.course_id
+                        WHERE curriculumCourse.curriculum_id
+                                = scopeRow.academic_curriculum_id
+                          AND curriculumCourse.course_id = scopeRow.course_id
+                          AND academicPlo.plo_id
+                                = optionRow.academic_plo_id
+                  )
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(deleteInvalidMappingSql)) {
+
+            statement.setLong(1, versionId);
+            statement.executeUpdate();
+        }
+
+        /* Remove PLO options no longer assigned by Academic Office. */
+        String deleteObsoleteOptionSql = """
+                DELETE optionRow
+                FROM syllabus_version_plo_options optionRow
+                INNER JOIN syllabus_version_curriculum_scopes scopeRow
+                    ON scopeRow.scope_id = optionRow.scope_id
+                   AND scopeRow.version_id = optionRow.version_id
+                WHERE optionRow.version_id = ?
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM curriculum_courses curriculumCourse
+                        INNER JOIN curriculums curriculum
+                            ON curriculum.curriculum_id
+                                = curriculumCourse.curriculum_id
+                        INNER JOIN curriculum_course_plo_mappings coursePlo
+                            ON coursePlo.curriculum_id
+                                = curriculumCourse.curriculum_id
+                           AND coursePlo.course_id
+                                = curriculumCourse.course_id
+                        INNER JOIN curriculum_plos academicPlo
+                            ON academicPlo.plo_id = coursePlo.plo_id
+                           AND academicPlo.curriculum_id
+                                = curriculumCourse.curriculum_id
+                        INNER JOIN courses course
+                            ON course.course_id
+                                = curriculumCourse.course_id
+                        WHERE curriculumCourse.curriculum_id
+                                = scopeRow.academic_curriculum_id
+                          AND curriculumCourse.course_id = scopeRow.course_id
+                          AND academicPlo.plo_id
+                                = optionRow.academic_plo_id
+                  )
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(deleteObsoleteOptionSql)) {
+
+            statement.setLong(1, versionId);
+            statement.executeUpdate();
+        }
+
+        /* Remove Curriculum scopes that no longer contain this Course. */
+        String deleteObsoleteScopeSql = """
+                DELETE scopeRow
+                FROM syllabus_version_curriculum_scopes scopeRow
+                WHERE scopeRow.version_id = ?
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM curriculum_courses curriculumCourse
+                        INNER JOIN curriculums curriculum
+                            ON curriculum.curriculum_id
+                                = curriculumCourse.curriculum_id
+                        INNER JOIN courses course
+                            ON course.course_id
+                                = curriculumCourse.course_id
+                        WHERE curriculumCourse.curriculum_id
+                                = scopeRow.academic_curriculum_id
+                          AND curriculumCourse.course_id = scopeRow.course_id
+                          AND EXISTS (
+                                SELECT 1
+                                FROM curriculum_course_plo_mappings mappedPlo
+                                WHERE mappedPlo.curriculum_id
+                                        = curriculumCourse.curriculum_id
+                                  AND mappedPlo.course_id
+                                        = curriculumCourse.course_id
+                          )
+                  )
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(deleteObsoleteScopeSql)) {
 
             statement.setLong(1, versionId);
             statement.executeUpdate();
