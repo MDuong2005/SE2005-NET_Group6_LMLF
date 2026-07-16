@@ -15,8 +15,8 @@ import utils.EmailUtil;
 import utils.PasswordUtil;
 import utils.SessionUtil;
 
-@WebServlet(name = "GuestManagementServlet", urlPatterns = {"/admin/guests"})
-public class GuestManagementServlet extends HttpServlet {
+@WebServlet(name = "ExternalUserManagementServlet", urlPatterns = {"/admin/external-users"})
+public class ExternalUserManagementServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAO();
     private final RoleDAO roleDAO = new RoleDAO();
@@ -39,7 +39,7 @@ public class GuestManagementServlet extends HttpServlet {
                 showCreateForm(request, response);
                 break;
             default:
-                listGuests(request, response);
+                listExternalUsers(request, response);
                 break;
         }
     }
@@ -56,29 +56,29 @@ public class GuestManagementServlet extends HttpServlet {
 
         String action = request.getParameter("action");
         if (action == null) {
-            response.sendRedirect(request.getContextPath() + "/admin/guests");
+            response.sendRedirect(request.getContextPath() + "/admin/external-users");
             return;
         }
 
         switch (action) {
             case "create":
-                createGuest(request, response);
+                createExternalUser(request, response);
                 break;
             case "ban":
             case "unban":
                 toggleStatus(request, response, action);
                 break;
             default:
-                response.sendRedirect(request.getContextPath() + "/admin/guests");
+                response.sendRedirect(request.getContextPath() + "/admin/external-users");
                 break;
         }
     }
 
-    private void listGuests(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        List<User> guests = userDAO.getExternalUsersWithRoles();
-        request.setAttribute("guests", guests);
+    private void listExternalUsers(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        List<User> externalUsers = userDAO.getExternalUsersWithRoles();
+        request.setAttribute("externalUsers", externalUsers);
         request.setAttribute("roles", roleDAO.getAllRoles());
-        request.setAttribute("contentPage", "admin/user/guest_list.jsp");
+        request.setAttribute("contentPage", "admin/user/external_user_list.jsp");
         request.setAttribute("cssFile", "admin/admin.css");
         request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
     }
@@ -87,12 +87,12 @@ public class GuestManagementServlet extends HttpServlet {
         // External users are always created with the EXTERNAL_EXPERT role and land
         // in the waiting room; Academic Office assigns the actual review work later.
         // No role selection is offered here (kept in sync with the approval flow).
-        request.setAttribute("contentPage", "admin/user/create_guest.jsp");
+        request.setAttribute("contentPage", "admin/user/create_external_user.jsp");
         request.setAttribute("cssFile", "admin/admin.css");
         request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
     }
 
-    private void createGuest(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private void createExternalUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String firstName = utils.ValidationUtil.sanitize(request.getParameter("firstName"));
         String lastName = utils.ValidationUtil.sanitize(request.getParameter("lastName"));
         String email = utils.ValidationUtil.sanitize(request.getParameter("email"));
@@ -100,12 +100,12 @@ public class GuestManagementServlet extends HttpServlet {
         // Backend Validation
         if (!utils.ValidationUtil.isValidEmail(email) ||
             !utils.ValidationUtil.isNotEmpty(firstName) || !utils.ValidationUtil.isNotEmpty(lastName)) {
-            response.sendRedirect(request.getContextPath() + "/admin/guests?action=create&error=invalid_data");
+            response.sendRedirect(request.getContextPath() + "/admin/external-users?action=create&error=invalid_data");
             return;
         }
 
         if (userDAO.existsByEmail(email)) {
-            response.sendRedirect(request.getContextPath() + "/admin/guests?action=create&error=email_exists");
+            response.sendRedirect(request.getContextPath() + "/admin/external-users?action=create&error=email_exists");
             return;
         }
 
@@ -113,34 +113,34 @@ public class GuestManagementServlet extends HttpServlet {
         // never a concrete review role - that is Academic Office's decision.
         Role extRole = roleDAO.getRoleByName("EXTERNAL_EXPERT");
         if (extRole == null) {
-            response.sendRedirect(request.getContextPath() + "/admin/guests?action=create&error=role_missing");
+            response.sendRedirect(request.getContextPath() + "/admin/external-users?action=create&error=role_missing");
             return;
         }
 
         String plainPassword = PasswordUtil.generateRandomPassword();
 
-        User newGuest = new User();
-        newGuest.setUsername(email); // Username = Email
-        newGuest.setFirstName(firstName);
-        newGuest.setLastName(lastName);
-        newGuest.setEmail(email);
-        newGuest.setPasswordHash(PasswordUtil.hashPassword(plainPassword));
-        newGuest.setAuthProvider("LOCAL");
-        newGuest.setExternal(true);
-        newGuest.setMustChangePassword(true);
-        newGuest.setStatus("ACTIVE");
+        User newExternalUser = new User();
+        newExternalUser.setUsername(email); // Username = Email
+        newExternalUser.setFirstName(firstName);
+        newExternalUser.setLastName(lastName);
+        newExternalUser.setEmail(email);
+        newExternalUser.setPasswordHash(PasswordUtil.hashPassword(plainPassword));
+        newExternalUser.setAuthProvider("LOCAL");
+        newExternalUser.setExternal(true);
+        newExternalUser.setMustChangePassword(true);
+        newExternalUser.setStatus("ACTIVE");
 
         // Create user + role in one transaction (same result as the approval flow)
-        long generatedId = userDAO.createExpertTx(newGuest, extRole.getRoleId());
+        long generatedId = userDAO.createExpertTx(newExternalUser, extRole.getRoleId());
         if (generatedId > 0) {
             // Send credentials email
-            boolean emailSent = EmailUtil.sendGuestCredentials(email, plainPassword, extRole.getRoleName());
+            boolean emailSent = EmailUtil.sendExternalUserCredentials(email, plainPassword, extRole.getRoleName());
             if (!emailSent) {
                 System.err.println("Failed to send email to " + email);
             }
         }
 
-        response.sendRedirect(request.getContextPath() + "/admin/guests");
+        response.sendRedirect(request.getContextPath() + "/admin/external-users");
     }
 
     private void toggleStatus(HttpServletRequest request, HttpServletResponse response, String action) throws IOException {
@@ -151,6 +151,6 @@ public class GuestManagementServlet extends HttpServlet {
         } catch (NumberFormatException e) {
             // ignore
         }
-        response.sendRedirect(request.getContextPath() + "/admin/guests");
+        response.sendRedirect(request.getContextPath() + "/admin/external-users");
     }
 }

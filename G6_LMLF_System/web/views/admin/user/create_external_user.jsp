@@ -6,7 +6,7 @@
         <h2>Add New External User</h2>
     </div>
     <div class="form-body">
-        <form action="${pageContext.request.contextPath}/admin/guests" method="POST">
+        <form action="${pageContext.request.contextPath}/admin/external-users" method="POST">
             <input type="hidden" name="action" value="create">
 
             <div style="display: flex; gap: 15px;">
@@ -31,7 +31,7 @@
             </div>
 
             <div class="form-actions">
-                <a href="${pageContext.request.contextPath}/admin/guests" class="btn btn-cancel">Cancel</a>
+                <a href="${pageContext.request.contextPath}/admin/external-users" class="btn btn-cancel">Cancel</a>
                 <button type="submit" class="btn btn-submit">Create External Account</button>
             </div>
         </form>

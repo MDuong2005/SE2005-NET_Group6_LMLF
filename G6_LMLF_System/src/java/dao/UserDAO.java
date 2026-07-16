@@ -253,7 +253,7 @@ public class UserDAO extends DBContext {
     }
 
     /**
-     * Get all external guest users with their roles
+     * Get all external users with their roles
      */
     public java.util.List<User> getExternalUsersWithRoles() {
         return getUsersWithRolesByExternalFlag(true);
@@ -458,7 +458,7 @@ public class UserDAO extends DBContext {
         return 0;
     }
 
-    public int getGuestUsersCount() {
+    public int getExternalUsersCount() {
         String sql = "SELECT COUNT(*) FROM users WHERE is_external = 1 AND deleted_at IS NULL";
         try (PreparedStatement ps = connection.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {

@@ -114,7 +114,7 @@ public class DashboardServlet extends HttpServlet {
             
             dao.UserDAO userDAO = new dao.UserDAO();
             request.setAttribute("internalUsers", userDAO.getInternalUsersCount());
-            request.setAttribute("guestUsers", userDAO.getGuestUsersCount());
+            request.setAttribute("externalUsersCount", userDAO.getExternalUsersCount());
             request.setAttribute("activeUsers", userDAO.getActiveUsersCount());
             request.setAttribute("bannedUsers", userDAO.getBannedUsersCount());
         } else if (user.hasRole("STUDENT")) {

@@ -23,9 +23,9 @@
         <div class="stat-value" style="margin-top: 0; font-size: 2rem; color: #2980b9;"><c:out value="${internalUsers}" default="0"/></div>
     </div>
     <!-- Stat 2 -->
-    <div class="stat-card" style="cursor: pointer;" onclick="window.location.href='${pageContext.request.contextPath}/admin/guests'">
+    <div class="stat-card" style="cursor: pointer;" onclick="window.location.href='${pageContext.request.contextPath}/admin/external-users'">
         <p style="font-weight: 600; color: #7f8c8d; margin-bottom: 5px; font-size: 0.9rem;">EXTERNAL USERS</p>
-        <div class="stat-value" style="margin-top: 0; font-size: 2rem; color: #d35400;"><c:out value="${guestUsers}" default="0"/></div>
+        <div class="stat-value" style="margin-top: 0; font-size: 2rem; color: #d35400;"><c:out value="${externalUsersCount}" default="0"/></div>
     </div>
     <!-- Stat 3 and 4 removed as requested -->
 </div>
@@ -41,7 +41,7 @@
                 Add Internal User
             </a>
 
-            <a href="${pageContext.request.contextPath}/admin/guests?action=create" style="background-color: #f39c12; color: white; border: none; padding: 10px 20px; border-radius: 4px; display: inline-block; font-weight: 600; text-decoration: none;">
+            <a href="${pageContext.request.contextPath}/admin/external-users?action=create" style="background-color: #f39c12; color: white; border: none; padding: 10px 20px; border-radius: 4px; display: inline-block; font-weight: 600; text-decoration: none;">
                 Add External User
             </a>
 

@@ -99,7 +99,7 @@ public class MyTasksServlet extends HttpServlet {
 
                         if (newUserId > 0) {
                             // 6. Send Email
-                            boolean emailSent = EmailUtil.sendGuestCredentials(accReq.getEmail(), plainPassword, extRole.getRoleName());
+                            boolean emailSent = EmailUtil.sendExternalUserCredentials(accReq.getEmail(), plainPassword, extRole.getRoleName());
                             
                             if (emailSent) {
                                 request.getSession().setAttribute("successMessage", "Account approved and email sent successfully.");

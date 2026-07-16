@@ -6,7 +6,7 @@
     <div class="header">
         <h2>User Management</h2>
         <div class="header-actions">
-            <a href="${pageContext.request.contextPath}/admin/guests" class="btn btn-back">Manage Guests</a>
+            <a href="${pageContext.request.contextPath}/admin/external-users" class="btn btn-back">Manage External Users</a>
             <button type="button" class="btn btn-back" onclick="toggleImport()">Import Excel</button>
             <a href="${pageContext.request.contextPath}/admin/users?action=create" class="btn btn-primary">+ Add User</a>
         </div>

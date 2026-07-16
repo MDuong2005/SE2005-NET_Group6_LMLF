@@ -29,7 +29,7 @@ public class EmailUtil {
         }
     }
 
-    public static boolean sendGuestCredentials(String toEmail, String plainPassword, String roleName) {
+    public static boolean sendExternalUserCredentials(String toEmail, String plainPassword, String roleName) {
         if (SMTP_EMAIL.isEmpty() || SMTP_PASSWORD.isEmpty()) {
             System.err.println("Email Configuration is missing. Cannot send email to " + toEmail);
             return false;
@@ -52,11 +52,11 @@ public class EmailUtil {
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(SMTP_EMAIL, "LMLF System Admin"));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
-            message.setSubject("LMLF System - Your Guest Account Credentials");
+            message.setSubject("LMLF System - Your External Account Credentials");
 
             String htmlContent = "<h2>Welcome to LMLF System</h2>"
                     + "<p>Hello,</p>"
-                    + "<p>An administrator has created a guest account for you with the role: <strong>" + roleName + "</strong>.</p>"
+                    + "<p>An administrator has created an external user account for you with the role: <strong>" + roleName + "</strong>.</p>"
                     + "<p>Here are your login credentials:</p>"
                     + "<ul>"
                     + "<li><strong>Username:</strong> " + toEmail + "</li>"
