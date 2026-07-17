@@ -26,14 +26,16 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/academic/academic.css">
     
     <style>
         /* CSS variables & color system */
         :root {
-            --primary: #FF6B00;
-            --primary-hover: #E05E00;
-            --primary-light: #FFF0E6;
+            --primary: var(--fpt-orange, #FF6B00);
+            --primary-hover: var(--fpt-orange-hover, #E05E00);
+            --primary-light: var(--fpt-orange-light, #FFF0E6);
             --bg-main: #F8FAFC;
             --bg-card: #FFFFFF;
             --border-color: #E2E8F0;
@@ -50,291 +52,25 @@
             --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg-main);
-            color: var(--text-dark);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
-        }
-        
-        /* Top Navigation Header */
-        header {
-            height: 70px;
-            background-color: var(--bg-card);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 24px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 48px;
-        }
-        
-        .logo {
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--primary);
-            text-decoration: none;
-            letter-spacing: -0.5px;
-        }
-        
-        .nav-menu {
-            display: flex;
-            gap: 32px;
-            list-style: none;
-        }
-        
-        .nav-menu a {
-            text-decoration: none;
-            color: var(--text-muted);
-            font-weight: 600;
-            font-size: 15px;
-            padding: 24px 0;
-            border-bottom: 2px solid transparent;
-            transition: var(--transition);
-        }
-        
-        .nav-menu a:hover {
-            color: var(--text-dark);
-        }
-        
-        .nav-menu li.active a {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-        
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        
-        .global-search {
-            position: relative;
-            width: 280px;
-        }
-        
-        .global-search input {
-            width: 100%;
-            height: 38px;
-            background-color: #F1F5F9;
-            border: none;
-            border-radius: 20px;
-            padding: 0 16px 0 40px;
-            font-family: inherit;
-            font-size: 14px;
-            color: var(--text-dark);
-            outline: none;
-            transition: var(--transition);
-        }
-        
-        .global-search input:focus {
-            background-color: #FFFFFF;
-            box-shadow: 0 0 0 2px var(--primary);
-        }
-        
-        .global-search svg {
-            position: absolute;
-            left: 14px;
-            top: 10px;
-            width: 18px;
-            height: 18px;
-            fill: var(--text-muted);
-        }
-        
-        .icon-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            transition: var(--transition);
-        }
-        
-        .icon-btn:hover {
-            background-color: #F1F5F9;
-            color: var(--text-dark);
-        }
-        
-        .profile-menu {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            padding: 6px 12px;
-            border-radius: 20px;
-            transition: var(--transition);
-        }
-        
-        .profile-menu:hover {
-            background-color: #F1F5F9;
-        }
-        
-        .avatar {
-            width: 36px;
-            height: 36px;
-            background-color: var(--primary);
-            color: #FFFFFF;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 14px;
-        }
-        
-        .profile-name-container {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .profile-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-dark);
-        }
-        
-        .profile-role {
-            font-size: 11px;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-        
-        .caret {
-            width: 8px;
-            height: 8px;
-            border-left: 2px solid var(--text-muted);
-            border-bottom: 2px solid var(--text-muted);
-            transform: rotate(-45deg);
-            margin-top: -3px;
-        }
-        
-        /* Main Layout */
-        .app-container {
-            display: flex;
-            flex: 1;
-        }
-        
-        /* Sidebar layout and items */
-        aside {
-            width: 260px;
-            background-color: var(--bg-card);
-            border-right: 1px solid var(--border-color);
-            padding: 24px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        
-        .sidebar-section-title {
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--text-muted);
-            letter-spacing: 1px;
-            padding-left: 12px;
-            text-transform: uppercase;
-        }
-        
-        .sidebar-menu {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        
-        .sidebar-menu a {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            text-decoration: none;
-            color: var(--text-muted);
-            font-weight: 600;
-            font-size: 14px;
-            border-radius: var(--radius-md);
-            transition: var(--transition);
-        }
-        
-        .sidebar-menu a:hover {
-            background-color: #F8FAFC;
-            color: var(--text-dark);
-        }
-        
-        .sidebar-menu li.active a {
-            background-color: var(--primary-light);
-            color: var(--primary);
-        }
-        
-        .sidebar-menu svg {
-            width: 20px;
-            height: 20px;
-            stroke-width: 2;
-        }
-        
-        /* Main Workspace */
-        main {
-            flex: 1;
-            padding: 32px 40px;
+        /* Scoped styles for the core workspace area */
+        .workspace-container {
             display: flex;
             flex-direction: column;
             gap: 24px;
-            width: 100%;
-            margin: 0 auto;
         }
-        
-        .content-header {
+
+        .workspace-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
-        
-        .content-header h1 {
+
+        .workspace-header h1 {
             font-size: 26px;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--text-dark);
-        }
-        
-        .btn-primary {
-            background-color: var(--primary);
-            color: #FFFFFF;
-            border: none;
-            height: 42px;
-            padding: 0 20px;
-            border-radius: var(--radius-md);
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: var(--transition);
-            box-shadow: var(--shadow-sm);
-            text-decoration: none;
-        }
-        
-        .btn-primary:hover {
-            background-color: var(--primary-hover);
+            letter-spacing: -0.5px;
+            margin: 0;
         }
         
         /* Card component */
@@ -748,94 +484,26 @@
 </head>
 <body>
 
-    <!-- Top Navigation Header -->
-    <header>
-        <div class="header-left">
-            <a href="#" class="logo">LMLF</a>
-            <ul class="nav-menu">
-                <li><a href="${pageContext.request.contextPath}/dashboard">Dashboard</a></li>
-                <li class="active"><a href="${pageContext.request.contextPath}/major">Curriculum</a></li>
-                <li><a href="#">Faculty</a></li>
-                <li><a href="#">Settings</a></li>
-            </ul>
-        </div>
-        <div class="header-right">
-            <div class="global-search">
-                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                <input type="text" placeholder="Global search...">
-            </div>
-            
-            <button class="icon-btn">
-                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 4.86 6 7.42 6 10.5v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6.5C8 8.02 9.51 6.5 11.5 6.5S15 8.02 15 11.5V17z"/></svg>
-            </button>
-            
-            <div class="profile-menu">
-                <div class="avatar">
-                    <%
-                        String userInitials = "AD";
-                        String userEmail = "";
-                        model.User user = (model.User) session.getAttribute("user");
-                        if (user != null && user.getEmail() != null) {
-                            userEmail = user.getEmail();
-                            if (userEmail.length() >= 2) {
-                                userInitials = userEmail.substring(0, 2).toUpperCase();
-                            } else {
-                                userInitials = userEmail.toUpperCase();
-                            }
-                        }
-                    %>
-                    <%= userInitials %>
-                </div>
-                <div class="profile-name-container">
-                    <span class="profile-name"><%= userEmail.isEmpty() ? "Admin User" : userEmail %></span>
-                    <span class="profile-role">Admin User</span>
-                </div>
-                <div class="caret"></div>
-            </div>
-        </div>
-    </header>
+    <div class="dashboard-wrapper">
+        <!-- ================= SIDEBAR ================= -->
+        <jsp:include page="../layout/sidebar.jsp" />
 
-    <div class="app-container">
-        <!-- Sidebar Navigation -->
-        <aside>
-            <div class="sidebar-section-title">Curriculum Management</div>
-            <ul class="sidebar-menu">
-                <li>
-                    <a href="#">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                        Role Assignments
-                    </a>
-                </li>
-                <li class="active">
-                    <a href="${pageContext.request.contextPath}/major">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-                        Curriculum Matrix
-                    </a>
-                </li>
-                <li>
-                    <a href="#">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        Revision History
-                    </a>
-                </li>
-                <li>
-                    <a href="#">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                        Approval Workflow
-                    </a>
-                </li>
-            </ul>
-        </aside>
+        <!-- ================= MAIN CONTENT AREA ================= -->
+        <main class="dashboard-main">
+            <!-- ================= TOP HEADER ================= -->
+            <jsp:include page="../layout/header.jsp" />
 
-        <!-- Main Workspace Panel -->
-        <main>
-            <div class="content-header">
-                <h1>Curriculum Matrix Settings</h1>
-                <button type="button" class="btn-primary" onclick="openCreateModal()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    Add New Major
-                </button>
-            </div>
+            <!-- ================= DYNAMIC WORKSPACE ================= -->
+            <div class="dashboard-content">
+                <div class="workspace-container">
+                    
+                    <div class="workspace-header">
+                        <h1>Curriculum Matrix Settings</h1>
+                        <button type="button" class="btn-primary" onclick="openCreateModal()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            Add New Major
+                        </button>
+                    </div>
 
             <!-- Error Notification Alert -->
             <% if(errorMessage != null && action.isEmpty()){ %>
@@ -1026,8 +694,10 @@
                 </div>
             </form>
             <% } %>
+            </div>
         </div>
-    </div>
+    </main>
+</div>
 
     <!-- JavaScript controls -->
     <script>

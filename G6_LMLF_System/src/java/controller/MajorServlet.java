@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class MajorServlet extends HttpServlet {
 
 private final MajorDAO majorDAO = new MajorDAO();
+private static final String JSP_PATH = "/views/academic/major.jsp";
 
 @Override
 protected void doGet(HttpServletRequest request,
@@ -35,7 +36,7 @@ protected void doGet(HttpServletRequest request,
             request.setAttribute("action", "create");
             request.setAttribute("majorList", majorDAO.getAllMajors());
             request.getRequestDispatcher(
-                    "/views/curriculum/major.jsp")
+                    JSP_PATH)
                     .forward(request, response);
             break;
 
@@ -94,7 +95,7 @@ private void listMajors(HttpServletRequest request,
     request.setAttribute("majorList", majorList);
 
     request.getRequestDispatcher(
-            "/views/curriculum/major.jsp")
+            JSP_PATH)
             .forward(request, response);
 }
 
@@ -111,7 +112,7 @@ private void searchMajor(HttpServletRequest request,
     request.setAttribute("keyword", keyword);
 
     request.getRequestDispatcher(
-            "/views/curriculum/major.jsp")
+            JSP_PATH)
             .forward(request, response);
 }
 
@@ -134,7 +135,7 @@ private void createMajor(HttpServletRequest request,
         request.setAttribute("description", description);
 
         request.getRequestDispatcher(
-                "/views/curriculum/major.jsp")
+                JSP_PATH)
                 .forward(request, response);
 
         return;
@@ -150,7 +151,7 @@ private void createMajor(HttpServletRequest request,
         request.setAttribute("description", description);
 
         request.getRequestDispatcher(
-                "/views/curriculum/major.jsp")
+                JSP_PATH)
                 .forward(request, response);
 
         return;
@@ -190,7 +191,7 @@ private void createMajor(HttpServletRequest request,
         request.setAttribute("description", description);
 
         request.getRequestDispatcher(
-                "/views/curriculum/major.jsp")
+                JSP_PATH)
                 .forward(request, response);
     }
 }
@@ -210,7 +211,7 @@ private void showEditForm(HttpServletRequest request,
     request.setAttribute("majorList", majorDAO.getAllMajors());
 
     request.getRequestDispatcher(
-            "/views/curriculum/major.jsp")
+            JSP_PATH)
             .forward(request, response);
 }
 
@@ -246,7 +247,7 @@ private void updateMajor(HttpServletRequest request,
         request.setAttribute("majorList", majorDAO.getAllMajors());
 
         request.getRequestDispatcher(
-                "/views/curriculum/major.jsp")
+                JSP_PATH)
                 .forward(request, response);
 
         return;
@@ -276,7 +277,7 @@ private void updateMajor(HttpServletRequest request,
         request.setAttribute("majorList", majorDAO.getAllMajors());
 
         request.getRequestDispatcher(
-                "/views/curriculum/major.jsp")
+                JSP_PATH)
                 .forward(request, response);
     }
 }

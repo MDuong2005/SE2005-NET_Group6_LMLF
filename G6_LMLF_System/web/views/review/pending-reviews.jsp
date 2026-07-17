@@ -1,603 +1,609 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="java.util.List"%>
 <%@page import="java.util.Map"%>
+<%@page import="java.text.SimpleDateFormat"%>
+
+<%!
+    private String h(Object value) {
+        if (value == null) {
+            return "";
+        }
+
+        return String.valueOf(value)
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
+
+    private String text(Object value, String fallback) {
+        if (value == null || String.valueOf(value).trim().isEmpty()) {
+            return fallback;
+        }
+
+        return String.valueOf(value);
+    }
+%>
 
 <%
-List<Map<String, Object>> pendingReviews =
-(List<Map<String, Object>>) request.getAttribute("pendingReviews");
-String errorMessage = (String) request.getAttribute("errorMessage");
+    List<Map<String, Object>> pendingReviews =
+            (List<Map<String, Object>>) request.getAttribute("pendingReviews");
 
-String userInitials = "RV";
-String userEmail = "";
-model.User user = (model.User) session.getAttribute("user");
+    int pendingCount = pendingReviews == null
+            ? 0
+            : pendingReviews.size();
 
-if (user != null && user.getEmail() != null) {
-    userEmail = user.getEmail();
+    model.User currentUser =
+            (model.User) session.getAttribute("user");
 
-    if (userEmail.length() >= 2) {
-        userInitials = userEmail.substring(0, 2).toUpperCase();
-    } else {
-        userInitials = userEmail.toUpperCase();
-    }
-}
+    String userEmail = currentUser == null
+            || currentUser.getEmail() == null
+            ? "reviewer"
+            : currentUser.getEmail();
 
+    String userInitials = userEmail.length() >= 2
+            ? userEmail.substring(0, 2).toUpperCase()
+            : userEmail.toUpperCase();
+
+    String error = request.getParameter("error");
+    SimpleDateFormat dateFormat =
+            new SimpleDateFormat("dd/MM/yyyy HH:mm");
 %>
 
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Pending Reviews - LMLF</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pending Reviews - LMLF</title>
 
-<style>
-    :root {
-        --primary: #FF6B00;
-        --primary-hover: #E05E00;
-        --primary-light: #FFF0E6;
-        --bg-main: #F8FAFC;
-        --bg-card: #FFFFFF;
-        --border-color: #E2E8F0;
-        --text-dark: #1E293B;
-        --text-muted: #64748B;
-        --warning-bg: #FEF3C7;
-        --warning-text: #92400E;
-        --danger: #EF4444;
-        --danger-hover: #DC2626;
-        --radius-lg: 14px;
-        --radius-md: 9px;
-        --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-    }
+    <style>
+        :root {
+            --primary: #f97316;
+            --primary-soft: #fff7ed;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --muted: #64748b;
+            --success: #15803d;
+            --success-soft: #dcfce7;
+            --warning: #b45309;
+            --warning-soft: #fef3c7;
+            --danger: #b91c1c;
+            --danger-soft: #fee2e2;
+        }
 
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-    }
+        * {
+            box-sizing: border-box;
+        }
 
-    body {
-        font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-        background-color: var(--bg-main);
-        color: var(--text-dark);
-        min-height: 100vh;
-    }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: var(--background);
+            color: var(--text);
+        }
 
-    a {
-        text-decoration: none;
-    }
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
 
-    .layout {
-        display: flex;
-        min-height: 100vh;
-    }
-
-    .sidebar {
-        width: 280px;
-        background-color: #FFFFFF;
-        border-right: 1px solid var(--border-color);
-        display: flex;
-        flex-direction: column;
-        flex-shrink: 0;
-    }
-
-    .sidebar-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid #F1F5F9;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .sidebar-logo {
-        width: 42px;
-        height: 42px;
-        background-color: var(--primary);
-        color: #FFFFFF;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        font-size: 16px;
-    }
-
-    .sidebar-title h1 {
-        font-size: 1.25rem;
-        font-weight: 800;
-        color: var(--primary);
-        margin: 0;
-    }
-
-    .sidebar-title p {
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: #94A3B8;
-        text-transform: uppercase;
-        margin-top: 2px;
-    }
-
-    .sidebar-nav {
-        flex: 1;
-        padding: 1.5rem;
-    }
-
-    .nav-section-title {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 0.75rem;
-    }
-
-    .nav-menu {
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.85rem 1rem;
-        border-radius: 0.75rem;
-        color: var(--text-muted);
-        font-weight: 700;
-        font-size: 0.95rem;
-        transition: all 0.2s;
-    }
-
-    .nav-item:hover {
-        background-color: #F8FAFC;
-        color: var(--text-dark);
-    }
-
-    .nav-item.active {
-        background-color: var(--primary-light);
-        color: var(--primary);
-        border: 1px solid #FBD6C4;
-    }
-
-    .sidebar-footer {
-        padding: 1.5rem;
-        border-top: 1px solid #F1F5F9;
-    }
-
-    .logout-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: var(--danger);
-        font-size: 0.9rem;
-        font-weight: 700;
-        padding: 0.85rem 1rem;
-        border-radius: 0.75rem;
-        transition: all 0.2s;
-    }
-
-    .logout-btn svg {
-        width: 20px;
-        height: 20px;
-    }
-
-    .logout-btn:hover {
-        color: var(--danger-hover);
-        background-color: #FEF2F2;
-    }
-
-    .main-wrapper {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-    }
-
-    .top-header {
-        height: 70px;
-        background-color: #FFFFFF;
-        border-bottom: 1px solid var(--border-color);
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        padding: 0 2.5rem;
-        flex-shrink: 0;
-    }
-
-    .profile-menu {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .avatar {
-        width: 42px;
-        height: 42px;
-        background-color: var(--primary);
-        color: #FFFFFF;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        font-size: 14px;
-    }
-
-    .profile-info {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .profile-email {
-        font-size: 0.9rem;
-        font-weight: 800;
-        color: var(--text-dark);
-    }
-
-    .profile-role {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        margin-top: 2px;
-    }
-
-    main {
-        flex: 1;
-        padding: 2.5rem;
-        overflow-y: auto;
-    }
-
-    .content-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 2rem;
-    }
-
-    .content-header h2 {
-        font-size: 1.9rem;
-        font-weight: 800;
-        color: var(--text-dark);
-        margin: 0;
-    }
-
-    .content-header p {
-        font-size: 0.95rem;
-        color: var(--text-muted);
-        margin-top: 0.35rem;
-    }
-
-    .panel {
-        background-color: #FFFFFF;
-        border: 1px solid var(--border-color);
-        border-radius: 1.5rem;
-        overflow: hidden;
-        box-shadow: var(--shadow-sm);
-        margin-bottom: 1.5rem;
-    }
-
-    .panel-header {
-        padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #F1F5F9;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .panel-title {
-        font-size: 1.1rem;
-        font-weight: 800;
-        color: var(--text-dark);
-    }
-
-    .view-all {
-        font-size: 0.875rem;
-        color: var(--primary);
-        font-weight: 700;
-    }
-
-    .view-all:hover {
-        color: var(--primary-hover);
-        text-decoration: underline;
-    }
-
-    .alert-error {
-        background-color: #FEF2F2;
-        border: 1px solid #FCA5A5;
-        color: var(--danger);
-        padding: 1rem;
-        border-radius: 0.75rem;
-        margin-bottom: 1.5rem;
-        font-weight: 700;
-    }
-
-    .review-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .review-table th {
-        text-align: left;
-        padding: 1rem;
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        border-bottom: 1px solid var(--border-color);
-        background-color: #F8FAFC;
-        white-space: nowrap;
-    }
-
-    .review-table td {
-        padding: 1rem;
-        border-bottom: 1px solid #F1F5F9;
-        color: #334155;
-        font-size: 0.875rem;
-        vertical-align: middle;
-    }
-
-    .review-table tr:hover {
-        background-color: #F8FAFC;
-    }
-
-    .badge-orange {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.35rem 0.65rem;
-        border-radius: 0.5rem;
-        background-color: var(--primary-light);
-        color: var(--primary);
-        border: 1px solid #FBD6C4;
-        font-size: 0.75rem;
-        font-weight: 800;
-        white-space: nowrap;
-    }
-
-    .badge-status {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.35rem 0.65rem;
-        border-radius: 999px;
-        background-color: var(--warning-bg);
-        color: var(--warning-text);
-        font-size: 0.75rem;
-        font-weight: 800;
-        white-space: nowrap;
-    }
-
-    .review-action {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0.55rem 0.9rem;
-        border-radius: 0.75rem;
-        background-color: var(--primary-light);
-        border: 1px solid #FBD6C4;
-        color: var(--primary);
-        font-size: 0.875rem;
-        font-weight: 800;
-        transition: all 0.2s;
-        white-space: nowrap;
-    }
-
-    .review-action:hover {
-        background-color: var(--primary);
-        color: #FFFFFF;
-    }
-
-    .empty-state {
-        padding: 4rem 1rem;
-        text-align: center;
-        color: var(--text-muted);
-    }
-
-    .empty-state h3 {
-        color: var(--text-dark);
-        font-size: 1.25rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .table-scroll {
-        overflow-x: auto;
-    }
-
-    @media (max-width: 900px) {
         .layout {
-            flex-direction: column;
+            display: flex;
+            min-height: 100vh;
         }
 
         .sidebar {
-            width: 100%;
-        }
-
-        main {
-            padding: 1.5rem;
-        }
-
-        .content-header {
+            width: 270px;
+            flex: 0 0 270px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
             flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
         }
-    }
-</style>
 
+        .brand {
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border);
+        }
 
+        .brand-logo {
+            width: 48px;
+            height: 48px;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
+            background: var(--primary);
+            color: white;
+            font-weight: 900;
+        }
+
+        .brand h1 {
+            margin: 0;
+            color: var(--primary);
+            font-size: 24px;
+        }
+
+        .brand p {
+            margin: 2px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .navigation {
+            flex: 1;
+            padding: 22px;
+        }
+
+        .navigation-title {
+            margin-bottom: 10px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .nav-link {
+            display: block;
+            margin-bottom: 8px;
+            padding: 13px 14px;
+            border-radius: 12px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .nav-link.active {
+            color: var(--primary);
+            background: var(--primary-soft);
+            border: 1px solid #fed7aa;
+        }
+
+        .sidebar-footer {
+            padding: 22px;
+            border-top: 1px solid var(--border);
+        }
+
+        .logout-link {
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        .main {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .topbar {
+            height: 72px;
+            padding: 0 34px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+
+        .avatar {
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            font-weight: 900;
+        }
+
+        .profile-email {
+            max-width: 260px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .profile-role {
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .content {
+            padding: 34px;
+        }
+
+        .page-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .page-header h2 {
+            margin: 0;
+            font-size: 30px;
+        }
+
+        .page-header p {
+            margin: 7px 0 0;
+            color: var(--muted);
+        }
+
+        .count-card {
+            min-width: 170px;
+            padding: 18px 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+
+        .count-card span {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .count-card strong {
+            display: block;
+            margin-top: 5px;
+            font-size: 30px;
+        }
+
+        .alert {
+            margin-bottom: 18px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            color: var(--danger);
+            background: var(--danger-soft);
+            border: 1px solid #fecaca;
+            font-weight: 700;
+        }
+
+        .review-card {
+            margin-bottom: 18px;
+            padding: 22px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 22px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        }
+
+        .course-line {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin-bottom: 10px;
+        }
+
+        .course-code {
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .review-card h3 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .meta-grid {
+            margin-top: 16px;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(130px, 1fr));
+            gap: 12px;
+        }
+
+        .meta-item {
+            padding: 12px;
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+        }
+
+        .meta-label {
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .meta-value {
+            margin-top: 5px;
+            font-weight: 800;
+        }
+
+        .description {
+            margin-top: 15px;
+            color: #334155;
+            line-height: 1.6;
+        }
+
+        .action-column {
+            min-width: 165px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .status {
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .status.pending {
+            color: var(--warning);
+            background: var(--warning-soft);
+        }
+
+        .status.progress {
+            color: #1d4ed8;
+            background: #dbeafe;
+        }
+
+        .review-button {
+            min-width: 150px;
+            padding: 12px 16px;
+            border-radius: 11px;
+            color: white;
+            background: var(--primary);
+            text-align: center;
+            font-weight: 800;
+        }
+
+        .empty-state {
+            padding: 60px 25px;
+            text-align: center;
+            background: var(--surface);
+            border: 1px dashed #cbd5e1;
+            border-radius: 18px;
+        }
+
+        .empty-state h3 {
+            margin: 0 0 8px;
+        }
+
+        .empty-state p {
+            margin: 0;
+            color: var(--muted);
+        }
+
+        @media (max-width: 1050px) {
+            .sidebar {
+                width: 220px;
+                flex-basis: 220px;
+            }
+
+            .meta-grid {
+                grid-template-columns: repeat(2, minmax(130px, 1fr));
+            }
+        }
+
+        @media (max-width: 760px) {
+            .layout {
+                display: block;
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            .content {
+                padding: 22px;
+            }
+
+            .page-header,
+            .review-card {
+                display: block;
+            }
+
+            .count-card {
+                margin-top: 16px;
+            }
+
+            .action-column {
+                margin-top: 18px;
+                align-items: stretch;
+            }
+        }
+    </style>
 </head>
 
 <body>
 <div class="layout">
     <aside class="sidebar">
-        <div class="sidebar-header">
-            <div class="sidebar-logo">LM</div>
-
-
-        <div class="sidebar-title">
-            <h1>LMLF</h1>
-            <p>Reviewer Portal</p>
-        </div>
-    </div>
-
-    <div class="sidebar-nav">
-        <div class="nav-section-title">Review Workflow</div>
-
-        <ul class="nav-menu">
-            <li>
-                <a class="nav-item active" href="${pageContext.request.contextPath}/review?action=pending">
-                    Pending Reviews
-                </a>
-            </li>
-
-            <li>
-                <a class="nav-item" href="${pageContext.request.contextPath}/review-history">
-                    Review History
-                </a>
-            </li>
-        </ul>
-    </div>
-
-    <div class="sidebar-footer">
-        <a class="logout-btn" href="${pageContext.request.contextPath}/logout">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
-            </svg>
-            Logout
-        </a>
-    </div>
-</aside>
-
-<div class="main-wrapper">
-    <header class="top-header">
-        <div class="profile-menu">
-            <div class="avatar"><%= userInitials %></div>
-
-            <div class="profile-info">
-                <span class="profile-email">
-                    <%= userEmail.isEmpty() ? "reviewer@test.com" : userEmail %>
-                </span>
-                <span class="profile-role">Reviewer</span>
-            </div>
-        </div>
-    </header>
-
-    <main>
-        <div class="content-header">
+        <div class="brand">
+            <div class="brand-logo">LM</div>
             <div>
-                <h2>Pending Reviews</h2>
-                <p>These are syllabus versions assigned to you and waiting for review.</p>
+                <h1>LMLF</h1>
+                <p>Reviewer Portal</p>
             </div>
         </div>
 
-        <% if (errorMessage != null && !errorMessage.isEmpty()) { %>
-        <div class="alert-error">
-            <%= errorMessage %>
+        <nav class="navigation">
+            <div class="navigation-title">Review Workflow</div>
+
+            <a class="nav-link active"
+               href="${pageContext.request.contextPath}/review?action=pending">
+                Pending Reviews
+            </a>
+
+            <a class="nav-link"
+               href="${pageContext.request.contextPath}/review-history">
+                Review History
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a class="logout-link"
+               href="${pageContext.request.contextPath}/logout">
+                Logout
+            </a>
         </div>
-        <% } %>
+    </aside>
 
-        <div class="panel">
-            <div class="panel-header">
-                <h3 class="panel-title">Review Queue</h3>
+    <div class="main">
+        <header class="topbar">
+            <div class="profile">
+                <div class="avatar"><%= h(userInitials) %></div>
+                <div>
+                    <div class="profile-email"><%= h(userEmail) %></div>
+                    <div class="profile-role">Reviewer</div>
+                </div>
+            </div>
+        </header>
 
-                <a href="${pageContext.request.contextPath}/review-history" class="view-all">
-                    View Review History
-                </a>
+        <main class="content">
+            <div class="page-header">
+                <div>
+                    <h2>Pending Reviews</h2>
+                    <p>Open an assigned syllabus version and review all seven sections.</p>
+                </div>
+
+                <div class="count-card">
+                    <span>Open assignments</span>
+                    <strong><%= pendingCount %></strong>
+                </div>
             </div>
 
-            <div class="table-scroll">
-                <table class="review-table">
-                    <thead>
-                    <tr>
-                        <th>Course Code</th>
-                        <th>Course Name</th>
-                        <th>Syllabus Title</th>
-                        <th>Version</th>
-                        <th>Change Type</th>
-                        <th>Status</th>
-                        <th>Submitted At</th>
-                        <th>Actions</th>
-                    </tr>
-                    </thead>
+            <% if ("not_assigned_or_closed".equals(error)) { %>
+                <div class="alert">
+                    This review assignment is no longer available.
+                </div>
+            <% } else if ("invalid_version".equals(error)) { %>
+                <div class="alert">
+                    Invalid syllabus version.
+                </div>
+            <% } else if ("cannot_start_review".equals(error)) { %>
+                <div class="alert">
+                    The review cannot be started. Refresh the page and try again.
+                </div>
+            <% } else if ("version_not_found".equals(error)) { %>
+                <div class="alert">
+                    The syllabus version was not found.
+                </div>
+            <% } %>
 
-                    <tbody>
-                    <%
-                        if (pendingReviews != null && !pendingReviews.isEmpty()) {
-                            for (Map<String, Object> row : pendingReviews) {
-                    %>
+            <% if (pendingReviews == null || pendingReviews.isEmpty()) { %>
+                <div class="empty-state">
+                    <h3>No pending reviews</h3>
+                    <p>You currently have no submitted syllabus version to review.</p>
+                </div>
+            <% } else { %>
+                <% for (Map<String, Object> row : pendingReviews) {
+                    String reviewStatus = text(
+                            row.get("review_status"),
+                            "PENDING"
+                    );
 
-                    <tr>
-                        <td>
-                            <span class="badge-orange">
-                                <%= row.get("course_code") == null ? "-" : row.get("course_code") %>
-                            </span>
-                        </td>
+                    Object submittedAtObject = row.get("submitted_at");
+                    String submittedAt = submittedAtObject instanceof java.util.Date
+                            ? dateFormat.format((java.util.Date) submittedAtObject)
+                            : text(submittedAtObject, "-");
+                %>
+                    <article class="review-card">
+                        <div>
+                            <div class="course-line">
+                                <span class="course-code">
+                                    <%= h(text(row.get("course_code"), "-")) %>
+                                </span>
 
-                        <td>
-                            <strong><%= row.get("course_name") == null ? "-" : row.get("course_name") %></strong>
-                        </td>
-
-                        <td>
-                            <%= row.get("syllabus_title") == null ? "-" : row.get("syllabus_title") %>
-                        </td>
-
-                        <td>
-                            <span class="badge-orange">
-                                v<%= row.get("version_number") == null ? "-" : row.get("version_number") %>
-                            </span>
-                        </td>
-
-                        <td>
-                            <span class="badge-orange">
-                                <%= row.get("change_type") == null ? "-" : row.get("change_type") %>
-                            </span>
-                        </td>
-
-                        <td>
-                            <span class="badge-status">
-                                <%= row.get("status") == null ? "-" : row.get("status") %>
-                            </span>
-                        </td>
-
-                        <td>
-                            <%= row.get("submitted_at") == null ? "-" : row.get("submitted_at") %>
-                        </td>
-
-                        <td>
-                            <a class="review-action"
-                               href="${pageContext.request.contextPath}/review?action=evaluate&versionId=<%= row.get("version_id") %>">
-                                Evaluate
-                            </a>
-                        </td>
-                    </tr>
-
-                    <%
-                            }
-                        } else {
-                    %>
-
-                    <tr>
-                        <td colspan="8">
-                            <div class="empty-state">
-                                <h3>No Pending Reviews</h3>
-                                <p>You currently have no syllabus versions waiting for review.</p>
+                                <h3>
+                                    <%= h(text(row.get("course_name"), "Unnamed course")) %>
+                                </h3>
                             </div>
-                        </td>
-                    </tr>
 
-                    <% } %>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </main>
-</div>
+                            <div>
+                                <strong>
+                                    <%= h(text(row.get("syllabus_title"), "Syllabus")) %>
+                                </strong>
+                            </div>
 
+                            <div class="meta-grid">
+                                <div class="meta-item">
+                                    <div class="meta-label">Version</div>
+                                    <div class="meta-value">
+                                        v<%= h(text(row.get("version_number"), "-")) %>
+                                    </div>
+                                </div>
 
+                                <div class="meta-item">
+                                    <div class="meta-label">Change type</div>
+                                    <div class="meta-value">
+                                        <%= h(text(row.get("change_type"), "-")) %>
+                                    </div>
+                                </div>
+
+                                <div class="meta-item">
+                                    <div class="meta-label">Submitted</div>
+                                    <div class="meta-value"><%= h(submittedAt) %></div>
+                                </div>
+
+                                <div class="meta-item">
+                                    <div class="meta-label">Reviewer progress</div>
+                                    <div class="meta-value">
+                                        <%= h(text(row.get("completed_reviewer_count"), "0")) %>
+                                        /
+                                        <%= h(text(row.get("assigned_reviewer_count"), "0")) %>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="description">
+                                <strong>Changes:</strong>
+                                <%= h(text(
+                                        row.get("description_of_changes"),
+                                        "No description was provided."
+                                )) %>
+                            </div>
+                        </div>
+
+                        <div class="action-column">
+                            <span class="status <%= "IN_PROGRESS".equalsIgnoreCase(reviewStatus)
+                                    ? "progress"
+                                    : "pending" %>">
+                                <%= h(reviewStatus.replace('_', ' ')) %>
+                            </span>
+
+                            <a class="review-button"
+                               href="${pageContext.request.contextPath}/review?action=evaluate&versionId=<%= h(row.get("version_id")) %>">
+                                <%= "IN_PROGRESS".equalsIgnoreCase(reviewStatus)
+                                        ? "Continue Review"
+                                        : "Start Review" %>
+                            </a>
+                        </div>
+                    </article>
+                <% } %>
+            <% } %>
+        </main>
+    </div>
 </div>
 </body>
 </html>
