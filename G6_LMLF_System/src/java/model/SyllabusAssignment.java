@@ -19,9 +19,12 @@ public class SyllabusAssignment {
     private int academicYear;
     private Timestamp assignedAt;
     private String assignmentStatus;
+    private Long templateFileId;
+    private Long submittedVersionId;
 
     // Display helpers (for showing lecturer name/email/course code on front end)
     private String courseCode;
+    private String courseName;
     private String designerName;
     private String designerEmail;
     private String reviewerName;
@@ -104,6 +107,14 @@ public class SyllabusAssignment {
         this.courseCode = courseCode;
     }
 
+    public String getCourseName() {
+        return courseName;
+    }
+
+    public void setCourseName(String courseName) {
+        this.courseName = courseName;
+    }
+
     public String getDesignerName() {
         return designerName;
     }
@@ -142,5 +153,31 @@ public class SyllabusAssignment {
 
     public void setAssignmentStatus(String assignmentStatus) {
         this.assignmentStatus = assignmentStatus;
+    }
+
+    public Long getTemplateFileId() {
+        return templateFileId;
+    }
+
+    public void setTemplateFileId(Long templateFileId) {
+        this.templateFileId = templateFileId;
+    }
+
+    private Timestamp dueDate;
+
+    public Long getSubmittedVersionId() {
+        return submittedVersionId;
+    }
+
+    public void setSubmittedVersionId(Long submittedVersionId) {
+        this.submittedVersionId = submittedVersionId;
+    }
+
+    public Timestamp getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(Timestamp dueDate) {
+        this.dueDate = dueDate;
     }
 }

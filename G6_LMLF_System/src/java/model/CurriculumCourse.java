@@ -6,6 +6,7 @@ public class CurriculumCourse {
     private Long courseId;
     private Integer semester;
     private Course course;
+    private String knowledgeBlock;
 
     public CurriculumCourse() {}
 
@@ -26,4 +27,6 @@ public class CurriculumCourse {
     public void setSemester(Integer semester) { this.semester = semester; }
     public Course getCourse() { return course; }
     public void setCourse(Course course) { this.course = course; }
+    public String getKnowledgeBlock() { return knowledgeBlock; }
+    public void setKnowledgeBlock(String knowledgeBlock) { this.knowledgeBlock = knowledgeBlock; }
 }

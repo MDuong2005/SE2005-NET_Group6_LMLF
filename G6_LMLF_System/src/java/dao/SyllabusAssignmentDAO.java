@@ -43,6 +43,7 @@ public class SyllabusAssignmentDAO extends DBContext {
                     sa.setAcademicYear(rs.getInt("academic_year"));
                     sa.setAssignedAt(rs.getTimestamp("assigned_at"));
                     sa.setAssignmentStatus(rs.getString("assignment_status"));
+                    sa.setDueDate(rs.getTimestamp("due_date"));
                     
                     // Display helpers
                     sa.setCourseCode(rs.getString("course_code"));
@@ -65,6 +66,7 @@ public class SyllabusAssignmentDAO extends DBContext {
     public SyllabusAssignment getAssignment(long courseId, String semester, int academicYear) {
         String sql = "SELECT sa.*, "
                 + "       c.code AS course_code, "
+                + "       c.name AS course_name, "
                 + "       d.first_name + ' ' + d.last_name AS designer_name, "
                 + "       d.email AS designer_email, "
                 + "       r.first_name + ' ' + r.last_name AS reviewer_name, "
@@ -92,9 +94,11 @@ public class SyllabusAssignmentDAO extends DBContext {
                     sa.setAcademicYear(rs.getInt("academic_year"));
                     sa.setAssignedAt(rs.getTimestamp("assigned_at"));
                     sa.setAssignmentStatus(rs.getString("assignment_status"));
+                    sa.setDueDate(rs.getTimestamp("due_date"));
                     
                     // Display helpers
                     sa.setCourseCode(rs.getString("course_code"));
+                    sa.setCourseName(rs.getString("course_name"));
                     sa.setDesignerName(rs.getString("designer_name").trim());
                     sa.setDesignerEmail(rs.getString("designer_email"));
                     sa.setReviewerName(rs.getString("reviewer_name").trim());
@@ -132,20 +136,31 @@ public class SyllabusAssignmentDAO extends DBContext {
             long assignmentId;
             if (isUpdate) {
                 sql = "UPDATE syllabus_assignments "
-                        + "SET designer_id = ?, reviewer_id = ?, assignment_status = ?, assigned_at = CURRENT_TIMESTAMP "
+                        + "SET designer_id = ?, reviewer_id = ?, assignment_status = ?, template_file_id = ?, submitted_version_id = ?, assigned_at = CURRENT_TIMESTAMP, due_date = ? "
                         + "WHERE course_id = ? AND semester = ? AND academic_year = ?";
                 PreparedStatement ps = connection.prepareStatement(sql);
                 ps.setLong(1, assignment.getDesignerId());
                 ps.setLong(2, assignment.getReviewerId());
                 ps.setString(3, status);
-                ps.setLong(4, assignment.getCourseId());
-                ps.setString(5, assignment.getSemester());
-                ps.setInt(6, assignment.getAcademicYear());
+                if (assignment.getTemplateFileId() != null) {
+                    ps.setLong(4, assignment.getTemplateFileId());
+                } else {
+                    ps.setNull(4, java.sql.Types.BIGINT);
+                }
+                if (assignment.getSubmittedVersionId() != null) {
+                    ps.setLong(5, assignment.getSubmittedVersionId());
+                } else {
+                    ps.setNull(5, java.sql.Types.BIGINT);
+                }
+                ps.setTimestamp(6, assignment.getDueDate());
+                ps.setLong(7, assignment.getCourseId());
+                ps.setString(8, assignment.getSemester());
+                ps.setInt(9, assignment.getAcademicYear());
                 ps.executeUpdate();
                 assignmentId = existing.getAssignmentId();
             } else {
-                sql = "INSERT INTO syllabus_assignments (course_id, designer_id, reviewer_id, semester, academic_year, assignment_status, assigned_at) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
+                sql = "INSERT INTO syllabus_assignments (course_id, designer_id, reviewer_id, semester, academic_year, assignment_status, template_file_id, submitted_version_id, assigned_at, due_date) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)";
                 PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
                 ps.setLong(1, assignment.getCourseId());
                 ps.setLong(2, assignment.getDesignerId());
@@ -153,6 +168,17 @@ public class SyllabusAssignmentDAO extends DBContext {
                 ps.setString(4, assignment.getSemester());
                 ps.setInt(5, assignment.getAcademicYear());
                 ps.setString(6, status);
+                if (assignment.getTemplateFileId() != null) {
+                    ps.setLong(7, assignment.getTemplateFileId());
+                } else {
+                    ps.setNull(7, java.sql.Types.BIGINT);
+                }
+                if (assignment.getSubmittedVersionId() != null) {
+                    ps.setLong(8, assignment.getSubmittedVersionId());
+                } else {
+                    ps.setNull(8, java.sql.Types.BIGINT);
+                }
+                ps.setTimestamp(9, assignment.getDueDate());
                 ps.executeUpdate();
                 
                 ResultSet generatedKeys = ps.getGeneratedKeys();
@@ -275,9 +301,11 @@ public class SyllabusAssignmentDAO extends DBContext {
                     sa.setAcademicYear(rs.getInt("academic_year"));
                     sa.setAssignedAt(rs.getTimestamp("assigned_at"));
                     sa.setAssignmentStatus(rs.getString("assignment_status"));
+                    sa.setDueDate(rs.getTimestamp("due_date"));
                     
                     // Display helpers
                     sa.setCourseCode(rs.getString("course_code"));
+                    sa.setCourseName(rs.getString("course_name"));
                     sa.setDesignerName(rs.getString("designer_name").trim());
                     sa.setDesignerEmail(rs.getString("designer_email"));
                     sa.setReviewerName(rs.getString("reviewer_name").trim());
@@ -330,9 +358,11 @@ public class SyllabusAssignmentDAO extends DBContext {
                     sa.setAcademicYear(rs.getInt("academic_year"));
                     sa.setAssignedAt(rs.getTimestamp("assigned_at"));
                     sa.setAssignmentStatus(rs.getString("assignment_status"));
+                    sa.setDueDate(rs.getTimestamp("due_date"));
                     
                     // Display helpers
                     sa.setCourseCode(rs.getString("course_code"));
+                    sa.setCourseName(rs.getString("course_name"));
                     sa.setDesignerName(rs.getString("designer_name").trim());
                     sa.setDesignerEmail(rs.getString("designer_email"));
                     sa.setReviewerName(rs.getString("reviewer_name").trim());
@@ -378,9 +408,11 @@ public class SyllabusAssignmentDAO extends DBContext {
                     sa.setAcademicYear(rs.getInt("academic_year"));
                     sa.setAssignedAt(rs.getTimestamp("assigned_at"));
                     sa.setAssignmentStatus(rs.getString("assignment_status"));
+                    sa.setDueDate(rs.getTimestamp("due_date"));
                     
                     // Display helpers
                     sa.setCourseCode(rs.getString("course_code"));
+                    sa.setCourseName(rs.getString("course_name"));
                     sa.setDesignerName(rs.getString("designer_name").trim());
                     sa.setDesignerEmail(rs.getString("designer_email"));
                     sa.setReviewerName(rs.getString("reviewer_name").trim());
@@ -454,11 +486,54 @@ public class SyllabusAssignmentDAO extends DBContext {
     }
 
     /**
+     * Check duplicate mapping including reviewer_id
+     */
+    public boolean isDuplicateForReviewer(long courseId, String semester, int academicYear, long reviewerId) {
+        String sql = "SELECT 1 FROM syllabus_assignments WHERE course_id = ? AND semester = ? AND academic_year = ? AND reviewer_id = ?";
+        try {
+            if (connection != null) {
+                PreparedStatement ps = connection.prepareStatement(sql);
+                ps.setLong(1, courseId);
+                ps.setString(2, semester);
+                ps.setInt(3, academicYear);
+                ps.setLong(4, reviewerId);
+                ResultSet rs = ps.executeQuery();
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Check duplicate mapping including reviewer_id excluding current id (for editing)
+     */
+    public boolean isDuplicateForReviewer(long courseId, String semester, int academicYear, long reviewerId, long excludeId) {
+        String sql = "SELECT 1 FROM syllabus_assignments WHERE course_id = ? AND semester = ? AND academic_year = ? AND reviewer_id = ? AND assignment_id <> ?";
+        try {
+            if (connection != null) {
+                PreparedStatement ps = connection.prepareStatement(sql);
+                ps.setLong(1, courseId);
+                ps.setString(2, semester);
+                ps.setInt(3, academicYear);
+                ps.setLong(4, reviewerId);
+                ps.setLong(5, excludeId);
+                ResultSet rs = ps.executeQuery();
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
      * Insert new assignment
      */
     public boolean create(SyllabusAssignment assignment) {
-        String sql = "INSERT INTO syllabus_assignments (course_id, designer_id, reviewer_id, semester, academic_year, assignment_status, assigned_at) "
-                + "VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
+        String sql = "INSERT INTO syllabus_assignments (course_id, designer_id, reviewer_id, semester, academic_year, assignment_status, template_file_id, submitted_version_id, assigned_at, due_date) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)";
         try {
             if (connection != null) {
                 PreparedStatement ps = connection.prepareStatement(sql);
@@ -469,6 +544,17 @@ public class SyllabusAssignmentDAO extends DBContext {
                 ps.setInt(5, assignment.getAcademicYear());
                 String status = assignment.getAssignmentStatus();
                 ps.setString(6, (status != null && !status.trim().isEmpty()) ? status : "PENDING");
+                if (assignment.getTemplateFileId() != null) {
+                    ps.setLong(7, assignment.getTemplateFileId());
+                } else {
+                    ps.setNull(7, java.sql.Types.BIGINT);
+                }
+                if (assignment.getSubmittedVersionId() != null) {
+                    ps.setLong(8, assignment.getSubmittedVersionId());
+                } else {
+                    ps.setNull(8, java.sql.Types.BIGINT);
+                }
+                ps.setTimestamp(9, assignment.getDueDate());
                 int rows = ps.executeUpdate();
                 return rows > 0;
             }
@@ -482,7 +568,7 @@ public class SyllabusAssignmentDAO extends DBContext {
      * Update existing assignment
      */
     public boolean update(SyllabusAssignment assignment) {
-        String sql = "UPDATE syllabus_assignments SET course_id = ?, designer_id = ?, reviewer_id = ?, semester = ?, academic_year = ?, assignment_status = ?, assigned_at = CURRENT_TIMESTAMP "
+        String sql = "UPDATE syllabus_assignments SET course_id = ?, designer_id = ?, reviewer_id = ?, semester = ?, academic_year = ?, assignment_status = ?, assigned_at = CURRENT_TIMESTAMP, due_date = ? "
                 + "WHERE assignment_id = ?";
         try {
             if (connection != null) {
@@ -494,7 +580,8 @@ public class SyllabusAssignmentDAO extends DBContext {
                 ps.setInt(5, assignment.getAcademicYear());
                 String status = assignment.getAssignmentStatus();
                 ps.setString(6, (status != null && !status.trim().isEmpty()) ? status : "PENDING");
-                ps.setLong(7, assignment.getAssignmentId());
+                ps.setTimestamp(7, assignment.getDueDate());
+                ps.setLong(8, assignment.getAssignmentId());
                 int rows = ps.executeUpdate();
                 return rows > 0;
             }

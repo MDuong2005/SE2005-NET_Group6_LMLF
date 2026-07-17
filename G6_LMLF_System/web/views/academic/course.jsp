@@ -26,14 +26,16 @@
         <!-- Google Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+        <!-- Main Stylesheet -->
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/academic/academic.css">
 
         <style>
             /* CSS variables & color system */
             :root {
-                --primary: #FF6B00;
-                --primary-hover: #E05E00;
-                --primary-light: #FFF0E6;
+                --primary: var(--fpt-orange, #FF6B00);
+                --primary-hover: var(--fpt-orange-hover, #E05E00);
+                --primary-light: var(--fpt-orange-light, #FFF0E6);
                 --bg-main: #F8FAFC;
                 --bg-card: #FFFFFF;
                 --border-color: #E2E8F0;
@@ -50,291 +52,25 @@
                 --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             }
 
-            * {
-                box-sizing: border-box;
-                margin: 0;
-                padding: 0;
-            }
-
-            body {
-                font-family: 'Plus Jakarta Sans', sans-serif;
-                background-color: var(--bg-main);
-                color: var(--text-dark);
-                min-height: 100vh;
-                display: flex;
-                flex-direction: column;
-                overflow-x: hidden;
-            }
-
-            /* Top Navigation Header */
-            header {
-                height: 70px;
-                background-color: var(--bg-card);
-                border-bottom: 1px solid var(--border-color);
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 0 24px;
-                position: sticky;
-                top: 0;
-                z-index: 100;
-            }
-
-            .header-left {
-                display: flex;
-                align-items: center;
-                gap: 48px;
-            }
-
-            .logo {
-                font-size: 24px;
-                font-weight: 800;
-                color: var(--primary);
-                text-decoration: none;
-                letter-spacing: -0.5px;
-            }
-
-            .nav-menu {
-                display: flex;
-                gap: 32px;
-                list-style: none;
-            }
-
-            .nav-menu a {
-                text-decoration: none;
-                color: var(--text-muted);
-                font-weight: 600;
-                font-size: 15px;
-                padding: 24px 0;
-                border-bottom: 2px solid transparent;
-                transition: var(--transition);
-            }
-
-            .nav-menu a:hover {
-                color: var(--text-dark);
-            }
-
-            .nav-menu li.active a {
-                color: var(--primary);
-                border-bottom-color: var(--primary);
-            }
-
-            .header-right {
-                display: flex;
-                align-items: center;
-                gap: 20px;
-            }
-
-            .global-search {
-                position: relative;
-                width: 280px;
-            }
-
-            .global-search input {
-                width: 100%;
-                height: 38px;
-                background-color: #F1F5F9;
-                border: none;
-                border-radius: 20px;
-                padding: 0 16px 0 40px;
-                font-family: inherit;
-                font-size: 14px;
-                color: var(--text-dark);
-                outline: none;
-                transition: var(--transition);
-            }
-
-            .global-search input:focus {
-                background-color: #FFFFFF;
-                box-shadow: 0 0 0 2px var(--primary);
-            }
-
-            .global-search svg {
-                position: absolute;
-                left: 14px;
-                top: 10px;
-                width: 18px;
-                height: 18px;
-                fill: var(--text-muted);
-            }
-
-            .icon-btn {
-                background: none;
-                border: none;
-                cursor: pointer;
-                color: var(--text-muted);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-                transition: var(--transition);
-            }
-
-            .icon-btn:hover {
-                background-color: #F1F5F9;
-                color: var(--text-dark);
-            }
-
-            .profile-menu {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                cursor: pointer;
-                padding: 6px 12px;
-                border-radius: 20px;
-                transition: var(--transition);
-            }
-
-            .profile-menu:hover {
-                background-color: #F1F5F9;
-            }
-
-            .avatar {
-                width: 36px;
-                height: 36px;
-                background-color: var(--primary);
-                color: #FFFFFF;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 700;
-                font-size: 14px;
-            }
-
-            .profile-name-container {
-                display: flex;
-                flex-direction: column;
-            }
-
-            .profile-name {
-                font-size: 14px;
-                font-weight: 600;
-                color: var(--text-dark);
-            }
-
-            .profile-role {
-                font-size: 11px;
-                color: var(--text-muted);
-                font-weight: 500;
-            }
-
-            .caret {
-                width: 8px;
-                height: 8px;
-                border-left: 2px solid var(--text-muted);
-                border-bottom: 2px solid var(--text-muted);
-                transform: rotate(-45deg);
-                margin-top: -3px;
-            }
-
-            /* Main Layout */
-            .app-container {
-                display: flex;
-                flex: 1;
-            }
-
-            /* Sidebar layout and items */
-            aside {
-                width: 260px;
-                background-color: var(--bg-card);
-                border-right: 1px solid var(--border-color);
-                padding: 24px 16px;
-                display: flex;
-                flex-direction: column;
-                gap: 20px;
-            }
-
-            .sidebar-section-title {
-                font-size: 11px;
-                font-weight: 700;
-                color: var(--text-muted);
-                letter-spacing: 1px;
-                padding-left: 12px;
-                text-transform: uppercase;
-            }
-
-            .sidebar-menu {
-                list-style: none;
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-            }
-
-            .sidebar-menu a {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 12px;
-                text-decoration: none;
-                color: var(--text-muted);
-                font-weight: 600;
-                font-size: 14px;
-                border-radius: var(--radius-md);
-                transition: var(--transition);
-            }
-
-            .sidebar-menu a:hover {
-                background-color: #F8FAFC;
-                color: var(--text-dark);
-            }
-
-            .sidebar-menu li.active a {
-                background-color: var(--primary-light);
-                color: var(--primary);
-            }
-
-            .sidebar-menu svg {
-                width: 20px;
-                height: 20px;
-                stroke-width: 2;
-            }
-
-            /* Main Workspace */
-            main {
-                flex: 1;
-                padding: 32px 40px;
+            /* Scoped styles for the core workspace area */
+            .workspace-container {
                 display: flex;
                 flex-direction: column;
                 gap: 24px;
-                width: 100%;
-                margin: 0 auto;
             }
 
-            .content-header {
+            .workspace-header {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
             }
 
-            .content-header h1 {
+            .workspace-header h1 {
                 font-size: 26px;
-                font-weight: 700;
+                font-weight: 800;
                 color: var(--text-dark);
-            }
-
-            .btn-primary {
-                background-color: var(--primary);
-                color: #FFFFFF;
-                border: none;
-                height: 42px;
-                padding: 0 20px;
-                border-radius: var(--radius-md);
-                font-weight: 700;
-                font-size: 14px;
-                cursor: pointer;
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                transition: var(--transition);
-                box-shadow: var(--shadow-sm);
-                text-decoration: none;
-            }
-
-            .btn-primary:hover {
-                background-color: var(--primary-hover);
+                letter-spacing: -0.5px;
+                margin: 0;
             }
 
             /* Card component */
@@ -385,21 +121,28 @@
             }
 
             .search-group {
-                position: relative;
                 flex: 2;
             }
 
-            .search-group .form-input {
-                padding-left: 44px;
+            .search-input-wrapper {
+                position: relative;
+                width: 100%;
             }
 
-            .search-group svg {
+            .search-input-wrapper .form-input {
+                padding-left: 44px;
+                width: 100%;
+            }
+
+            .search-input-wrapper svg {
                 position: absolute;
                 left: 14px;
-                top: 12px;
+                top: 50%;
+                transform: translateY(-50%);
                 width: 18px;
                 height: 18px;
                 fill: var(--text-muted);
+                pointer-events: none;
             }
 
             .btn-search {
@@ -494,30 +237,48 @@
                 align-items: center;
             }
 
-            .btn-link-edit {
+            .btn-action {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 36px;
+                height: 36px;
+                border-radius: var(--radius-md);
+                border: 1px solid var(--border-color);
+                background-color: #FFFFFF;
+                transition: var(--transition);
+                cursor: pointer;
+                text-decoration: none;
+            }
+
+            .btn-action-edit {
                 color: var(--primary);
-                text-decoration: none;
-                font-weight: 700;
-                font-size: 14px;
-                transition: var(--transition);
             }
 
-            .btn-link-edit:hover {
+            .btn-action-edit:hover {
+                background-color: var(--primary-light);
+                border-color: var(--primary);
                 color: var(--primary-hover);
-                text-decoration: underline;
             }
 
-            .btn-link-delete {
+            .btn-action-delete {
                 color: var(--text-muted);
-                text-decoration: none;
-                font-weight: 600;
-                font-size: 14px;
-                transition: var(--transition);
             }
 
-            .btn-link-delete:hover {
+            .btn-action-delete:hover {
+                background-color: #FEF2F2;
+                border-color: #FCA5A5;
                 color: var(--danger);
-                text-decoration: underline;
+            }
+
+            .btn-action svg {
+                width: 18px;
+                height: 18px;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 2;
+                stroke-linecap: round;
+                stroke-linejoin: round;
             }
 
             /* Empty State inside table */
@@ -773,122 +534,54 @@
     </head>
     <body>
 
-        <!-- Top Navigation Header -->
-        <header>
-            <div class="header-left">
-                <a href="#" class="logo">LMLF</a>
-                <ul class="nav-menu">
-                    <li><a href="${pageContext.request.contextPath}/dashboard">Dashboard</a></li>
-                    <li class="active"><a href="${pageContext.request.contextPath}/course">Curriculum</a></li>
-                    <li><a href="#">Faculty</a></li>
-                    <li><a href="#">Settings</a></li>
-                </ul>
-            </div>
-            <div class="header-right">
-                <div class="global-search">
-                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                    <input type="text" placeholder="Global search...">
-                </div>
+        <div class="dashboard-wrapper">
+            <!-- ================= SIDEBAR ================= -->
+            <jsp:include page="../layout/sidebar.jsp" />
 
-                <button class="icon-btn">
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 4.86 6 7.42 6 10.5v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6.5C8 8.02 9.51 6.5 11.5 6.5S15 8.02 15 11.5V17z"/></svg>
-                </button>
+            <!-- ================= MAIN CONTENT AREA ================= -->
+            <main class="dashboard-main">
+                <!-- ================= TOP HEADER ================= -->
+                <jsp:include page="../layout/header.jsp" />
 
-                <div class="profile-menu">
-                    <div class="avatar">
+                <!-- ================= DYNAMIC WORKSPACE ================= -->
+                <div class="dashboard-content">
+                    <div class="workspace-container">
+                        <!-- Success Message -->
                         <%
-                            String userInitials = "AD";
-                            String userEmail = "";
-                            model.User user = (model.User) session.getAttribute("user");
-                            if (user != null && user.getEmail() != null) {
-                                userEmail = user.getEmail();
-                                if (userEmail.length() >= 2) {
-                                    userInitials = userEmail.substring(0, 2).toUpperCase();
-                                } else {
-                                    userInitials = userEmail.toUpperCase();
-                                }
+                            String successMessage = (String) session.getAttribute("successMessage");
+                            if (successMessage != null && !successMessage.isEmpty()) {
+                        %>
+                        <div class="alert-success" style="
+                             background-color: #DCFCE7;
+                             border: 1px solid #86EFAC;
+                             color: #166534;
+                             padding: 12px 16px;
+                             border-radius: var(--radius-md);
+                             font-size: 14px;
+                             font-weight: 500;
+                             display: flex;
+                             align-items: center;
+                             gap: 8px;
+                             margin-bottom: 16px;
+                             ">
+                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <%= successMessage %>
+                            <button onclick="this.parentElement.style.display = 'none'" style="margin-left: auto; background: none; border: none; color: #166534; cursor: pointer; font-size: 18px;">&times;</button>
+                        </div>
+                        <%
+                                session.removeAttribute("successMessage");
                             }
                         %>
-                        <%= userInitials %>
-                    </div>
-                    <div class="profile-name-container">
-                        <span class="profile-name"><%= userEmail.isEmpty() ? "Admin User" : userEmail %></span>
-                        <span class="profile-role">Admin User</span>
-                    </div>
-                    <div class="caret"></div>
-                </div>
-            </div>
-        </header>
-
-        <div class="app-container">
-            <!-- Sidebar Navigation -->
-            <aside>
-                <div class="sidebar-section-title">Course Management</div>
-                <ul class="sidebar-menu">
-                    <li>
-                        <a href="#">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                            Role Assignments
-                        </a>
-                    </li>
-                    <li class="active">
-                        <a href="${pageContext.request.contextPath}/course">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                            Course Management
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            Prerequisites
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                            Approval Workflow
-                        </a>
-                    </li>
-                </ul>
-            </aside>
-
-            <!-- Main Workspace Panel -->
-            <main>
-                <!-- Success Message -->
-                <%
-                    String successMessage = (String) session.getAttribute("successMessage");
-                    if (successMessage != null && !successMessage.isEmpty()) {
-                %>
-                <div class="alert-success" style="
-                     background-color: #DCFCE7;
-                     border: 1px solid #86EFAC;
-                     color: #166534;
-                     padding: 12px 16px;
-                     border-radius: var(--radius-md);
-                     font-size: 14px;
-                     font-weight: 500;
-                     display: flex;
-                     align-items: center;
-                     gap: 8px;
-                     margin-bottom: 16px;
-                     ">
-                    <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                    </svg>
-                    <%= successMessage %>
-                    <button onclick="this.parentElement.style.display = 'none'" style="margin-left: auto; background: none; border: none; color: #166534; cursor: pointer; font-size: 18px;">&times;</button>
-                </div>
-                <%
-                        session.removeAttribute("successMessage");
-                    }
-                %>
-                <div class="content-header">
-                    <h1>Course Management</h1>
-                    <button type="button" class="btn-primary" onclick="openCreateModal()">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        Add New Course
-                    </button>
-                </div>
+                        
+                        <div class="workspace-header">
+                            <h1>Course Management</h1>
+                            <button type="button" class="btn-primary" onclick="openCreateModal()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                Add New Course
+                            </button>
+                        </div>
 
                 <!-- Error Notification Alert -->
                 <% if(errorMessage != null && action.isEmpty()){ %>
@@ -905,22 +598,30 @@
 
                         <div class="form-group" style="max-width: 280px;">
                             <label for="selectCourse">Filter by Credits</label>
-                            <select id="selectCourse" name="creditsFilter" class="form-select">
-                                <option value="all">All Credits</option>
-                                <option value="1">1 Credit</option>
-                                <option value="2">2 Credits</option>
-                                <option value="3">3 Credits</option>
-                                <option value="4">4 Credits</option>
-                                <option value="5">5+ Credits</option>
+                            <%
+                                String currentFilter = (String) request.getAttribute("creditsFilter");
+                                if (currentFilter == null) {
+                                    currentFilter = "all";
+                                }
+                            %>
+                            <select id="selectCourse" name="creditsFilter" class="form-select" onchange="this.form.submit()">
+                                <option value="all" <%= "all".equals(currentFilter) ? "selected" : "" %>>All Credits</option>
+                                <option value="1" <%= "1".equals(currentFilter) ? "selected" : "" %>>1 Credit</option>
+                                <option value="2" <%= "2".equals(currentFilter) ? "selected" : "" %>>2 Credits</option>
+                                <option value="3" <%= "3".equals(currentFilter) ? "selected" : "" %>>3 Credits</option>
+                                <option value="4" <%= "4".equals(currentFilter) ? "selected" : "" %>>4 Credits</option>
+                                <option value="5" <%= "5".equals(currentFilter) ? "selected" : "" %>>5+ Credits</option>
                             </select>
                         </div>
 
                         <div class="form-group search-group">
                             <label for="searchKeyword">Search Course</label>
-                            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                            <input type="text" id="searchKeyword" name="keyword" class="form-input" 
-                                   placeholder="Enter course code or name..." 
-                                   value="<%= request.getAttribute("keyword") == null ? "" : request.getAttribute("keyword") %>">
+                            <div class="search-input-wrapper">
+                                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                                <input type="text" id="searchKeyword" name="keyword" class="form-input" 
+                                       placeholder="Enter course code or name..." 
+                                       value="<%= request.getAttribute("keyword") == null ? "" : request.getAttribute("keyword") %>">
+                            </div>
                         </div>
 
                         <button type="submit" class="btn-search">Search</button>
@@ -953,10 +654,22 @@
                                 <td style="text-align: center; font-size: 13px;"><%= courseItem.getCreatedAt() != null ? courseItem.getCreatedAt().toString().replace("T", " ") : "N/A" %></td>
                                 <td>
                                     <div class="actions-cell">
-                                        <a href="${pageContext.request.contextPath}/course?action=edit&id=<%= courseItem.getCourseId() %>" class="btn-link-edit">Edit</a>
+                                        <a href="${pageContext.request.contextPath}/course?action=edit&id=<%= courseItem.getCourseId() %>" 
+                                           class="btn-action btn-action-edit" title="Edit">
+                                            <svg viewBox="0 0 24 24">
+                                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                            </svg>
+                                        </a>
                                         <a href="${pageContext.request.contextPath}/course?action=delete&id=<%= courseItem.getCourseId() %>" 
-                                           class="btn-link-delete" 
-                                           onclick="return confirm('Delete this course?')">Delete</a>
+                                           class="btn-action btn-action-delete" title="Remove"
+                                           onclick="return confirm('Delete this course?')">
+                                            <svg viewBox="0 0 24 24">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                                            </svg>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>
@@ -1096,6 +809,8 @@
                 <% } %>
             </div>
         </div>
+    </main>
+</div>
 
         <!-- JavaScript controls -->
         <script>
@@ -1143,8 +858,8 @@
                     });
 
                     // Update text indicators
-                    document.getElementById('pageIndicator').textContent = `Page ${page} of ${totalPages}`;
-                    document.getElementById('paginationInfo').innerHTML = `Showing <span>${start + 1}</span> to <span>${end}</span> of <span>${rows.length}</span> courses`;
+                    document.getElementById('pageIndicator').textContent = 'Page ' + page + ' of ' + totalPages;
+                    document.getElementById('paginationInfo').innerHTML = 'Showing <span>' + (start + 1) + '</span> to <span>' + end + '</span> of <span>' + rows.length + '</span> courses';
 
                     // Toggle state of buttons
                     document.getElementById('btnFirst').disabled = (page === 1);
