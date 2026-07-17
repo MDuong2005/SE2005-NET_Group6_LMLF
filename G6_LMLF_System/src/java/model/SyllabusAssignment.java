@@ -5,6 +5,8 @@
 package model;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -19,13 +21,17 @@ public class SyllabusAssignment {
     private int academicYear;
     private Timestamp assignedAt;
     private String assignmentStatus;
+    private Long templateFileId;
+    private Long submittedVersionId;
 
     // Display helpers (for showing lecturer name/email/course code on front end)
     private String courseCode;
+    private String courseName;
     private String designerName;
     private String designerEmail;
     private String reviewerName;
     private String reviewerEmail;
+    private List<Long> reviewerIds = new ArrayList<>();
 
     public SyllabusAssignment() {
     }
@@ -104,6 +110,14 @@ public class SyllabusAssignment {
         this.courseCode = courseCode;
     }
 
+    public String getCourseName() {
+        return courseName;
+    }
+
+    public void setCourseName(String courseName) {
+        this.courseName = courseName;
+    }
+
     public String getDesignerName() {
         return designerName;
     }
@@ -136,11 +150,51 @@ public class SyllabusAssignment {
         this.reviewerEmail = reviewerEmail;
     }
 
+    public List<Long> getReviewerIds() {
+        return reviewerIds;
+    }
+
+    public void setReviewerIds(List<Long> reviewerIds) {
+        this.reviewerIds = reviewerIds == null
+                ? new ArrayList<>()
+                : new ArrayList<>(reviewerIds);
+    }
+
+    public boolean hasReviewer(long reviewerId) {
+        return reviewerIds != null && reviewerIds.contains(reviewerId);
+    }
+
     public String getAssignmentStatus() {
         return assignmentStatus;
     }
 
     public void setAssignmentStatus(String assignmentStatus) {
         this.assignmentStatus = assignmentStatus;
+    }
+
+    public Long getTemplateFileId() {
+        return templateFileId;
+    }
+
+    public void setTemplateFileId(Long templateFileId) {
+        this.templateFileId = templateFileId;
+    }
+
+    private Timestamp dueDate;
+
+    public Long getSubmittedVersionId() {
+        return submittedVersionId;
+    }
+
+    public void setSubmittedVersionId(Long submittedVersionId) {
+        this.submittedVersionId = submittedVersionId;
+    }
+
+    public Timestamp getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(Timestamp dueDate) {
+        this.dueDate = dueDate;
     }
 }

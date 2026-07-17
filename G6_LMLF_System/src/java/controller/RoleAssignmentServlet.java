@@ -1,11 +1,13 @@
 package controller;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.Part;
 import model.Course;
 import model.SyllabusAssignment;
 import model.User;
@@ -14,9 +16,17 @@ import dao.UserDAO;
 import dao.SyllabusAssignmentDAO;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @WebServlet("/role-assignment")
+@MultipartConfig(
+    fileSizeThreshold = 1024 * 1024 * 2,  // 2MB
+    maxFileSize = 1024 * 1024 * 10,       // 10MB
+    maxRequestSize = 1024 * 1024 * 50     // 50MB
+)
 public class RoleAssignmentServlet extends HttpServlet {
 
     private CourseDAO courseDAO;
@@ -57,8 +67,25 @@ public class RoleAssignmentServlet extends HttpServlet {
                 try {
                     Long id = Long.parseLong(idStr);
                     SyllabusAssignment sa = assignmentDAO.getById(id);
+                    assignmentDAO.enrichReviewerData(sa);
                     req.setAttribute("assignment", sa);
                     req.setAttribute("action", "edit");
+                } catch (NumberFormatException e) {
+                    req.setAttribute("errorMessage", "Invalid assignment ID");
+                }
+            }
+        }
+
+        // Load specific assignment if action is detail
+        if ("detail".equals(action)) {
+            String idStr = req.getParameter("id");
+            if (idStr != null && !idStr.isEmpty()) {
+                try {
+                    Long id = Long.parseLong(idStr);
+                    SyllabusAssignment sa = assignmentDAO.getById(id);
+                    assignmentDAO.enrichReviewerData(sa);
+                    req.setAttribute("detailAssignment", sa);
+                    req.setAttribute("action", "detail");
                 } catch (NumberFormatException e) {
                     req.setAttribute("errorMessage", "Invalid assignment ID");
                 }
@@ -73,6 +100,8 @@ public class RoleAssignmentServlet extends HttpServlet {
         } else {
             assignmentList = assignmentDAO.listAll();
         }
+
+        assignmentDAO.enrichReviewerData(assignmentList);
 
         // Apply filterCourseId if selected
         if (filterCourseIdStr != null && !filterCourseIdStr.trim().isEmpty()) {
@@ -133,158 +162,349 @@ public class RoleAssignmentServlet extends HttpServlet {
         }
     }
 
-    private void handleCreate(HttpServletRequest req, HttpServletResponse resp) 
-            throws ServletException, IOException {
+    private void handleCreate(
+            HttpServletRequest req,
+            HttpServletResponse resp
+    ) throws ServletException, IOException {
 
         String courseIdStr = req.getParameter("courseId");
         String designerIdStr = req.getParameter("designerId");
-        String reviewerIdStr = req.getParameter("reviewerId");
+        String[] reviewerIdValues
+                = req.getParameterValues("reviewerId");
         String semester = req.getParameter("semester");
         String yearStr = req.getParameter("academicYear");
         String status = req.getParameter("status");
+        String dueDateStr = req.getParameter("dueDate");
 
         req.setAttribute("action", "create");
         req.setAttribute("tempCourseId", courseIdStr);
         req.setAttribute("tempDesignerId", designerIdStr);
-        req.setAttribute("tempReviewerId", reviewerIdStr);
         req.setAttribute("tempSemester", semester);
         req.setAttribute("tempYear", yearStr);
         req.setAttribute("tempStatus", status);
 
-        if (courseIdStr == null || courseIdStr.trim().isEmpty() || 
-            designerIdStr == null || designerIdStr.trim().isEmpty() ||
-            reviewerIdStr == null || reviewerIdStr.trim().isEmpty() ||
-            semester == null || semester.trim().isEmpty() ||
-            yearStr == null || yearStr.trim().isEmpty()) {
-            req.setAttribute("errorMessage", "All fields are required.");
+        if (courseIdStr == null
+                || courseIdStr.trim().isEmpty()
+                || designerIdStr == null
+                || designerIdStr.trim().isEmpty()
+                || reviewerIdValues == null
+                || reviewerIdValues.length == 0
+                || semester == null
+                || semester.trim().isEmpty()
+                || yearStr == null
+                || yearStr.trim().isEmpty()) {
+
+            req.setAttribute(
+                    "errorMessage",
+                    "Course, Designer, Reviewer, semester, and academic year are required."
+            );
             forwardToList(req, resp);
             return;
         }
 
         try {
-            Long courseId = Long.parseLong(courseIdStr.trim());
-            Long designerId = Long.parseLong(designerIdStr.trim());
-            Long reviewerId = Long.parseLong(reviewerIdStr.trim());
-            int academicYear = Integer.parseInt(yearStr.trim());
+            long courseId
+                    = Long.parseLong(courseIdStr.trim());
+            long designerId
+                    = Long.parseLong(designerIdStr.trim());
+            int academicYear
+                    = Integer.parseInt(yearStr.trim());
 
-            if (designerId.equals(reviewerId)) {
-                req.setAttribute("errorMessage", "Syllabus Designer and Reviewer must be different lecturers.");
+            List<Long> reviewerIds
+                    = parseReviewerIds(reviewerIdValues);
+
+            if (reviewerIds.isEmpty()) {
+                req.setAttribute(
+                        "errorMessage",
+                        "Please select at least one Reviewer."
+                );
                 forwardToList(req, resp);
                 return;
             }
 
-            if (assignmentDAO.isDuplicate(courseId, semester, academicYear)) {
-                req.setAttribute("errorMessage", "An assignment for this course, semester and academic year already exists.");
+            if (reviewerIds.contains(designerId)) {
+                req.setAttribute(
+                        "errorMessage",
+                        "The Designer cannot also be a Reviewer for the same assignment."
+                );
                 forwardToList(req, resp);
                 return;
             }
 
-            SyllabusAssignment sa = new SyllabusAssignment();
-            sa.setCourseId(courseId);
-            sa.setDesignerId(designerId);
-            sa.setReviewerId(reviewerId);
-            sa.setSemester(semester);
-            sa.setAcademicYear(academicYear);
-            sa.setAssignmentStatus((status != null && !status.trim().isEmpty()) ? status : "PENDING");
-
-            boolean result = assignmentDAO.create(sa);
-
-            if (result) {
-                HttpSession session = req.getSession();
-                User loggedInUser = (User) session.getAttribute("user");
-                String ipAddress = req.getRemoteAddr();
-                
-                assignmentDAO.saveAssignment(sa, loggedInUser.getUserId(), ipAddress);
-                
-                req.getSession().setAttribute("successMessage", "Added syllabus role assignment successfully!");
-                resp.sendRedirect(req.getContextPath() + "/role-assignment");
-            } else {
-                req.setAttribute("errorMessage", "Failed to save syllabus role assignment. Please try again.");
+            if (assignmentDAO.isDuplicate(
+                    courseId,
+                    semester,
+                    academicYear
+            )) {
+                req.setAttribute(
+                        "errorMessage",
+                        "One assignment already exists for this Course, semester, and academic year."
+                );
                 forwardToList(req, resp);
+                return;
             }
 
-        } catch (NumberFormatException e) {
-            req.setAttribute("errorMessage", "Invalid parameters provided.");
+            java.sql.Timestamp dueDate
+                    = parseDueDate(dueDateStr);
+
+            HttpSession session = req.getSession();
+            User loggedInUser
+                    = (User) session.getAttribute("user");
+
+            long assignedBy = loggedInUser == null
+                    ? 0L
+                    : loggedInUser.getUserId();
+
+            Long fileId = saveTemplateFile(
+                    req.getPart("templateFile"),
+                    loggedInUser
+            );
+
+            SyllabusAssignment assignment
+                    = new SyllabusAssignment();
+
+            assignment.setCourseId(courseId);
+            assignment.setDesignerId(designerId);
+            assignment.setReviewerId(reviewerIds.get(0));
+            assignment.setReviewerIds(reviewerIds);
+            assignment.setSemester(semester);
+            assignment.setAcademicYear(academicYear);
+            assignment.setAssignmentStatus(
+                    status == null || status.trim().isEmpty()
+                            ? "PENDING"
+                            : status.trim()
+            );
+            assignment.setTemplateFileId(fileId);
+            assignment.setDueDate(dueDate);
+
+            long assignmentId
+                    = assignmentDAO.createWithReviewers(
+                            assignment,
+                            reviewerIds,
+                            assignedBy,
+                            req.getRemoteAddr()
+                    );
+
+            if (assignmentId <= 0) {
+                req.setAttribute(
+                        "errorMessage",
+                        "Failed to create the assignment. Make sure the multi-Reviewer migration has been executed."
+                );
+                forwardToList(req, resp);
+                return;
+            }
+
+            dao.RoleDAO roleDAO = new dao.RoleDAO();
+            roleDAO.assignRoleToUser(
+                    designerId,
+                    "DESIGNER"
+            );
+
+            for (Long reviewerId : reviewerIds) {
+                roleDAO.assignRoleToUser(
+                        reviewerId,
+                        "REVIEWER"
+                );
+            }
+
+            req.getSession().setAttribute(
+                    "successMessage",
+                    "Assignment #"
+                    + assignmentId
+                    + " created for 1 Designer and "
+                    + reviewerIds.size()
+                    + " Reviewer(s)."
+            );
+
+            resp.sendRedirect(
+                    req.getContextPath()
+                    + "/role-assignment"
+            );
+
+        } catch (NumberFormatException exception) {
+            req.setAttribute(
+                    "errorMessage",
+                    "Invalid numeric parameters."
+            );
             forwardToList(req, resp);
         }
     }
 
-    private void handleEdit(HttpServletRequest req, HttpServletResponse resp) 
-            throws ServletException, IOException {
+    private void handleEdit(
+            HttpServletRequest req,
+            HttpServletResponse resp
+    ) throws ServletException, IOException {
 
-        String assignmentIdStr = req.getParameter("assignmentId");
-        String courseIdStr = req.getParameter("courseId");
-        String designerIdStr = req.getParameter("designerId");
-        String reviewerIdStr = req.getParameter("reviewerId");
-        String semester = req.getParameter("semester");
-        String yearStr = req.getParameter("academicYear");
-        String status = req.getParameter("status");
+        String assignmentIdStr
+                = req.getParameter("assignmentId");
+        String courseIdStr
+                = req.getParameter("courseId");
+        String designerIdStr
+                = req.getParameter("designerId");
+        String[] reviewerIdValues
+                = req.getParameterValues("reviewerId");
+        String semester
+                = req.getParameter("semester");
+        String yearStr
+                = req.getParameter("academicYear");
+        String status
+                = req.getParameter("status");
+        String dueDateStr
+                = req.getParameter("dueDate");
 
         req.setAttribute("action", "edit");
 
-        if (assignmentIdStr == null || assignmentIdStr.trim().isEmpty() ||
-            courseIdStr == null || courseIdStr.trim().isEmpty() || 
-            designerIdStr == null || designerIdStr.trim().isEmpty() ||
-            reviewerIdStr == null || reviewerIdStr.trim().isEmpty() ||
-            semester == null || semester.trim().isEmpty() ||
-            yearStr == null || yearStr.trim().isEmpty()) {
-            req.setAttribute("errorMessage", "All fields are required.");
+        if (assignmentIdStr == null
+                || assignmentIdStr.trim().isEmpty()
+                || courseIdStr == null
+                || courseIdStr.trim().isEmpty()
+                || designerIdStr == null
+                || designerIdStr.trim().isEmpty()
+                || reviewerIdValues == null
+                || reviewerIdValues.length == 0
+                || semester == null
+                || semester.trim().isEmpty()
+                || yearStr == null
+                || yearStr.trim().isEmpty()) {
+
+            req.setAttribute(
+                    "errorMessage",
+                    "All assignment fields are required."
+            );
             forwardToList(req, resp);
             return;
         }
 
         try {
-            Long assignmentId = Long.parseLong(assignmentIdStr.trim());
-            Long courseId = Long.parseLong(courseIdStr.trim());
-            Long designerId = Long.parseLong(designerIdStr.trim());
-            Long reviewerId = Long.parseLong(reviewerIdStr.trim());
-            int academicYear = Integer.parseInt(yearStr.trim());
+            long assignmentId
+                    = Long.parseLong(assignmentIdStr.trim());
+            long courseId
+                    = Long.parseLong(courseIdStr.trim());
+            long designerId
+                    = Long.parseLong(designerIdStr.trim());
+            int academicYear
+                    = Integer.parseInt(yearStr.trim());
 
-            SyllabusAssignment existing = assignmentDAO.getById(assignmentId);
+            List<Long> reviewerIds
+                    = parseReviewerIds(reviewerIdValues);
+
+            SyllabusAssignment existing
+                    = assignmentDAO.getById(assignmentId);
+
             if (existing == null) {
-                req.setAttribute("errorMessage", "Syllabus assignment not found.");
+                req.setAttribute(
+                        "errorMessage",
+                        "Syllabus assignment not found."
+                );
                 forwardToList(req, resp);
                 return;
             }
 
+            assignmentDAO.enrichReviewerData(existing);
             req.setAttribute("assignment", existing);
 
-            if (designerId.equals(reviewerId)) {
-                req.setAttribute("errorMessage", "Syllabus Designer and Reviewer must be different lecturers.");
+            if (reviewerIds.isEmpty()) {
+                req.setAttribute(
+                        "errorMessage",
+                        "Please select at least one Reviewer."
+                );
                 forwardToList(req, resp);
                 return;
             }
 
-            if (assignmentDAO.isDuplicate(courseId, semester, academicYear, assignmentId)) {
-                req.setAttribute("errorMessage", "An assignment for this course, semester and academic year already exists.");
+            if (reviewerIds.contains(designerId)) {
+                req.setAttribute(
+                        "errorMessage",
+                        "The Designer cannot also be a Reviewer for the same assignment."
+                );
+                forwardToList(req, resp);
+                return;
+            }
+
+            if (assignmentDAO.isDuplicate(
+                    courseId,
+                    semester,
+                    academicYear,
+                    assignmentId
+            )) {
+                req.setAttribute(
+                        "errorMessage",
+                        "Another assignment already exists for this Course, semester, and academic year."
+                );
                 forwardToList(req, resp);
                 return;
             }
 
             existing.setCourseId(courseId);
             existing.setDesignerId(designerId);
-            existing.setReviewerId(reviewerId);
+            existing.setReviewerId(reviewerIds.get(0));
+            existing.setReviewerIds(reviewerIds);
             existing.setSemester(semester);
             existing.setAcademicYear(academicYear);
-            existing.setAssignmentStatus((status != null && !status.trim().isEmpty()) ? status : "PENDING");
+            existing.setAssignmentStatus(
+                    status == null || status.trim().isEmpty()
+                            ? existing.getAssignmentStatus()
+                            : status.trim()
+            );
+            existing.setDueDate(
+                    parseDueDate(dueDateStr)
+            );
 
-            boolean result = assignmentDAO.update(existing);
+            HttpSession session = req.getSession();
+            User loggedInUser
+                    = (User) session.getAttribute("user");
 
-            if (result) {
-                HttpSession session = req.getSession();
-                User loggedInUser = (User) session.getAttribute("user");
-                String ipAddress = req.getRemoteAddr();
-                assignmentDAO.saveAssignment(existing, loggedInUser.getUserId(), ipAddress);
-                
-                req.getSession().setAttribute("successMessage", "Updated syllabus role assignment successfully!");
-                resp.sendRedirect(req.getContextPath() + "/role-assignment");
-            } else {
-                req.setAttribute("errorMessage", "Failed to update assignment.");
+            long updatedBy = loggedInUser == null
+                    ? 0L
+                    : loggedInUser.getUserId();
+
+            boolean updated
+                    = assignmentDAO.updateWithReviewers(
+                            existing,
+                            reviewerIds,
+                            updatedBy,
+                            req.getRemoteAddr()
+                    );
+
+            if (!updated) {
+                req.setAttribute(
+                        "errorMessage",
+                        "Failed to update the assignment."
+                );
                 forwardToList(req, resp);
+                return;
             }
 
-        } catch (NumberFormatException e) {
-            req.setAttribute("errorMessage", "Invalid numeric inputs.");
+            dao.RoleDAO roleDAO = new dao.RoleDAO();
+            roleDAO.assignRoleToUser(
+                    designerId,
+                    "DESIGNER"
+            );
+
+            for (Long reviewerId : reviewerIds) {
+                roleDAO.assignRoleToUser(
+                        reviewerId,
+                        "REVIEWER"
+                );
+            }
+
+            req.getSession().setAttribute(
+                    "successMessage",
+                    "Assignment updated with "
+                    + reviewerIds.size()
+                    + " Reviewer(s)."
+            );
+
+            resp.sendRedirect(
+                    req.getContextPath()
+                    + "/role-assignment"
+            );
+
+        } catch (NumberFormatException exception) {
+            req.setAttribute(
+                    "errorMessage",
+                    "Invalid numeric inputs."
+            );
             forwardToList(req, resp);
         }
     }
@@ -330,6 +550,8 @@ public class RoleAssignmentServlet extends HttpServlet {
             throws ServletException, IOException {
 
         List<SyllabusAssignment> assignmentList = assignmentDAO.listAll();
+        assignmentDAO.enrichReviewerData(assignmentList);
+
         List<Course> courses = courseDAO.listAll();
         List<User> lecturers = userDAO.getActiveUsersByRole("LECTURER");
 
@@ -337,6 +559,128 @@ public class RoleAssignmentServlet extends HttpServlet {
         req.setAttribute("courses", courses);
         req.setAttribute("lecturers", lecturers);
         req.getRequestDispatcher("/views/academic/role-assignment.jsp").forward(req, resp);
+    }
+
+    private List<Long> parseReviewerIds(
+            String[] reviewerIdValues
+    ) {
+
+        Set<Long> reviewerIds
+                = new LinkedHashSet<>();
+
+        if (reviewerIdValues == null) {
+            return new ArrayList<>();
+        }
+
+        for (String reviewerIdValue : reviewerIdValues) {
+            if (reviewerIdValue == null
+                    || reviewerIdValue.trim().isEmpty()) {
+                continue;
+            }
+
+            reviewerIds.add(
+                    Long.parseLong(reviewerIdValue.trim())
+            );
+        }
+
+        return new ArrayList<>(reviewerIds);
+    }
+
+    private java.sql.Timestamp parseDueDate(
+            String dueDateValue
+    ) {
+
+        if (dueDateValue == null
+                || dueDateValue.trim().isEmpty()) {
+            return null;
+        }
+
+        String normalizedValue
+                = dueDateValue.trim().replace("T", " ");
+
+        if (normalizedValue.length() == 16) {
+            normalizedValue += ":00";
+        }
+
+        return java.sql.Timestamp.valueOf(
+                normalizedValue
+        );
+    }
+
+    private Long saveTemplateFile(
+            Part filePart,
+            User loggedInUser
+    ) throws IOException {
+
+        if (filePart == null || filePart.getSize() <= 0) {
+            return null;
+        }
+
+        String originalFileName
+                = java.nio.file.Paths.get(
+                        filePart.getSubmittedFileName()
+                ).getFileName().toString();
+
+        String storedFileName
+                = System.currentTimeMillis()
+                + "_"
+                + originalFileName;
+
+        java.nio.file.Path templateDirectory
+                = java.nio.file.Paths.get(
+                        System.getProperty("user.home"),
+                        "lmlf_uploads",
+                        "templates"
+                );
+
+        java.nio.file.Files.createDirectories(
+                templateDirectory
+        );
+
+        java.nio.file.Path storedPath
+                = templateDirectory.resolve(
+                        storedFileName
+                );
+
+        try (java.io.InputStream inputStream
+                     = filePart.getInputStream()) {
+
+            java.nio.file.Files.copy(
+                    inputStream,
+                    storedPath,
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING
+            );
+        }
+
+        model.SyllabusVersionFile templateFile
+                = new model.SyllabusVersionFile();
+
+        templateFile.setFileType("TEMPLATE");
+        templateFile.setOriginalFileName(
+                originalFileName
+        );
+        templateFile.setStoredFilePath(
+                storedPath.toAbsolutePath().toString()
+        );
+        templateFile.setFileSize(
+                filePart.getSize()
+        );
+        templateFile.setMimeType(
+                filePart.getContentType()
+        );
+
+        if (loggedInUser != null) {
+            templateFile.setUploadedBy(
+                    loggedInUser.getUserId()
+            );
+        }
+
+        dao.SyllabusVersionFileDAO fileDAO
+                = new dao.SyllabusVersionFileDAO();
+
+        long fileId = fileDAO.insert(templateFile);
+
+        return fileId > 0 ? fileId : null;
     }
 
     private boolean checkAccess(HttpServletRequest req, HttpServletResponse resp) throws IOException {

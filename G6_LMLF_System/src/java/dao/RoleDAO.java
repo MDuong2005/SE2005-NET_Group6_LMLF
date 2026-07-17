@@ -156,4 +156,39 @@ public class RoleDAO extends DBContext {
 
         return false;
     }
+
+    public boolean assignRoleToUser(long userId, String roleName) {
+        if (hasRole(userId, roleName)) {
+            return true; // Already has it
+        }
+
+        String sqlRole = "SELECT role_id FROM roles WHERE role_name = ?";
+        Long roleId = null;
+        try (PreparedStatement ps = connection.prepareStatement(sqlRole)) {
+            ps.setString(1, roleName);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    roleId = rs.getLong("role_id");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        if (roleId == null) {
+            return false; 
+        }
+
+        String sqlInsert = "INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)";
+        try (PreparedStatement ps = connection.prepareStatement(sqlInsert)) {
+            ps.setLong(1, userId);
+            ps.setLong(2, roleId);
+            int rows = ps.executeUpdate();
+            return rows > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
