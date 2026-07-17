@@ -104,6 +104,7 @@ public class SyllabusReviewDAO extends DBContext {
             if (rejectedCount > 0) {
                 updateVersionRejectedInternal(connection, versionId);
                 markSyllabusRevisionRequiredInternal(connection, versionId);
+                markAcademicAssignmentRejectedInternal(connection, versionId);
                 cancelRemainingAssignmentsInternal(
                         connection,
                         versionId,
@@ -117,6 +118,7 @@ public class SyllabusReviewDAO extends DBContext {
                     && approvedCount == assignedCount) {
 
                 updateVersionApprovedInternal(connection, versionId);
+                markAcademicAssignmentCompletedInternal(connection, versionId);
                 workflowStatus = WORKFLOW_ALL_APPROVED;
 
             } else {
@@ -752,6 +754,77 @@ public class SyllabusReviewDAO extends DBContext {
             if (statement.executeUpdate() != 1) {
                 throw new SQLException(
                         "Unable to approve the syllabus version."
+                );
+            }
+        }
+    }
+
+    /**
+     * Synchronizes the Academic assignment after every assigned Reviewer
+     * has completed the review and all decisions are approved.
+     *
+     * The assignment workflow uses COMPLETED, while the submitted syllabus
+     * version uses APPROVED.
+     */
+    private void markAcademicAssignmentCompletedInternal(
+            Connection transactionConnection,
+            long versionId
+    ) throws SQLException {
+
+        String sql = """
+                UPDATE syllabus_assignments
+                SET assignment_status = 'COMPLETED',
+                    completed_at = SYSDATETIME()
+                WHERE submitted_version_id = ?
+                  AND assignment_status IN (
+                        'SUBMITTED',
+                        'IN_PROGRESS',
+                        'ACTIVE'
+                  )
+                """;
+
+        try (PreparedStatement statement
+                     = transactionConnection.prepareStatement(sql)) {
+
+            statement.setLong(1, versionId);
+
+            if (statement.executeUpdate() < 1) {
+                throw new SQLException(
+                        "Unable to complete the syllabus assignment."
+                );
+            }
+        }
+    }
+
+    /**
+     * Synchronizes the Academic assignment when at least one Reviewer
+     * rejects the submitted syllabus version.
+     */
+    private void markAcademicAssignmentRejectedInternal(
+            Connection transactionConnection,
+            long versionId
+    ) throws SQLException {
+
+        String sql = """
+                UPDATE syllabus_assignments
+                SET assignment_status = 'REJECTED',
+                    completed_at = NULL
+                WHERE submitted_version_id = ?
+                  AND assignment_status IN (
+                        'SUBMITTED',
+                        'IN_PROGRESS',
+                        'ACTIVE'
+                  )
+                """;
+
+        try (PreparedStatement statement
+                     = transactionConnection.prepareStatement(sql)) {
+
+            statement.setLong(1, versionId);
+
+            if (statement.executeUpdate() < 1) {
+                throw new SQLException(
+                        "Unable to reject the syllabus assignment."
                 );
             }
         }

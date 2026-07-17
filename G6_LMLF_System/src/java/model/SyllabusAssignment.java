@@ -5,6 +5,8 @@
 package model;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -29,6 +31,7 @@ public class SyllabusAssignment {
     private String designerEmail;
     private String reviewerName;
     private String reviewerEmail;
+    private List<Long> reviewerIds = new ArrayList<>();
 
     public SyllabusAssignment() {
     }
@@ -145,6 +148,20 @@ public class SyllabusAssignment {
 
     public void setReviewerEmail(String reviewerEmail) {
         this.reviewerEmail = reviewerEmail;
+    }
+
+    public List<Long> getReviewerIds() {
+        return reviewerIds;
+    }
+
+    public void setReviewerIds(List<Long> reviewerIds) {
+        this.reviewerIds = reviewerIds == null
+                ? new ArrayList<>()
+                : new ArrayList<>(reviewerIds);
+    }
+
+    public boolean hasReviewer(long reviewerId) {
+        return reviewerIds != null && reviewerIds.contains(reviewerId);
     }
 
     public String getAssignmentStatus() {

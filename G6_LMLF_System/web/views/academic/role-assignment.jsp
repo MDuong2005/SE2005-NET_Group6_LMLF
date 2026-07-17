@@ -1126,7 +1126,10 @@
                                                                                 String
                                                                                 status=item.getAssignmentStatus() !=null
                                                                                 ? item.getAssignmentStatus() : "PENDING"
-                                                                                ; String statusColor="#64748B" ; String
+                                                                                ; String displayStatus =
+                                                                                "COMPLETED".equals(status)
+                                                                                ? "APPROVED" : status;
+                                                                                String statusColor="#64748B" ; String
                                                                                 statusBg="#F1F5F9" ; if
                                                                                 ("PENDING".equals(status)) {
                                                                                 statusColor="#D97706" ;
@@ -1191,7 +1194,7 @@
                                                                                     <td>
                                                                                         <span
                                                                                             style="display: inline-block; padding: 4px 10px; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; color: <%= statusColor %>; background-color: <%= statusBg %>;">
-                                                                                            <%= status %>
+                                                                                            <%= displayStatus %>
                                                                                         </span>
                                                                                     </td>
                                                                                     <td>
@@ -1354,7 +1357,7 @@
                                                                     <!-- Step 4 Indicator -->
                                                                     <div class="step-item" id="stepIndicator4">
                                                                         <div class="step-circle">4</div>
-                                                                        <span class="step-title">Import Template</span>
+                                                                        <span class="step-title">Save Assignment</span>
                                                                     </div>
                                                                 </div>
 
@@ -1539,6 +1542,10 @@
                                                                         <p id="uploadSub" class="upload-sub">Supports
                                                                             .xlsx, .xls templates</p>
                                                                     </div>
+                                                                    <p style="margin-top: 12px; color: #B45309; font-size: 13px; font-weight: 700;">
+                                                                        The assignment is saved only after you press
+                                                                        “Assign Roles &amp; Import Template”.
+                                                                    </p>
                                                                 </div>
 
                                                             </div>
@@ -1568,8 +1575,8 @@
                                                                                 stroke-linejoin="round"
                                                                                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                                                         </svg>
-                                                                        <span style="vertical-align: middle;">Import &
-                                                                            Clone</span>
+                                                                        <span style="vertical-align: middle;">Assign Roles &amp;
+                                                                            Import Template</span>
                                                                     </button>
                                                                 </div>
                                                             </div>
@@ -1599,7 +1606,7 @@
                                                             <form
                                                                 action="${pageContext.request.contextPath}/role-assignment?action=edit"
                                                                 method="post" class="modal-form"
-                                                                onsubmit="return validateRoles('editDesignerId', 'editReviewerId')">
+                                                                onsubmit="return validateEditRoles()">
                                                                 <input type="hidden" name="assignmentId"
                                                                     value="<%= editAssignment.getAssignmentId() %>">
                                                                 <div class="modal-body">
@@ -1671,15 +1678,15 @@
 
                                                                      <div class="form-group"
                                                                         style="margin-bottom: 16px;">
-                                                                        <label for="editReviewerId">Syllabus Reviewer
-                                                                            *</label>
+                                                                        <label for="editReviewerId">Syllabus Reviewers
+                                                                            (Select one or more) *</label>
                                                                         <select id="editReviewerId" name="reviewerId"
-                                                                            class="form-select" required>
+                                                                            class="form-select" multiple size="6" required>
                                                                             <% if(lecturers !=null) { for(User u :
                                                                                 lecturers) { String
                                                                                 fullName=u.getFirstName() + " " +
                                                                                 u.getLastName(); boolean
-                                                                                isSelected=u.getUserId()==editAssignment.getReviewerId();
+                                                                                isSelected=editAssignment.hasReviewer(u.getUserId());
                                                                                 %>
                                                                                 <option value="<%= u.getUserId() %>"
                                                                                     <%=isSelected ? "selected" : "" %>>
@@ -1687,6 +1694,9 @@
                                                                                             )</option>
                                                                                 <% } } %>
                                                                         </select>
+                                                                        <small style="display:block; margin-top:6px; color:var(--text-muted);">
+                                                                            Hold Ctrl to select or remove multiple Reviewers.
+                                                                        </small>
                                                                     </div>
 
                                                                     <!-- Deadline (Due Date) -->
@@ -1751,7 +1761,11 @@
                                                                             status=detailAssignment.getAssignmentStatus()
                                                                             !=null ?
                                                                             detailAssignment.getAssignmentStatus()
-                                                                            : "PENDING" ; String statusColor="#64748B" ;
+                                                                            : "PENDING" ;
+                                                                            String displayStatus =
+                                                                            "COMPLETED".equals(status)
+                                                                            ? "APPROVED" : status;
+                                                                            String statusColor="#64748B" ;
                                                                             String statusBg="#F1F5F9" ; if
                                                                             ("PENDING".equals(status)) {
                                                                             statusColor="#D97706" ; statusBg="#FEF3C7" ;
@@ -1765,7 +1779,7 @@
                                                                             } %>
                                                                             <span
                                                                                 style="display: inline-block; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 800; text-transform: uppercase; color: <%= statusColor %>; background-color: <%= statusBg %>;">
-                                                                                <%= status %>
+                                                                                <%= displayStatus %>
                                                                             </span>
                                                                     </div>
                                                                 </div>
@@ -2186,6 +2200,31 @@
                                                         document.getElementById(modalId).classList.remove('open');
                                                         const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
                                                         window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+                                                    }
+
+                                                    function validateEditRoles() {
+                                                        const designer = document.getElementById('editDesignerId').value;
+                                                        const reviewerSelect = document.getElementById('editReviewerId');
+                                                        const selectedOptions = Array.from(reviewerSelect.selectedOptions);
+
+                                                        if (selectedOptions.length === 0) {
+                                                            showToast("Please select at least one Reviewer.", false);
+                                                            return false;
+                                                        }
+
+                                                        const hasSameUser = selectedOptions.some(
+                                                            option => option.value === designer
+                                                        );
+
+                                                        if (hasSameUser) {
+                                                            showToast(
+                                                                "Syllabus Designer and Reviewer must be different accounts.",
+                                                                false
+                                                            );
+                                                            return false;
+                                                        }
+
+                                                        return true;
                                                     }
 
                                                     function validateRoles(designerSelectId, reviewerSelectId) {

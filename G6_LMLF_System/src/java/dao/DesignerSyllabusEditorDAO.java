@@ -423,6 +423,18 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 }
             }
 
+            int assignedReviewerCount = createPendingReviewAssignments(
+                    assignmentId,
+                    versionId,
+                    designerId
+            );
+
+            if (assignedReviewerCount == 0) {
+                throw new SQLException(
+                        "No active Reviewer has been assigned to this syllabus assignment."
+                );
+            }
+
             String updateSyllabusSql = """
                     UPDATE syllabuses
                     SET current_version = ?,
@@ -449,6 +461,174 @@ public class DesignerSyllabusEditorDAO extends DBContext {
 
         } finally {
             connection.setAutoCommit(oldAutoCommit);
+        }
+    }
+
+    /**
+     * Creates the version-level Reviewer queue when Designer submits.
+     *
+     * Preferred source:
+     *   syllabus_assignment_reviewers
+     *   (supports more than one Reviewer when that table exists).
+     *
+     * Compatibility fallback:
+     *   syllabus_assignments.reviewer_id
+     *   (current Academic Office implementation).
+     *
+     * Only ACTIVE users having the REVIEWER role are inserted.
+     */
+    private int createPendingReviewAssignments(
+            long assignmentId,
+            long versionId,
+            long designerId
+    ) throws SQLException {
+
+        boolean hasMultipleReviewerTable = false;
+
+        String tableCheckSql = """
+                SELECT CASE
+                    WHEN OBJECT_ID(
+                        N'dbo.syllabus_assignment_reviewers',
+                        N'U'
+                    ) IS NOT NULL
+                    THEN 1
+                    ELSE 0
+                END AS table_exists
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(tableCheckSql);
+             ResultSet resultSet = statement.executeQuery()) {
+
+            if (resultSet.next()) {
+                hasMultipleReviewerTable
+                        = resultSet.getInt("table_exists") == 1;
+            }
+        }
+
+        if (hasMultipleReviewerTable) {
+            String insertMultipleSql = """
+                    INSERT INTO syllabus_version_review_assignments (
+                        version_id,
+                        reviewer_id,
+                        assigned_by,
+                        status,
+                        assigned_at,
+                        completed_at
+                    )
+                    SELECT
+                        ?,
+                        assignmentReviewer.reviewer_id,
+                        assignmentRow.assigned_by,
+                        'PENDING',
+                        SYSDATETIME(),
+                        NULL
+                    FROM syllabus_assignment_reviewers assignmentReviewer
+                    INNER JOIN syllabus_assignments assignmentRow
+                        ON assignmentRow.assignment_id
+                            = assignmentReviewer.assignment_id
+                    INNER JOIN users reviewer
+                        ON reviewer.user_id
+                            = assignmentReviewer.reviewer_id
+                    INNER JOIN user_roles userRole
+                        ON userRole.user_id = reviewer.user_id
+                    INNER JOIN roles roleRow
+                        ON roleRow.role_id = userRole.role_id
+                       AND roleRow.role_name = 'REVIEWER'
+                    WHERE assignmentReviewer.assignment_id = ?
+                      AND assignmentRow.designer_id = ?
+                      AND reviewer.status = 'ACTIVE'
+                      AND reviewer.deleted_at IS NULL
+                      AND NOT EXISTS (
+                            SELECT 1
+                            FROM syllabus_version_review_assignments existingRow
+                            WHERE existingRow.version_id = ?
+                              AND existingRow.reviewer_id
+                                    = assignmentReviewer.reviewer_id
+                      )
+                    """;
+
+            try (PreparedStatement statement
+                         = connection.prepareStatement(insertMultipleSql)) {
+
+                statement.setLong(1, versionId);
+                statement.setLong(2, assignmentId);
+                statement.setLong(3, designerId);
+                statement.setLong(4, versionId);
+                statement.executeUpdate();
+            }
+        }
+
+        /*
+         * Current Academic Office code stores one selected Reviewer directly
+         * in syllabus_assignments.reviewer_id. Use it as a fallback and also
+         * as compatibility support for existing assignments.
+         */
+        String insertSingleSql = """
+                INSERT INTO syllabus_version_review_assignments (
+                    version_id,
+                    reviewer_id,
+                    assigned_by,
+                    status,
+                    assigned_at,
+                    completed_at
+                )
+                SELECT
+                    ?,
+                    assignmentRow.reviewer_id,
+                    assignmentRow.assigned_by,
+                    'PENDING',
+                    SYSDATETIME(),
+                    NULL
+                FROM syllabus_assignments assignmentRow
+                INNER JOIN users reviewer
+                    ON reviewer.user_id = assignmentRow.reviewer_id
+                INNER JOIN user_roles userRole
+                    ON userRole.user_id = reviewer.user_id
+                INNER JOIN roles roleRow
+                    ON roleRow.role_id = userRole.role_id
+                   AND roleRow.role_name = 'REVIEWER'
+                WHERE assignmentRow.assignment_id = ?
+                  AND assignmentRow.designer_id = ?
+                  AND assignmentRow.reviewer_id IS NOT NULL
+                  AND reviewer.status = 'ACTIVE'
+                  AND reviewer.deleted_at IS NULL
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM syllabus_version_review_assignments existingRow
+                        WHERE existingRow.version_id = ?
+                          AND existingRow.reviewer_id
+                                = assignmentRow.reviewer_id
+                  )
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(insertSingleSql)) {
+
+            statement.setLong(1, versionId);
+            statement.setLong(2, assignmentId);
+            statement.setLong(3, designerId);
+            statement.setLong(4, versionId);
+            statement.executeUpdate();
+        }
+
+        String countSql = """
+                SELECT COUNT(*) AS reviewer_count
+                FROM syllabus_version_review_assignments
+                WHERE version_id = ?
+                  AND status IN ('PENDING', 'IN_PROGRESS')
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(countSql)) {
+
+            statement.setLong(1, versionId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next()
+                        ? resultSet.getInt("reviewer_count")
+                        : 0;
+            }
         }
     }
 
