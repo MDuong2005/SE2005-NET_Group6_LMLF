@@ -14,9 +14,14 @@ import model.User;
 import dao.CourseDAO;
 import dao.UserDAO;
 import dao.SyllabusAssignmentDAO;
+import dao.AccountRequestDAO;
+import model.AccountRequest;
 
 import java.io.IOException;
 import java.util.List;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 @WebServlet("/role-assignment")
 @MultipartConfig(
@@ -46,6 +51,10 @@ public class RoleAssignmentServlet extends HttpServlet {
         }
 
         String action = req.getParameter("action");
+        if ("checkExternalReviewer".equals(action)) {
+            checkExternalReviewer(req, resp);
+            return;
+        }
         String keyword = req.getParameter("keyword");
         String filterCourseIdStr = req.getParameter("filterCourseId");
         String filterSemester = req.getParameter("filterSemester");
@@ -143,6 +152,10 @@ public class RoleAssignmentServlet extends HttpServlet {
         }
 
         String action = req.getParameter("action");
+        if ("sendExternalReviewerRequest".equals(action)) {
+            sendExternalReviewerRequest(req, resp);
+            return;
+        }
 
         if ("create".equals(action)) {
             handleCreate(req, resp);
@@ -450,6 +463,112 @@ public class RoleAssignmentServlet extends HttpServlet {
         req.setAttribute("courses", courses);
         req.setAttribute("lecturers", lecturers);
         req.getRequestDispatcher("/views/academic/role-assignment.jsp").forward(req, resp);
+    }
+
+    private static class TempAccountRequestQuery extends context.DBContext {
+        public boolean insertRequest(String email, String firstName, String lastName, long requestedBy) {
+            String sql = "INSERT INTO account_requests (email, first_name, last_name, requested_by, status, requested_at) "
+                       + "VALUES (?, ?, ?, ?, 'PENDING', CURRENT_TIMESTAMP)";
+            try {
+                if (connection != null) {
+                    try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        ps.setString(1, email);
+                        ps.setString(2, firstName);
+                        ps.setString(3, lastName);
+                        ps.setLong(4, requestedBy);
+                        return ps.executeUpdate() > 0;
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            return false;
+        }
+    }
+
+    private void checkExternalReviewer(HttpServletRequest req, HttpServletResponse resp) 
+            throws ServletException, IOException {
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
+        
+        String email = req.getParameter("email");
+        if (email == null || email.trim().isEmpty()) {
+            resp.getWriter().write("{\"success\":false,\"message\":\"Email không được để trống.\"}");
+            return;
+        }
+        
+        email = email.trim();
+        UserDAO uDAO = new UserDAO();
+        if (uDAO.existsByEmail(email)) {
+            resp.getWriter().write("{\"success\":true,\"exists\":true,\"message\":\"Tài khoản đã tồn tại và đang hoạt động trên hệ thống.\"}");
+            return;
+        }
+        
+        AccountRequestDAO arDAO = new AccountRequestDAO();
+        List<AccountRequest> pendingList = arDAO.getPendingRequests();
+        AccountRequest pendingReq = null;
+        if (pendingList != null) {
+            for (AccountRequest r : pendingList) {
+                if (email.equalsIgnoreCase(r.getEmail())) {
+                    pendingReq = r;
+                    break;
+                }
+            }
+        }
+        
+        if (pendingReq != null) {
+            resp.getWriter().write("{\"success\":true,\"exists\":false,\"requested\":true,\"status\":\"PENDING\",\"message\":\"Yêu cầu đã được gửi đến Admin. <br>Trạng thái: <b>PENDING</b>\"}");
+            return;
+        }
+        
+        resp.getWriter().write("{\"success\":true,\"exists\":false,\"requested\":false}");
+    }
+
+    private void sendExternalReviewerRequest(HttpServletRequest req, HttpServletResponse resp) 
+            throws ServletException, IOException {
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
+        
+        String email = req.getParameter("email");
+        if (email == null || email.trim().isEmpty()) {
+            resp.getWriter().write("{\"success\":false,\"message\":\"Email không được để trống.\"}");
+            return;
+        }
+        
+        email = email.trim();
+        UserDAO uDAO = new UserDAO();
+        if (uDAO.existsByEmail(email)) {
+            resp.getWriter().write("{\"success\":false,\"message\":\"Tài khoản đã tồn tại và đang hoạt động trên hệ thống.\"}");
+            return;
+        }
+        
+        AccountRequestDAO arDAO = new AccountRequestDAO();
+        List<AccountRequest> pendingList = arDAO.getPendingRequests();
+        AccountRequest pendingReq = null;
+        if (pendingList != null) {
+            for (AccountRequest r : pendingList) {
+                if (email.equalsIgnoreCase(r.getEmail())) {
+                    pendingReq = r;
+                    break;
+                }
+            }
+        }
+        
+        if (pendingReq != null) {
+            resp.getWriter().write("{\"success\":false,\"message\":\"Yêu cầu cho email này đã được gửi từ trước và đang chờ duyệt.\"}");
+            return;
+        }
+        
+        User currentUser = (User) req.getSession().getAttribute("user");
+        long requestedBy = (currentUser != null) ? currentUser.getUserId() : 1L;
+        
+        String prefix = email.split("@")[0];
+        TempAccountRequestQuery tempQuery = new TempAccountRequestQuery();
+        if (tempQuery.insertRequest(email, prefix, "External", requestedBy)) {
+            resp.getWriter().write("{\"success\":true,\"message\":\"Yêu cầu đã được gửi đến Admin. <br>Trạng thái: <b>PENDING</b>\"}");
+        } else {
+            resp.getWriter().write("{\"success\":false,\"message\":\"Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại.\"}");
+        }
     }
 
     private boolean checkAccess(HttpServletRequest req, HttpServletResponse resp) throws IOException {
