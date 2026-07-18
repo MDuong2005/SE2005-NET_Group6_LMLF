@@ -1743,59 +1743,31 @@
                                                                 onsubmit="return validateRoles('editDesignerId', 'editReviewerId')">
                                                                 <input type="hidden" name="assignmentId"
                                                                     value="<%= editAssignment.getAssignmentId() %>">
+                                                                <% 
+                                                                boolean isEditLocked = "SUBMITTED".equalsIgnoreCase(editAssignment.getAssignmentStatus()) || "COMPLETED".equalsIgnoreCase(editAssignment.getAssignmentStatus());
+                                                                %>
                                                                 <div class="modal-body">
+                                                                    <% if (isEditLocked) { %>
+                                                                        <div class="alert-error" style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                                                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;">
+                                                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                                                            </svg>
+                                                                            <span>This assignment is already <strong><%= editAssignment.getAssignmentStatus() %></strong> and cannot be modified.</span>
+                                                                        </div>
+                                                                    <% } %>
 
-                                                                    <div class="form-group"
-                                                                        style="margin-bottom: 16px;">
-                                                                        <label for="editCourseId">Course *</label>
-                                                                        <select id="editCourseId" name="courseId"
-                                                                            class="form-select" required>
-                                                                            <% if(courses !=null) { for(Course c :
-                                                                                courses) { boolean
-                                                                                isSelected=c.getCourseId()==editAssignment.getCourseId();
-                                                                                %>
-                                                                                <option value="<%= c.getCourseId() %>"
-                                                                                    <%=isSelected ? "selected" : "" %>>
-                                                                                    <%= c.getCode() %> - <%= c.getName()
-                                                                                            %>
-                                                                                </option>
-                                                                                <% } } %>
-                                                                        </select>
-                                                                    </div>
-
-                                                                    <div class="form-group"
-                                                                        style="margin-bottom: 16px;">
-                                                                        <label for="editSemester">Semester *</label>
-                                                                        <select id="editSemester" name="semester"
-                                                                            class="form-select" required>
-                                                                            <option value="Spring" <%="Spring"
-                                                                                .equals(editAssignment.getSemester())
-                                                                                ? "selected" : "" %>>Spring</option>
-                                                                            <option value="Summer" <%="Summer"
-                                                                                .equals(editAssignment.getSemester())
-                                                                                ? "selected" : "" %>>Summer</option>
-                                                                            <option value="Fall" <%="Fall"
-                                                                                .equals(editAssignment.getSemester())
-                                                                                ? "selected" : "" %>>Fall</option>
-                                                                        </select>
-                                                                    </div>
-
-                                                                    <div class="form-group"
-                                                                        style="margin-bottom: 16px;">
-                                                                        <label for="editYear">Academic Year *</label>
-                                                                        <input type="number" id="editYear"
-                                                                            name="academicYear" class="form-input"
-                                                                            min="2020" max="2035"
-                                                                            value="<%= editAssignment.getAcademicYear() %>"
-                                                                            required />
-                                                                    </div>
+                                                                    <!-- Keep hidden inputs for form submission -->
+                                                                    <input type="hidden" name="courseId" value="<%= editAssignment.getCourseId() %>">
+                                                                    <input type="hidden" name="semester" value="<%= editAssignment.getSemester() %>">
+                                                                    <input type="hidden" name="academicYear" value="<%= editAssignment.getAcademicYear() %>">
 
                                                                     <div class="form-group"
                                                                         style="margin-bottom: 16px;">
                                                                         <label for="editDesignerId">Syllabus Designer
                                                                             *</label>
                                                                         <select id="editDesignerId" name="designerId"
-                                                                            class="form-select" required>
+                                                                            class="form-select" required <%= isEditLocked ? "disabled" : "" %>>
                                                                             <% if(lecturers !=null) { for(User u :
                                                                                 lecturers) { String
                                                                                 fullName=u.getFirstName() + " " +
@@ -1815,7 +1787,7 @@
                                                                         <label for="editReviewerId">Syllabus Reviewer
                                                                             *</label>
                                                                         <select id="editReviewerId" name="reviewerId"
-                                                                            class="form-select" required>
+                                                                            class="form-select" required <%= isEditLocked ? "disabled" : "" %>>
                                                                             <% if(lecturers !=null) { for(User u :
                                                                                 lecturers) { String
                                                                                 fullName=u.getFirstName() + " " +
@@ -1841,13 +1813,13 @@
                                                                         %>
                                                                         <input type="datetime-local" id="editDueDate"
                                                                             name="dueDate" class="form-input" 
-                                                                            value="<%= editDueDateStr %>" required />
+                                                                            value="<%= editDueDateStr %>" required <%= isEditLocked ? "disabled" : "" %> />
                                                                     </div>
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn-secondary"
                                                                         onclick="closeModal('editModal')">Cancel</button>
-                                                                    <button type="submit" class="btn-primary">Update
+                                                                    <button type="submit" class="btn-primary" <%= isEditLocked ? "disabled style='opacity: 0.6; cursor: not-allowed;'" : "" %>>Update
                                                                         Assignment</button>
                                                                 </div>
                                                             </form>

@@ -357,6 +357,22 @@ public class RoleAssignmentServlet extends HttpServlet {
 
             req.setAttribute("assignment", existing);
 
+            // Backend business logic enforcement: Block edits if status is SUBMITTED or COMPLETED
+            if ("SUBMITTED".equalsIgnoreCase(existing.getAssignmentStatus()) || "COMPLETED".equalsIgnoreCase(existing.getAssignmentStatus())) {
+                req.setAttribute("errorMessage", "This assignment is already SUBMITTED or COMPLETED and cannot be updated.");
+                forwardToList(req, resp);
+                return;
+            }
+
+            // Backend business logic enforcement: Block edits to Course, Semester, or Academic Year
+            if (existing.getCourseId() != courseId || 
+                !existing.getSemester().equalsIgnoreCase(semester) || 
+                existing.getAcademicYear() != academicYear) {
+                req.setAttribute("errorMessage", "Course, Semester, and Academic Year cannot be modified.");
+                forwardToList(req, resp);
+                return;
+            }
+
             if (designerId.equals(reviewerId)) {
                 req.setAttribute("errorMessage", "Syllabus Designer and Reviewer must be different lecturers.");
                 forwardToList(req, resp);
