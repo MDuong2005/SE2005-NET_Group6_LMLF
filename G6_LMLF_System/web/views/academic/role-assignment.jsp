@@ -7,6 +7,7 @@
                             request.getAttribute("assignmentList");
                             List<Course> courses = (List<Course>) request.getAttribute("courses");
                                     List<User> lecturers = (List<User>) request.getAttribute("lecturers");
+                                    List<User> externalReviewers = (List<User>) request.getAttribute("externalReviewers");
                                             String errorMessage = (String) request.getAttribute("errorMessage");
                                             String action = (String) request.getAttribute("action");
                                             if (action == null) {
@@ -849,6 +850,43 @@
                                                         color: #DC2626;
                                                     }
 
+                                                     .reviewer-type-btn {
+                                                         flex: 1;
+                                                         height: 38px;
+                                                         border-radius: 6px;
+                                                         border: 1px solid var(--border-color);
+                                                         background-color: #FFFFFF;
+                                                         color: var(--text-muted);
+                                                         font-weight: 600;
+                                                         cursor: pointer;
+                                                         transition: var(--transition);
+                                                     }
+                                                     .reviewer-type-btn:hover {
+                                                         background-color: #F8FAFC;
+                                                         color: var(--text-dark);
+                                                     }
+                                                     .reviewer-type-btn.active {
+                                                         background-color: #EFF6FF;
+                                                         border-color: #3B82F6;
+                                                         color: #1D4ED8;
+                                                         box-shadow: var(--shadow-sm);
+                                                     }
+
+                                                     /* External Reviewer Grid Layout */
+                                                     .external-reviewer-grid {
+                                                         display: grid;
+                                                         grid-template-columns: 1fr 1fr;
+                                                         gap: 20px;
+                                                         align-items: start;
+                                                         margin-top: 10px;
+                                                     }
+
+                                                     @media (max-width: 768px) {
+                                                         .external-reviewer-grid {
+                                                             grid-template-columns: 1fr;
+                                                         }
+                                                     }
+
                                                     /* Multi-step Wizard Styles */
                                                     .step-progress {
                                                         display: flex;
@@ -1442,9 +1480,17 @@
                                                                     <!-- Syllabus Reviewer (Select one or more) -->
                                                                     <div class="form-group"
                                                                         style="margin-bottom: 16px;">
-                                                                        <label>Syllabus Reviewer (Select one or more)
-                                                                            *</label>
-                                                                        <div class="multiselect-wrapper">
+                                                                        <label>Syllabus Reviewer *</label>
+                                                                        
+                                                                        <!-- Reviewer Type Selector Toggle Buttons -->
+                                                                        <div class="reviewer-type-buttons" style="margin-bottom: 12px; display: flex; gap: 10px;">
+                                                                            <button type="button" class="reviewer-type-btn active" id="btnInternalReviewer" onclick="selectReviewerType('internal')">Internal Reviewer</button>
+                                                                            <button type="button" class="reviewer-type-btn" id="btnExternalReviewer" onclick="selectReviewerType('external')">External Reviewer</button>
+                                                                        </div>
+
+                                                                        <!-- Internal Reviewer Wrapper -->
+                                                                        <div id="internalReviewerSection" style="display: block;">
+                                                                            <div class="multiselect-wrapper">
                                                                             <!-- Display selected tag badges or placeholder -->
                                                                             <div class="multiselect-select-box"
                                                                                 id="reviewerSelectBox"
@@ -1500,6 +1546,101 @@
                                                                                         class="multiselect-clear-all"
                                                                                         onclick="clearAllReviewers()">Clear
                                                                                         all</a>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                        </div> <!-- closes internalReviewerSection -->
+
+                                                                        <!-- External Reviewer Wrapper -->
+                                                                        <div id="externalReviewerSection" style="display: none;">
+                                                                            <div class="external-reviewer-grid">
+                                                                                <!-- Left Column: Select Existing External Reviewer -->
+                                                                                <div style="border: 1px solid var(--border-color); padding: 16px; border-radius: var(--radius-md); background-color: #F8FAFC;">
+                                                                                    <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 700; color: var(--text-dark);">Select External Reviewer</h4>
+                                                                                    <div class="multiselect-wrapper">
+                                                                                        <!-- Display selected tag badges or placeholder -->
+                                                                                        <div class="multiselect-select-box"
+                                                                                            id="extReviewerSelectBox"
+                                                                                            onclick="toggleExtReviewerPanel(event)">
+                                                                                            <span class="multiselect-placeholder"
+                                                                                                id="extReviewerPlaceholder">--Choose Reviewer--</span>
+                                                                                        </div>
+
+                                                                                        <!-- Search & Checkbox list panel -->
+                                                                                        <div class="multiselect-dropdown-panel"
+                                                                                            id="extReviewerDropdownPanel">
+                                                                                            <div class="multiselect-search-row"
+                                                                                                onclick="event.stopPropagation()">
+                                                                                                <svg class="multiselect-search-icon"
+                                                                                                    viewBox="0 0 24 24">
+                                                                                                    <path
+                                                                                                        d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                                                                                                </svg>
+                                                                                                <input type="text"
+                                                                                                    class="multiselect-search-input"
+                                                                                                    id="extReviewerSearchInput"
+                                                                                                    placeholder="Search reviewer..."
+                                                                                                    oninput="filterExtReviewersList(this.value)">
+                                                                                            </div>
+                                                                                            <div class="multiselect-options-list"
+                                                                                                id="extReviewerOptionsList"
+                                                                                                onclick="event.stopPropagation()">
+                                                                                                <% if(externalReviewers != null) { 
+                                                                                                    for(User u : externalReviewers) { 
+                                                                                                        String fullName = u.getFirstName() + " " + u.getLastName(); 
+                                                                                                %>
+                                                                                                    <label class="multiselect-option ext-multiselect-option" data-name="<%= fullName.toLowerCase() %> <%= u.getEmail().toLowerCase() %>" id="ext-reviewer-opt-<%= u.getUserId() %>">
+                                                                                                        <input type="checkbox" name="reviewerId" value="<%= u.getUserId() %>" onchange="handleExtReviewerCheckboxChange(this, '<%= fullName %> (<%= u.getEmail() %>)')">
+                                                                                                        <span><%= fullName %> (<%= u.getEmail() %>)</span>
+                                                                                                    </label>
+                                                                                                <% } } %>
+                                                                                            </div>
+                                                                                            <div class="multiselect-footer"
+                                                                                                onclick="event.stopPropagation()">
+                                                                                                <span id="selectedExtReviewersText">0 reviewers selected</span>
+                                                                                                <a href="javascript:void(0)"
+                                                                                                    class="multiselect-clear-all"
+                                                                                                    onclick="clearAllExtReviewers()">Clear all</a>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                <!-- Right Column: Invite New External Reviewer -->
+                                                                                <div style="border: 1px solid var(--border-color); padding: 16px; border-radius: var(--radius-md); background-color: #F8FAFC;">
+                                                                                    <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 700; color: var(--text-dark);">Invite External Reviewer</h4>
+                                                                                    
+                                                                                    <div class="form-group" style="margin-bottom: 12px;">
+                                                                                        <label for="extEmail" style="font-size: 12px; font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 4px;">Email *</label>
+                                                                                        <input type="email" id="extEmail" class="form-input" placeholder="e.g. expert_cuong@gmail.com" oninput="checkExtEmailStatus()" style="width: 100%; box-sizing: border-box;" />
+                                                                                    </div>
+                                                                                    
+                                                                                    <div class="form-group" style="margin-bottom: 12px;">
+                                                                                        <label for="extFirstName" style="font-size: 12px; font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 4px;">First Name *</label>
+                                                                                        <input type="text" id="extFirstName" class="form-input" placeholder="First name" style="width: 100%; box-sizing: border-box;" />
+                                                                                    </div>
+                                                                                    
+                                                                                    <div class="form-group" style="margin-bottom: 16px;">
+                                                                                        <label for="extLastName" style="font-size: 12px; font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 4px;">Last Name *</label>
+                                                                                        <input type="text" id="extLastName" class="form-input" placeholder="Last name" style="width: 100%; box-sizing: border-box;" />
+                                                                                    </div>
+                                                                                    
+                                                                                    <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+                                                                                        <button type="button" class="btn-primary" id="btnSendExtRequest" onclick="sendExtRequest()" style="height: 38px;">Send Request</button>
+                                                                                    </div>
+                                                                                    
+                                                                                    <!-- Status container box -->
+                                                                                    <div id="extStatusContainer" style="display: none; background-color: #FFFDF0; border: 1px solid #FCD34D; color: #78350F; padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 500;">
+                                                                                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                                                                            <svg style="width: 16px; height: 16px; color: #D97706; margin-top: 2px; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-4-4" />
+                                                                                            </svg>
+                                                                                            <div id="extStatusText">
+                                                                                                Request has been sent to Admin.<br>
+                                                                                                Status: <span style="font-weight: 700;">PENDING</span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -1891,6 +2032,159 @@
                                                 <!-- Client-side Pagination & Modal Controllers JS -->
                                                 <script>
                                                     let selectedReviewers = []; // array of {id, name}
+                                                    let selectedExtReviewers = []; // array of {id, name}
+                                                    let reviewerType = 'internal'; // 'internal' or 'external'
+
+                                                    function selectReviewerType(type) {
+                                                        reviewerType = type;
+                                                        const btnInternal = document.getElementById('btnInternalReviewer');
+                                                        const btnExternal = document.getElementById('btnExternalReviewer');
+                                                        const internalSec = document.getElementById('internalReviewerSection');
+                                                        const externalSec = document.getElementById('externalReviewerSection');
+
+                                                        if (type === 'internal') {
+                                                            btnInternal.classList.add('active');
+                                                            btnExternal.classList.remove('active');
+                                                            internalSec.style.display = 'block';
+                                                            externalSec.style.display = 'none';
+                                                        } else {
+                                                            btnInternal.classList.remove('active');
+                                                            btnExternal.classList.add('active');
+                                                            internalSec.style.display = 'none';
+                                                            externalSec.style.display = 'block';
+                                                        }
+                                                    }
+
+                                                    let checkExtEmailTimeout = null;
+                                                    function checkExtEmailStatus() {
+                                                        clearTimeout(checkExtEmailTimeout);
+                                                        const email = document.getElementById('extEmail').value.trim();
+                                                        const statusContainer = document.getElementById('extStatusContainer');
+                                                        const statusText = document.getElementById('extStatusText');
+                                                        const btnSend = document.getElementById('btnSendExtRequest');
+
+                                                        if (!email) {
+                                                            statusContainer.style.display = 'none';
+                                                            return;
+                                                        }
+
+                                                        checkExtEmailTimeout = setTimeout(() => {
+                                                            fetch('${pageContext.request.contextPath}/role-assignment?action=checkExternalReviewer&email=' + encodeURIComponent(email))
+                                                                .then(response => response.json())
+                                                                .then(data => {
+                                                                    if (data.exists) {
+                                                                        statusContainer.style.display = 'block';
+                                                                        statusContainer.style.backgroundColor = '#EFF6FF';
+                                                                        statusContainer.style.borderColor = '#BFDBFE';
+                                                                        statusContainer.style.color = '#1E40AF';
+                                                                        statusText.innerHTML = 'Account already exists. You can select them from the Internal Reviewer list.';
+                                                                        btnSend.disabled = true;
+                                                                        btnSend.style.opacity = '0.5';
+                                                                        btnSend.style.cursor = 'not-allowed';
+                                                                    } else if (data.requested) {
+                                                                        statusContainer.style.display = 'block';
+                                                                        if (data.status === 'REJECTED') {
+                                                                            statusContainer.style.backgroundColor = '#FEF2F2';
+                                                                            statusContainer.style.borderColor = '#FCA5A5';
+                                                                            statusContainer.style.color = '#991B1B';
+                                                                            statusText.innerHTML = 'Request was rejected by Admin.<br>Status: <span style="font-weight: 700;">REJECTED</span><br>Reason: <b>' + (data.note ? data.note : 'No reason') + '</b>';
+                                                                            btnSend.disabled = false;
+                                                                            btnSend.style.opacity = '1';
+                                                                            btnSend.style.cursor = 'pointer';
+                                                                        } else if (data.status === 'APPROVED' || data.status === 'APPROVE') {
+                                                                            statusContainer.style.backgroundColor = '#ECFDF5';
+                                                                            statusContainer.style.borderColor = '#10B981';
+                                                                            statusContainer.style.color = '#047857';
+                                                                            statusText.innerHTML = 'Request was approved.<br>Status: <span style="font-weight: 700;">APPROVED</span><br>Account is active. You can select them from the Internal Reviewer list.';
+                                                                            btnSend.disabled = true;
+                                                                            btnSend.style.opacity = '0.5';
+                                                                            btnSend.style.cursor = 'not-allowed';
+                                                                        } else {
+                                                                            statusContainer.style.backgroundColor = '#FFFDF0';
+                                                                            statusContainer.style.borderColor = '#FCD34D';
+                                                                            statusContainer.style.color = '#78350F';
+                                                                            statusText.innerHTML = 'Request has been sent to Admin.<br>Status: <span style="font-weight: 700;">' + data.status + '</span>';
+                                                                            btnSend.disabled = true;
+                                                                            btnSend.style.opacity = '0.5';
+                                                                            btnSend.style.cursor = 'not-allowed';
+                                                                        }
+                                                                    } else {
+                                                                        statusContainer.style.display = 'none';
+                                                                        btnSend.disabled = false;
+                                                                        btnSend.style.opacity = '1';
+                                                                        btnSend.style.cursor = 'pointer';
+                                                                    }
+                                                                })
+                                                                .catch(err => {
+                                                                    console.error(err);
+                                                                });
+                                                        }, 500);
+                                                    }
+
+                                                    function sendExtRequest() {
+                                                        const email = document.getElementById('extEmail').value.trim();
+                                                        const firstName = document.getElementById('extFirstName').value.trim();
+                                                        const lastName = document.getElementById('extLastName').value.trim();
+                                                        const statusContainer = document.getElementById('extStatusContainer');
+                                                        const statusText = document.getElementById('extStatusText');
+                                                        const btnSend = document.getElementById('btnSendExtRequest');
+
+                                                        if (!email || !firstName || !lastName) {
+                                                            showToast("Please fill in all information for Email, First Name, and Last Name.", false);
+                                                            return;
+                                                        }
+
+                                                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                                                        if (!emailRegex.test(email)) {
+                                                            showToast("Invalid email address.", false);
+                                                            return;
+                                                        }
+
+                                                        btnSend.disabled = true;
+                                                        btnSend.innerText = 'Sending...';
+
+                                                        const params = new URLSearchParams();
+                                                        params.append('email', email);
+                                                        params.append('firstName', firstName);
+                                                        params.append('lastName', lastName);
+
+                                                        fetch('${pageContext.request.contextPath}/role-assignment?action=sendExternalReviewerRequest', {
+                                                            method: 'POST',
+                                                            headers: {
+                                                                'Content-Type': 'application/x-www-form-urlencoded'
+                                                            },
+                                                            body: params
+                                                        })
+                                                        .then(response => response.json())
+                                                        .then(data => {
+                                                            btnSend.innerText = 'Send Request';
+                                                            if (data.success) {
+                                                                showToast("Request sent successfully!", true);
+                                                                statusContainer.style.display = 'block';
+                                                                statusContainer.style.backgroundColor = '#FFFDF0';
+                                                                statusContainer.style.borderColor = '#FCD34D';
+                                                                statusContainer.style.color = '#78350F';
+                                                                statusText.innerHTML = data.message || 'Request has been sent to Admin.<br>Status: <span style="font-weight: 700;">PENDING</span>';
+                                                                
+                                                                // Lock inputs
+                                                                document.getElementById('extEmail').disabled = true;
+                                                                document.getElementById('extFirstName').disabled = true;
+                                                                document.getElementById('extLastName').disabled = true;
+                                                                btnSend.disabled = true;
+                                                                btnSend.style.opacity = '0.5';
+                                                                btnSend.style.cursor = 'not-allowed';
+                                                            } else {
+                                                                showToast(data.message || "Failed to send request.", false);
+                                                                btnSend.disabled = false;
+                                                            }
+                                                        })
+                                                        .catch(err => {
+                                                            btnSend.disabled = false;
+                                                            btnSend.innerText = 'Send Request';
+                                                            showToast("System connection error.", false);
+                                                            console.error(err);
+                                                        });
+                                                    }
 
                                                     function toggleReviewerPanel(e) {
                                                         e.stopPropagation();
@@ -1903,6 +2197,11 @@
                                                         const selectBox = document.getElementById('reviewerSelectBox');
                                                         if (panel && !panel.contains(e.target) && !selectBox.contains(e.target)) {
                                                             panel.classList.remove('open');
+                                                        }
+                                                        const extPanel = document.getElementById('extReviewerDropdownPanel');
+                                                        const extSelectBox = document.getElementById('extReviewerSelectBox');
+                                                        if (extPanel && !extPanel.contains(e.target) && !extSelectBox.contains(e.target)) {
+                                                            extPanel.classList.remove('open');
                                                         }
                                                     });
 
@@ -1925,7 +2224,7 @@
                                                         selectedReviewers = selectedReviewers.filter(r => r.id !== id);
 
                                                         // Uncheck the checkbox in panel
-                                                        const checkbox = document.querySelector('input[name="reviewerId"][value="' + id + '"]');
+                                                        const checkbox = document.querySelector('#internalReviewerSection input[name="reviewerId"][value="' + id + '"]');
                                                         if (checkbox) {
                                                             checkbox.checked = false;
                                                         }
@@ -1935,7 +2234,7 @@
 
                                                     function clearAllReviewers() {
                                                         selectedReviewers = [];
-                                                        const checkboxes = document.querySelectorAll('input[name="reviewerId"]');
+                                                        const checkboxes = document.querySelectorAll('#internalReviewerSection input[name="reviewerId"]');
                                                         checkboxes.forEach(cb => {
                                                             cb.checked = false;
                                                         });
@@ -1944,7 +2243,7 @@
 
                                                     function filterReviewersList(query) {
                                                         const lowerQuery = query.toLowerCase().trim();
-                                                        const options = document.querySelectorAll('.multiselect-option');
+                                                        const options = document.querySelectorAll('.multiselect-option:not(.ext-multiselect-option)');
                                                         options.forEach(opt => {
                                                             const name = opt.getAttribute('data-name');
                                                             if (name.includes(lowerQuery)) {
@@ -1982,8 +2281,90 @@
                                                         }
                                                     }
 
+                                                    // EXTERNAL REVIEWER MULTISELECT FUNCTIONS
+                                                    function toggleExtReviewerPanel(e) {
+                                                        e.stopPropagation();
+                                                        document.getElementById('extReviewerDropdownPanel').classList.toggle('open');
+                                                    }
+
+                                                    function handleExtReviewerCheckboxChange(checkbox, fullName) {
+                                                        const id = checkbox.value;
+                                                        if (checkbox.checked) {
+                                                            if (!selectedExtReviewers.some(r => r.id === id)) {
+                                                                selectedExtReviewers.push({ id: id, name: fullName });
+                                                            }
+                                                        } else {
+                                                            selectedExtReviewers = selectedExtReviewers.filter(r => r.id !== id);
+                                                        }
+                                                        renderExtReviewerTags();
+                                                    }
+
+                                                    function removeExtReviewerTag(id, event) {
+                                                        if (event) {
+                                                            event.stopPropagation();
+                                                        }
+                                                        selectedExtReviewers = selectedExtReviewers.filter(r => r.id !== id);
+
+                                                        // Uncheck the checkbox in panel
+                                                        const checkbox = document.querySelector('#externalReviewerSection input[name="reviewerId"][value="' + id + '"]');
+                                                        if (checkbox) {
+                                                            checkbox.checked = false;
+                                                        }
+
+                                                        renderExtReviewerTags();
+                                                    }
+
+                                                    function clearAllExtReviewers() {
+                                                        selectedExtReviewers = [];
+                                                        const checkboxes = document.querySelectorAll('#externalReviewerSection input[name="reviewerId"]');
+                                                        checkboxes.forEach(cb => {
+                                                            cb.checked = false;
+                                                        });
+                                                        renderExtReviewerTags();
+                                                    }
+
+                                                    function filterExtReviewersList(query) {
+                                                        const lowerQuery = query.toLowerCase().trim();
+                                                        const options = document.querySelectorAll('.ext-multiselect-option');
+                                                        options.forEach(opt => {
+                                                            const name = opt.getAttribute('data-name');
+                                                            if (name.includes(lowerQuery)) {
+                                                                opt.style.display = 'flex';
+                                                            } else {
+                                                                opt.style.display = 'none';
+                                                            }
+                                                        });
+                                                    }
+
+                                                    function renderExtReviewerTags() {
+                                                        const selectBox = document.getElementById('extReviewerSelectBox');
+                                                        const placeholder = document.getElementById('extReviewerPlaceholder');
+                                                        const countText = document.getElementById('selectedExtReviewersText');
+                                                        if (!selectBox || !placeholder || !countText) return;
+
+                                                        // Remove existing tag elements
+                                                        const existingTags = selectBox.querySelectorAll('.reviewer-tag');
+                                                        existingTags.forEach(t => t.remove());
+
+                                                        if (selectedExtReviewers.length === 0) {
+                                                            placeholder.style.display = 'block';
+                                                            countText.textContent = '0 reviewers selected';
+                                                        } else {
+                                                            placeholder.style.display = 'none';
+                                                            countText.textContent = selectedExtReviewers.length + ' reviewer' + (selectedExtReviewers.length > 1 ? 's' : '') + ' selected';
+
+                                                            // Append tags
+                                                            selectedExtReviewers.forEach(r => {
+                                                                const tag = document.createElement('span');
+                                                                tag.className = 'reviewer-tag';
+                                                                tag.innerHTML = r.name + ' <span class="remove-tag" onclick="removeExtReviewerTag(\'' + r.id + '\', event)">&times;</span>';
+                                                                selectBox.insertBefore(tag, null);
+                                                            });
+                                                        }
+                                                    }
+
                                                     function handleDesignerChange(designerId) {
-                                                        // Uncheck and disable the designer in reviewers list
+                                                        // Uncheck and disable the designer in reviewers lists
                                                         const options = document.querySelectorAll('.multiselect-option');
                                                         options.forEach(opt => {
                                                             const checkbox = opt.querySelector('input[type="checkbox"]');
@@ -1993,8 +2374,9 @@
                                                                     checkbox.disabled = true;
                                                                     opt.style.opacity = '0.5';
                                                                     opt.style.cursor = 'not-allowed';
-                                                                    // Remove from selected list if it was checked
+                                                                    // Remove from selected lists if it was checked
                                                                     removeReviewerTag(designerId);
+                                                                    removeExtReviewerTag(designerId);
                                                                 } else {
                                                                     checkbox.disabled = false;
                                                                     opt.style.opacity = '1';
@@ -2106,7 +2488,8 @@
                                                                 showToast("Please select a syllabus designer.", false);
                                                                 return;
                                                             }
-                                                            if (selectedReviewers.length === 0) {
+                                                            const totalSelected = selectedReviewers.length + selectedExtReviewers.length;
+                                                            if (totalSelected === 0) {
                                                                 showToast("Please select at least one syllabus reviewer.", false);
                                                                 return;
                                                             }
@@ -2156,7 +2539,8 @@
                                                             goToStep(2);
                                                             return false;
                                                         }
-                                                        if (selectedReviewers.length === 0) {
+                                                        const totalSelected = selectedReviewers.length + selectedExtReviewers.length;
+                                                        if (totalSelected === 0) {
                                                             showToast("Please select at least one syllabus reviewer.", false);
                                                             goToStep(2);
                                                             return false;
@@ -2170,16 +2554,38 @@
                                                     }
 
                                                     function openCreateModal() {
-                                                        clearAllReviewers();
-                                                        document.getElementById('createCourseId').value = '';
-                                                        document.getElementById('createDesignerId').value = '';
-                                                        document.getElementById('templateFileInput').value = '';
-                                                        document.getElementById('uploadTitle').innerText = 'Click to choose Excel file';
-                                                        document.getElementById('uploadSub').innerText = 'Supports .xlsx, .xls templates';
-                                                        document.getElementById('dropZone').className = 'dropzone-container';
-                                                        handleDesignerChange('');
-                                                        document.getElementById('createModal').classList.add('open');
-                                                        goToStep(1);
+                                                         clearAllReviewers();
+                                                         clearAllExtReviewers();
+                                                         document.getElementById('createCourseId').value = '';
+                                                         document.getElementById('createDesignerId').value = '';
+                                                         document.getElementById('templateFileInput').value = '';
+                                                         document.getElementById('uploadTitle').innerText = 'Click to choose Excel file';
+                                                         document.getElementById('uploadSub').innerText = 'Supports .xlsx, .xls templates';
+                                                         document.getElementById('dropZone').className = 'dropzone-container';
+                                                         handleDesignerChange('');
+                                                         
+                                                         // Reset external reviewer form
+                                                         document.getElementById('extEmail').value = '';
+                                                         document.getElementById('extEmail').disabled = false;
+                                                         document.getElementById('extFirstName').value = '';
+                                                         document.getElementById('extFirstName').disabled = false;
+                                                         document.getElementById('extLastName').value = '';
+                                                         document.getElementById('extLastName').disabled = false;
+                                                         const btnSend = document.getElementById('btnSendExtRequest');
+                                                         if (btnSend) {
+                                                             btnSend.disabled = false;
+                                                             btnSend.style.opacity = '1';
+                                                             btnSend.style.cursor = 'pointer';
+                                                             btnSend.innerText = 'Send Request';
+                                                         }
+                                                         const statusCont = document.getElementById('extStatusContainer');
+                                                         if (statusCont) {
+                                                             statusCont.style.display = 'none';
+                                                         }
+                                                         selectReviewerType('internal');
+                                                         
+                                                         document.getElementById('createModal').classList.add('open');
+                                                         goToStep(1);
                                                     }
 
                                                     function closeModal(modalId) {

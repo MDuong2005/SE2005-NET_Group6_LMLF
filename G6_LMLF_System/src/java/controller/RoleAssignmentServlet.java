@@ -136,10 +136,12 @@ public class RoleAssignmentServlet extends HttpServlet {
         // Fetch courses and lecturers for selectors
         List<Course> courses = courseDAO.listAll();
         List<User> lecturers = userDAO.getActiveUsersByRole("LECTURER");
+        List<User> externalReviewers = userDAO.getActiveUsersByRole("EXTERNAL_EXPERT");
 
         req.setAttribute("assignmentList", assignmentList);
         req.setAttribute("courses", courses);
         req.setAttribute("lecturers", lecturers);
+        req.setAttribute("externalReviewers", externalReviewers);
         req.getRequestDispatcher("/views/academic/role-assignment.jsp").forward(req, resp);
     }
 
@@ -458,10 +460,12 @@ public class RoleAssignmentServlet extends HttpServlet {
         List<SyllabusAssignment> assignmentList = assignmentDAO.listAll();
         List<Course> courses = courseDAO.listAll();
         List<User> lecturers = userDAO.getActiveUsersByRole("LECTURER");
+        List<User> externalReviewers = userDAO.getActiveUsersByRole("EXTERNAL_EXPERT");
 
         req.setAttribute("assignmentList", assignmentList);
         req.setAttribute("courses", courses);
         req.setAttribute("lecturers", lecturers);
+        req.setAttribute("externalReviewers", externalReviewers);
         req.getRequestDispatcher("/views/academic/role-assignment.jsp").forward(req, resp);
     }
 
@@ -484,6 +488,32 @@ public class RoleAssignmentServlet extends HttpServlet {
             }
             return false;
         }
+
+        public model.AccountRequest getLatestRequest(String email) {
+            String sql = "SELECT TOP 1 * FROM account_requests WHERE email = ? ORDER BY requested_at DESC";
+            try {
+                if (connection != null) {
+                    try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        ps.setString(1, email);
+                        try (java.sql.ResultSet rs = ps.executeQuery()) {
+                            if (rs.next()) {
+                                model.AccountRequest req = new model.AccountRequest();
+                                req.setRequestId(rs.getLong("request_id"));
+                                req.setEmail(rs.getString("email"));
+                                req.setFirstName(rs.getString("first_name"));
+                                req.setLastName(rs.getString("last_name"));
+                                req.setStatus(rs.getString("status"));
+                                req.setNote(rs.getString("note"));
+                                return req;
+                            }
+                        }
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
     }
 
     private void checkExternalReviewer(HttpServletRequest req, HttpServletResponse resp) 
@@ -504,21 +534,24 @@ public class RoleAssignmentServlet extends HttpServlet {
             return;
         }
         
-        AccountRequestDAO arDAO = new AccountRequestDAO();
-        List<AccountRequest> pendingList = arDAO.getPendingRequests();
-        AccountRequest pendingReq = null;
-        if (pendingList != null) {
-            for (AccountRequest r : pendingList) {
-                if (email.equalsIgnoreCase(r.getEmail())) {
-                    pendingReq = r;
-                    break;
-                }
-            }
-        }
+        TempAccountRequestQuery tempQuery = new TempAccountRequestQuery();
+        model.AccountRequest latestReq = tempQuery.getLatestRequest(email);
         
-        if (pendingReq != null) {
-            resp.getWriter().write("{\"success\":true,\"exists\":false,\"requested\":true,\"status\":\"PENDING\",\"message\":\"Yêu cầu đã được gửi đến Admin. <br>Trạng thái: <b>PENDING</b>\"}");
-            return;
+        if (latestReq != null) {
+            if ("PENDING".equalsIgnoreCase(latestReq.getStatus())) {
+                resp.getWriter().write("{\"success\":true,\"exists\":false,\"requested\":true,\"status\":\"PENDING\",\"message\":\"Yêu cầu đã được gửi đến Admin. <br>Trạng thái: <b>PENDING</b>\"}");
+                return;
+            } else if ("REJECTED".equalsIgnoreCase(latestReq.getStatus())) {
+                String note = latestReq.getNote();
+                if (note == null || note.trim().isEmpty()) {
+                    note = "Không có lý do từ chối.";
+                }
+                resp.getWriter().write("{\"success\":true,\"exists\":false,\"requested\":true,\"status\":\"REJECTED\",\"note\":\"" + note.replace("\"", "\\\"").replace("\n", "\\n") + "\",\"message\":\"Yêu cầu đã bị Admin từ chối. <br>Lý do: <b>" + note.replace("\"", "\\\"").replace("\n", "\\n") + "</b>\"}");
+                return;
+            } else if ("APPROVED".equalsIgnoreCase(latestReq.getStatus()) || "APPROVE".equalsIgnoreCase(latestReq.getStatus())) {
+                resp.getWriter().write("{\"success\":true,\"exists\":false,\"requested\":true,\"status\":\"APPROVED\",\"message\":\"Yêu cầu đã được Admin phê duyệt. <br>Trạng thái: <b>APPROVED</b>\"}");
+                return;
+            }
         }
         
         resp.getWriter().write("{\"success\":true,\"exists\":false,\"requested\":false}");
@@ -562,9 +595,23 @@ public class RoleAssignmentServlet extends HttpServlet {
         User currentUser = (User) req.getSession().getAttribute("user");
         long requestedBy = (currentUser != null) ? currentUser.getUserId() : 1L;
         
-        String prefix = email.split("@")[0];
+        String firstName = req.getParameter("firstName");
+        String lastName = req.getParameter("lastName");
+        
+        if (firstName == null || firstName.trim().isEmpty()) {
+            firstName = email.split("@")[0];
+        } else {
+            firstName = firstName.trim();
+        }
+        
+        if (lastName == null || lastName.trim().isEmpty()) {
+            lastName = "External";
+        } else {
+            lastName = lastName.trim();
+        }
+        
         TempAccountRequestQuery tempQuery = new TempAccountRequestQuery();
-        if (tempQuery.insertRequest(email, prefix, "External", requestedBy)) {
+        if (tempQuery.insertRequest(email, firstName, lastName, requestedBy)) {
             resp.getWriter().write("{\"success\":true,\"message\":\"Yêu cầu đã được gửi đến Admin. <br>Trạng thái: <b>PENDING</b>\"}");
         } else {
             resp.getWriter().write("{\"success\":false,\"message\":\"Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại.\"}");
