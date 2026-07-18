@@ -423,6 +423,18 @@ loadSchedule(versionId, data);
                 }
             }
 
+            int assignedReviewerCount = createPendingReviewAssignments(
+                    assignmentId,
+                    versionId,
+                    designerId
+            );
+
+            if (assignedReviewerCount < 1) {
+                throw new SQLException(
+                        "No active Reviewer assignment was found for this syllabus."
+                );
+            }
+
             String updateSyllabusSql = """
                     UPDATE syllabuses
                     SET current_version = ?,
@@ -449,6 +461,151 @@ loadSchedule(versionId, data);
 
         } finally {
             connection.setAutoCommit(oldAutoCommit);
+        }
+    }
+
+    /**
+     * Copies every Reviewer selected by Academic Office for this assignment
+     * into the submitted-version review queue.
+     *
+     * The assignment-level table is the source of truth for multiple
+     * Reviewers. The legacy syllabus_assignments.reviewer_id column is kept
+     * only as a backward-compatible fallback.
+     */
+    private int createPendingReviewAssignments(
+            long assignmentId,
+            long versionId,
+            long designerId
+    ) throws SQLException {
+
+        String insertSelectedReviewersSql = """
+                INSERT INTO syllabus_version_review_assignments (
+                    version_id,
+                    reviewer_id,
+                    assigned_by,
+                    status,
+                    assigned_at,
+                    completed_at
+                )
+                SELECT
+                    ?,
+                    assignmentReviewer.reviewer_id,
+                    COALESCE(
+                        assignmentReviewer.assigned_by,
+                        assignmentRow.assigned_by
+                    ),
+                    'PENDING',
+                    SYSDATETIME(),
+                    NULL
+                FROM syllabus_assignment_reviewers assignmentReviewer
+                INNER JOIN syllabus_assignments assignmentRow
+                    ON assignmentRow.assignment_id
+                        = assignmentReviewer.assignment_id
+                INNER JOIN users reviewer
+                    ON reviewer.user_id = assignmentReviewer.reviewer_id
+                WHERE assignmentReviewer.assignment_id = ?
+                  AND assignmentRow.designer_id = ?
+                  AND reviewer.status = 'ACTIVE'
+                  AND reviewer.deleted_at IS NULL
+                  AND EXISTS (
+                        SELECT 1
+                        FROM user_roles userRole
+                        INNER JOIN roles roleRow
+                            ON roleRow.role_id = userRole.role_id
+                        WHERE userRole.user_id = reviewer.user_id
+                          AND roleRow.role_name = 'REVIEWER'
+                  )
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM syllabus_version_review_assignments existingRow
+                        WHERE existingRow.version_id = ?
+                          AND existingRow.reviewer_id
+                                = assignmentReviewer.reviewer_id
+                  )
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(
+                             insertSelectedReviewersSql
+                     )) {
+
+            statement.setLong(1, versionId);
+            statement.setLong(2, assignmentId);
+            statement.setLong(3, designerId);
+            statement.setLong(4, versionId);
+            statement.executeUpdate();
+        }
+
+        String insertLegacyReviewerSql = """
+                INSERT INTO syllabus_version_review_assignments (
+                    version_id,
+                    reviewer_id,
+                    assigned_by,
+                    status,
+                    assigned_at,
+                    completed_at
+                )
+                SELECT
+                    ?,
+                    assignmentRow.reviewer_id,
+                    assignmentRow.assigned_by,
+                    'PENDING',
+                    SYSDATETIME(),
+                    NULL
+                FROM syllabus_assignments assignmentRow
+                INNER JOIN users reviewer
+                    ON reviewer.user_id = assignmentRow.reviewer_id
+                WHERE assignmentRow.assignment_id = ?
+                  AND assignmentRow.designer_id = ?
+                  AND assignmentRow.reviewer_id IS NOT NULL
+                  AND reviewer.status = 'ACTIVE'
+                  AND reviewer.deleted_at IS NULL
+                  AND EXISTS (
+                        SELECT 1
+                        FROM user_roles userRole
+                        INNER JOIN roles roleRow
+                            ON roleRow.role_id = userRole.role_id
+                        WHERE userRole.user_id = reviewer.user_id
+                          AND roleRow.role_name = 'REVIEWER'
+                  )
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM syllabus_version_review_assignments existingRow
+                        WHERE existingRow.version_id = ?
+                          AND existingRow.reviewer_id
+                                = assignmentRow.reviewer_id
+                  )
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(
+                             insertLegacyReviewerSql
+                     )) {
+
+            statement.setLong(1, versionId);
+            statement.setLong(2, assignmentId);
+            statement.setLong(3, designerId);
+            statement.setLong(4, versionId);
+            statement.executeUpdate();
+        }
+
+        String countSql = """
+                SELECT COUNT(*) AS reviewer_count
+                FROM syllabus_version_review_assignments
+                WHERE version_id = ?
+                  AND status IN ('PENDING', 'IN_PROGRESS', 'COMPLETED')
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(countSql)) {
+
+            statement.setLong(1, versionId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next()
+                        ? resultSet.getInt("reviewer_count")
+                        : 0;
+            }
         }
     }
 
