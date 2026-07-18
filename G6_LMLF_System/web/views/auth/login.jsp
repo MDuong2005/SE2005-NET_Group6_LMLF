@@ -140,8 +140,8 @@
 
                                     <div class="footer-action" id="footerActions"
                                         style="margin-top: 16px; display: <%= showEmailForm ? "none" : "flex" %>; flex-direction: column; gap: 10px; align-items: center;">
-                                        <a href="javascript:void(0);" onclick="showEmailLogin('Syllabus Reviewer/Designer')" style="font-weight: 500;">Sign in for Syllabus Reviewer/Designer</a>
-                                        <a href="javascript:void(0);" onclick="showEmailLogin('Admin/Academic office')" style="font-weight: 500;">Sign in for Admin/Academic office</a>
+                                        <a href="javascript:void(0);" onclick="showEmailLogin('External Expert')" style="font-weight: 500;">Sign in for External Expert (Reviewer)</a>
+                                        <a href="javascript:void(0);" onclick="showEmailLogin('Admin / Academic Office')" style="font-weight: 500;">Sign in for Admin / Academic Office</a>
                                     </div>
 
                                     <script>
