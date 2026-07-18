@@ -107,7 +107,7 @@
                                                 <div class="password-header">
                                                     <label for="password" class="form-label"
                                                         style="margin-bottom: 0;">Password</label>
-                                                    <a href="#" class="forgot-link">Forgot Password?</a>
+                                                    <a href="${pageContext.request.contextPath}/forgot-password" class="forgot-link">Forgot Password?</a>
                                                 </div>
                                                 <input type="password" id="password" name="password" required
                                                     class="form-input password-input" />

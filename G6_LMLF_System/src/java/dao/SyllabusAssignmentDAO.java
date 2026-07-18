@@ -1279,4 +1279,28 @@ public class SyllabusAssignmentDAO extends DBContext {
         }
         return false;
     }
+    /**
+     * Lightweight existence check for the external-expert waiting room.
+     * Returns true if the user already has at least one syllabus assignment
+     * (as designer or reviewer). Kept intentionally minimal - no JOINs or
+     * display data - since the waiting-room routing only needs a yes/no.
+     */
+    public boolean hasAssignments(long userId) {
+        String sql = "SELECT 1 FROM syllabus_assignments "
+                + "WHERE designer_id = ? OR reviewer_id = ?";
+        try {
+            if (connection != null) {
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                    ps.setLong(1, userId);
+                    ps.setLong(2, userId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        return rs.next();
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }

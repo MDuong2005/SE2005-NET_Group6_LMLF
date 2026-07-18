@@ -114,7 +114,9 @@ public class DashboardServlet extends HttpServlet {
             
             dao.UserDAO userDAO = new dao.UserDAO();
             request.setAttribute("internalUsers", userDAO.getInternalUsersCount());
-            request.setAttribute("guestUsers", userDAO.getGuestUsersCount());
+            request.setAttribute("externalUsersCount", userDAO.getExternalUsersCount());
+            request.setAttribute("activeUsers", userDAO.getActiveUsersCount());
+            request.setAttribute("bannedUsers", userDAO.getBannedUsersCount());
         } else if (user.hasRole("STUDENT")) {
             contentPage = "student/dashboard.jsp";
             cssFile = "student/student.css";
@@ -130,6 +132,16 @@ public class DashboardServlet extends HttpServlet {
         } else if (user.hasRole("ACADEMIC_OFFICE")) {
             contentPage = "academic/dashboard.jsp";
             cssFile = "academic/academic.css";
+        } else if (user.hasRole("EXTERNAL_EXPERT")) {
+            dao.SyllabusAssignmentDAO assignDAO = new dao.SyllabusAssignmentDAO();
+            if (!assignDAO.hasAssignments(user.getUserId())) {
+                // Chưa được Academic Office phân công -> vào phòng chờ
+                request.getRequestDispatcher("/views/expert/waiting_standalone.jsp").forward(request, response);
+            } else {
+                // External chỉ đóng vai reviewer -> vào thẳng màn hình review
+                response.sendRedirect(request.getContextPath() + "/review?action=pending");
+            }
+            return;
         }
 
         request.setAttribute("contentPage", contentPage);

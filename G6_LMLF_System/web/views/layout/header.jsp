@@ -30,21 +30,88 @@
         </button>
 
         <!-- Avatar người dùng -->
-        <div class="user-profile-sm" style="background: transparent; border-left: 1px solid #e2e8f0; border-radius: 0; padding-left: 1.5rem;">
-            <div class="user-info-sm" style="text-align: right;">
-                <h4 style="color: #0f172a;"><c:out value="${sessionScope.user.firstName} ${sessionScope.user.lastName}" /></h4>
-                <p style="color: #64748b;">
-                    <c:choose>
-                        <c:when test="${not empty sessionScope.user.roles}">
-                            <c:out value="${sessionScope.user.roles[0].roleName}" />
-                        </c:when>
-                        <c:otherwise>
-                            Member
-                        </c:otherwise>
-                    </c:choose>
-                </p>
+        <style>
+            .user-dropdown-container {
+                position: relative;
+                display: inline-block;
+                cursor: pointer;
+            }
+            .user-dropdown-menu {
+                display: none;
+                position: absolute;
+                right: 0;
+                top: 100%;
+                min-width: 180px;
+                padding-top: 0.5rem; /* Gap is now part of the hoverable area */
+                z-index: 1000;
+            }
+            .user-dropdown-content {
+                background-color: #ffffff;
+                box-shadow: 0px 10px 15px -3px rgba(0,0,0,0.1), 0px 4px 6px -2px rgba(0,0,0,0.05);
+                border-radius: 0.5rem;
+                overflow: hidden;
+                border: 1px solid #e2e8f0;
+            }
+            .user-dropdown-container:hover .user-dropdown-menu {
+                display: block;
+            }
+            .user-dropdown-menu a {
+                color: #334155;
+                padding: 0.75rem 1rem;
+                text-decoration: none;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                font-size: 0.875rem;
+                font-weight: 500;
+                transition: background-color 0.2s;
+            }
+            .user-dropdown-menu a:hover {
+                background-color: #f1f5f9;
+            }
+            .user-dropdown-menu a.logout-link {
+                color: #ef4444;
+                border-top: 1px solid #e2e8f0;
+            }
+            .user-dropdown-menu a.logout-link:hover {
+                background-color: #fef2f2;
+            }
+        </style>
+
+        <div class="user-dropdown-container">
+            <div class="user-profile-sm" style="background: transparent; border-left: 1px solid #e2e8f0; border-radius: 0; padding-left: 1.5rem;">
+                <div class="user-info-sm" style="text-align: right;">
+                    <h4 style="color: #0f172a;"><c:out value="${sessionScope.user.firstName} ${sessionScope.user.lastName}" /></h4>
+                    <p style="color: #64748b;">
+                        <c:choose>
+                            <c:when test="${not empty sessionScope.user.roles}">
+                                <c:out value="${sessionScope.user.roles[0].roleName}" />
+                            </c:when>
+                            <c:otherwise>
+                                Member
+                            </c:otherwise>
+                        </c:choose>
+                    </p>
+                </div>
+                <img class="avatar" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="Avatar">
             </div>
-            <img class="avatar" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="Avatar">
+            
+            <div class="user-dropdown-menu">
+                <div class="user-dropdown-content">
+                    <a href="#">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        My Profile
+                    </a>
+                    <a href="${pageContext.request.contextPath}/logout" class="logout-link">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Logout
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </header>

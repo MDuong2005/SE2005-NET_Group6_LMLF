@@ -10,9 +10,13 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import model.User;
 import utils.SessionUtil;
+import dao.UserDAO;
+import dao.RoleDAO;
 
 /**
  * Filter for Authorization and Role-Based Access Control
@@ -26,7 +30,7 @@ public class AuthorizationFilter implements Filter {
     };
 
     private static final String[] WHITELIST_EXACT = {
-        "/", "/login", "/Logingoogle", "/logout"
+        "/", "/login", "/Logingoogle", "/logout", "/forgot-password"
     };
 
     @Override
@@ -49,7 +53,25 @@ public class AuthorizationFilter implements Filter {
             return;
         }
 
-        // 2. Check Authentication
+        // 2. Auto-Login using Cookie
+        if (!SessionUtil.isLoggedIn(httpRequest)) {
+            String userEmail = getCookieValue(httpRequest, "userEmail");
+            if (userEmail != null && !userEmail.isEmpty()) {
+                UserDAO userDAO = new UserDAO();
+                User user = userDAO.getUserByEmail(userEmail);
+                if (user != null && "ACTIVE".equals(user.getStatus())) {
+                    RoleDAO roleDAO = new RoleDAO();
+                    user.setRoles(roleDAO.getRolesByUserId(user.getUserId()));
+                    if (user.getRoles() != null && !user.getRoles().isEmpty()) {
+                        HttpSession session = httpRequest.getSession();
+                        session.setAttribute("user", user);
+                        userDAO.updateLastLogin(user.getUserId());
+                    }
+                }
+            }
+        }
+
+        // 3. Check Authentication after Auto-Login attempt
         if (!SessionUtil.isLoggedIn(httpRequest)) {
             // Not logged in, redirect to login page
             httpResponse.sendRedirect(httpRequest.getContextPath() + "/login");
@@ -57,6 +79,16 @@ public class AuthorizationFilter implements Filter {
         }
 
         User user = SessionUtil.getCurrentUser(httpRequest);
+
+        // 4. Force Password Change (Only for LOCAL auth provider)
+        if (user.isMustChangePassword() 
+            && !"GOOGLE".equalsIgnoreCase(user.getAuthProvider()) 
+            && !path.equals("/change-password") 
+            && !path.equals("/logout")) {
+            httpResponse.sendRedirect(httpRequest.getContextPath() + "/change-password");
+            return;
+        }
+
         // System Admin: system logs
         if (path.equals("/auditlog")
                 && !hasAnyRole(user, RoleConstants.ADMIN)) {
@@ -87,6 +119,18 @@ public class AuthorizationFilter implements Filter {
             }
         }
         return false;
+    }
+
+    private String getCookieValue(HttpServletRequest request, String name) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (name.equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
     }
 
     private void sendAccessDenied(HttpServletRequest request, HttpServletResponse response)

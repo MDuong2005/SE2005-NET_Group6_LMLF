@@ -253,7 +253,7 @@ public class UserDAO extends DBContext {
     }
 
     /**
-     * Get all external guest users with their roles
+     * Get all external users with their roles
      */
     public java.util.List<User> getExternalUsersWithRoles() {
         return getUsersWithRolesByExternalFlag(true);
@@ -377,6 +377,40 @@ public class UserDAO extends DBContext {
     }
 
     /**
+     * Change user password and clear must_change_password flag
+     */
+    public boolean changePassword(long userId, String newPasswordHash) {
+        String sql = "UPDATE users SET password_hash = ?, must_change_password = 0 WHERE user_id = ?";
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, newPasswordHash);
+                ps.setLong(2, userId);
+                return ps.executeUpdate() > 0;
+            } catch (SQLException e) {
+                System.err.println("UserDAO - Error changePassword: " + e.getMessage());
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Reset user password and set must_change_password flag
+     */
+    public boolean resetPassword(long userId, String tempPasswordHash) {
+        String sql = "UPDATE users SET password_hash = ?, must_change_password = 1 WHERE user_id = ?";
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, tempPasswordHash);
+                ps.setLong(2, userId);
+                return ps.executeUpdate() > 0;
+            } catch (SQLException e) {
+                System.err.println("UserDAO - Error resetPassword: " + e.getMessage());
+            }
+        }
+        return false;
+    }
+
+    /**
      * Update user status (ban/unban)
      */
     public void updateUserStatus(long userId, String status) {
@@ -458,7 +492,7 @@ public class UserDAO extends DBContext {
         return 0;
     }
 
-    public int getGuestUsersCount() {
+    public int getExternalUsersCount() {
         String sql = "SELECT COUNT(*) FROM users WHERE is_external = 1 AND deleted_at IS NULL";
         try (PreparedStatement ps = connection.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -469,5 +503,234 @@ public class UserDAO extends DBContext {
             e.printStackTrace();
         }
         return 0;
+    }
+
+    public int getActiveUsersCount() {
+        String sql = "SELECT COUNT(*) FROM users WHERE status = 'ACTIVE' AND deleted_at IS NULL";
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public int getBannedUsersCount() {
+        String sql = "SELECT COUNT(*) FROM users WHERE status = 'BANNED' AND deleted_at IS NULL";
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
+     * Result of a bulk import: how many rows were inserted, how many failed,
+     * and human-readable error lines (already labelled with the source row).
+     */
+    public static class BatchResult {
+        public int imported = 0;
+        public int failed = 0;
+        public final List<String> errors = new ArrayList<>();
+    }
+
+    /**
+     * Insert many users in one transaction, each with a single role.
+     * {@code users} and {@code roleIds} are parallel lists (same index = same row).
+     * Rows that were already validated by the caller are inserted; a row that
+     * still fails at the DB level (e.g. a duplicate that slipped through) is
+     * skipped and reported, without aborting the whole batch. A systemic
+     * SQLException rolls the whole run back.
+     *
+     * @param rowLabels optional labels (e.g. "Row 5 (john@x.com)") used in error
+     *                  messages; may be null.
+     */
+    public BatchResult insertUsersBatch(List<User> users, List<Long> roleIds, List<String> rowLabels) {
+        BatchResult result = new BatchResult();
+        if (connection == null) {
+            result.errors.add("No database connection.");
+            result.failed = (users == null) ? 0 : users.size();
+            return result;
+        }
+
+        boolean previousAutoCommit = true;
+        try {
+            previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+
+            for (int i = 0; i < users.size(); i++) {
+                String label = (rowLabels != null && i < rowLabels.size())
+                        ? rowLabels.get(i) : ("Row " + (i + 1));
+                try {
+                    long id = insertUser(users.get(i));
+                    if (id > 0) {
+                        assignRole(id, roleIds.get(i));
+                        result.imported++;
+                    } else {
+                        result.failed++;
+                        result.errors.add(label + ": could not be inserted (duplicate email/username?).");
+                    }
+                } catch (RuntimeException ex) {
+                    result.failed++;
+                    result.errors.add(label + ": " + ex.getMessage());
+                }
+            }
+
+            connection.commit();
+        } catch (SQLException e) {
+            try {
+                connection.rollback();
+            } catch (SQLException rb) {
+                System.err.println("UserDAO - rollback failed: " + rb.getMessage());
+            }
+            result.imported = 0;
+            result.failed = (users == null) ? 0 : users.size();
+            result.errors.clear();
+            result.errors.add("Import failed and was rolled back: " + e.getMessage());
+        } finally {
+            try {
+                connection.setAutoCommit(previousAutoCommit);
+            } catch (SQLException e) {
+                System.err.println("UserDAO - restore autocommit failed: " + e.getMessage());
+            }
+        }
+        return result;
+    }
+    public long approveExpertRequestTx(User newUser, long roleId, long requestId, long adminId) {
+        boolean previousAutoCommit = true;
+        try {
+            if (connection == null) return -1;
+            previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+
+            // 1. Insert User
+            long newUserId = insertUser(newUser);
+            if (newUserId <= 0) {
+                connection.rollback();
+                return -1;
+            }
+
+            // 2. Assign Role
+            boolean assigned = assignRole(newUserId, roleId);
+            if (!assigned) {
+                connection.rollback();
+                return -1;
+            }
+
+            // 3. Update Request Status on the same connection
+            String updateReqSql = "UPDATE account_requests SET status = 'APPROVED', resolved_at = CURRENT_TIMESTAMP, resolved_by = ? WHERE request_id = ?";
+            try (PreparedStatement ps = connection.prepareStatement(updateReqSql)) {
+                ps.setLong(1, adminId);
+                ps.setLong(2, requestId);
+                int rows = ps.executeUpdate();
+                if (rows <= 0) {
+                    connection.rollback();
+                    return -1;
+                }
+            }
+
+            connection.commit();
+            return newUserId;
+        } catch (SQLException e) {
+            try {
+                connection.rollback();
+            } catch (SQLException rb) {
+                System.err.println("UserDAO - rollback failed: " + rb.getMessage());
+            }
+            e.printStackTrace();
+            return -1;
+        } finally {
+            try {
+                connection.setAutoCommit(previousAutoCommit);
+            } catch (SQLException e) {
+                System.err.println("UserDAO - restore autocommit failed: " + e.getMessage());
+            }
+        }
+    }
+
+    public boolean undoApproveExpertRequestTx(long userId, long requestId) {
+        boolean previousAutoCommit = true;
+        try {
+            if (connection == null) return false;
+            previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            
+            // Delete user_roles
+            try (PreparedStatement ps1 = connection.prepareStatement("DELETE FROM user_roles WHERE user_id = ?")) {
+                ps1.setLong(1, userId);
+                ps1.executeUpdate();
+            }
+            // Delete user
+            try (PreparedStatement ps2 = connection.prepareStatement("DELETE FROM users WHERE user_id = ?")) {
+                ps2.setLong(1, userId);
+                ps2.executeUpdate();
+            }
+            // Revert request status
+            try (PreparedStatement ps3 = connection.prepareStatement("UPDATE account_requests SET status = 'PENDING', resolved_at = NULL, resolved_by = NULL WHERE request_id = ?")) {
+                ps3.setLong(1, requestId);
+                ps3.executeUpdate();
+            }
+
+            connection.commit();
+            return true;
+        } catch (SQLException e) {
+            try { connection.rollback(); } catch (SQLException ex) {}
+            return false;
+        } finally {
+            try { connection.setAutoCommit(previousAutoCommit); } catch (SQLException ex) {}
+        }
+    }
+
+    /**
+     * Create an external user and assign the given role atomically.
+     * Used by the manual "Add External User" fallback so it produces the
+     * exact same result as the request-approval flow (user + role in one tx).
+     * Returns the new user id, or -1 if the whole transaction was rolled back.
+     */
+    public long createExpertTx(User newUser, long roleId) {
+        boolean previousAutoCommit = true;
+        try {
+            if (connection == null) return -1;
+            previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+
+            // 1. Insert User
+            long newUserId = insertUser(newUser);
+            if (newUserId <= 0) {
+                connection.rollback();
+                return -1;
+            }
+
+            // 2. Assign Role
+            boolean assigned = assignRole(newUserId, roleId);
+            if (!assigned) {
+                connection.rollback();
+                return -1;
+            }
+
+            connection.commit();
+            return newUserId;
+        } catch (SQLException e) {
+            try {
+                connection.rollback();
+            } catch (SQLException rb) {
+                System.err.println("UserDAO - rollback failed: " + rb.getMessage());
+            }
+            e.printStackTrace();
+            return -1;
+        } finally {
+            try {
+                connection.setAutoCommit(previousAutoCommit);
+            } catch (SQLException e) {
+                System.err.println("UserDAO - restore autocommit failed: " + e.getMessage());
+            }
+        }
     }
 }

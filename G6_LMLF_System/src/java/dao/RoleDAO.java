@@ -50,6 +50,36 @@ public class RoleDAO extends DBContext {
         return null;
     }
 
+    /**
+     * Look up a role by its name (case-insensitive), e.g. "LECTURER".
+     * Returns null if no such role exists.
+     */
+    public Role getRoleByName(String roleName) {
+        if (roleName == null || roleName.trim().isEmpty()) {
+            return null;
+        }
+
+        String sql
+                = "SELECT * "
+                + "FROM roles "
+                + "WHERE UPPER(role_name) = UPPER(?)";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, roleName.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapRole(rs);
+                }
+            }
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
     public List<Role> getAllRoles() {
 
         List<Role> list
