@@ -664,16 +664,51 @@
 
 <body>
 <div class="layout">
-    <jsp:include page="/views/layout/sidebar.jsp">
-        <jsp:param name="currentRole"
-                   value="SYLLABUS_REVIEWER"/>
-    </jsp:include>
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-logo">LM</div>
+            <div>
+                <h1>LMLF</h1>
+                <p>Reviewer Portal</p>
+            </div>
+        </div>
+
+        <nav class="navigation">
+            <div class="navigation-title">Review Workflow</div>
+
+            <a class="nav-link"
+               href="${pageContext.request.contextPath}/review?action=pending">
+                Pending Reviews
+            </a>
+
+            <a class="nav-link active" href="#">
+                Evaluation Screen
+            </a>
+
+            <a class="nav-link"
+               href="${pageContext.request.contextPath}/review-history">
+                Review History
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a class="logout-link"
+               href="${pageContext.request.contextPath}/logout">
+                Logout
+            </a>
+        </div>
+    </aside>
 
     <div class="main">
-        <jsp:include page="/views/layout/header.jsp">
-            <jsp:param name="currentRole"
-                       value="SYLLABUS_REVIEWER"/>
-        </jsp:include>
+        <header class="topbar">
+            <div class="profile">
+                <div class="avatar"><%= h(userInitials) %></div>
+                <div>
+                    <div class="profile-email"><%= h(userEmail) %></div>
+                    <div class="profile-role">Reviewer</div>
+                </div>
+            </div>
+        </header>
 
         <main class="content">
             <div class="page-header">

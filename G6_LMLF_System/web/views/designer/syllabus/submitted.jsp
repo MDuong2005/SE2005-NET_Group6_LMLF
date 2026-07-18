@@ -91,16 +91,12 @@
 
 <body>
 <div class="dashboard-wrapper">
-    <jsp:include page="/views/layout/sidebar.jsp">
-        <jsp:param name="currentRole"
-                   value="SYLLABUS_DESIGNER"/>
-    </jsp:include>
+    <%@ include file="/views/designer/layout_designer/sidebar_designer.jsp" %>
 
     <main class="dashboard-main">
-        <jsp:include page="/views/layout/header.jsp">
-            <jsp:param name="currentRole"
-                       value="SYLLABUS_DESIGNER"/>
-        </jsp:include>
+        <div class="top-header">
+            <strong>Designer Workspace</strong>
+            <div>Submitted</div>
         </div>
 
         <section class="dashboard-content">
