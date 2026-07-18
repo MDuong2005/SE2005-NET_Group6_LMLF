@@ -30,39 +30,35 @@
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
                 <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-                    <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Curriculum Name</th>
-                    <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Major</th>
-                    <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Academic Year</th>
-                    <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Credits</th>
-                    <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Status</th>
+                    <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">CurriculumCode</th>
+                    <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Name</th>
+                    <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Description</th>
+                    <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">DecisionNo MM/dd/yyyy</th>
+                    <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Total Credit</th>
                     <th style="padding: 1rem; color: #64748b; font-size: 0.875rem; text-align: right;">Action</th>
                 </tr>
             </thead>
             <tbody>
                 <!-- Mock Row 1 -->
                 <tr style="border-bottom: 1px solid #f1f5f9; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
-                    <td style="padding: 1rem; font-weight: 600; color: #1e293b;">Software Engineering 2026</td>
-                    <td style="padding: 1rem;">SE</td>
-                    <td style="padding: 1rem;">2026</td>
+                    <td style="padding: 1rem; font-weight: 600; color: #1e293b;">BIT_SE_K20B</td>
+                    <td style="padding: 1rem;">Bachelor Program of IT, Software Engineering</td>
+                    <td style="padding: 1rem; color: #64748b; font-size: 0.875rem; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">This curriculum provides students with a solid foundation in software engineering...</td>
+                    <td style="padding: 1rem;">577/QĐ-ĐHFPT 05/15/2026</td>
                     <td style="padding: 1rem;">145</td>
-                    <td style="padding: 1rem;">
-                        <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background-color: #bbf7d0; color: #166534;">APPROVED</span>
-                    </td>
                     <td style="padding: 1rem; text-align: right;">
-                        <button class="action-button" onclick="alert('Viewing Curriculum Detail: Overview, Study Plan, Subject List, Prerequisites')" style="padding: 6px 12px; font-size: 0.75rem;">View Detail</button>
+                        <a href="${pageContext.request.contextPath}/views/curriculum/curriculum-detail.jsp" class="action-button" style="padding: 6px 12px; font-size: 0.75rem; text-decoration: none; display: inline-block;">View Detail</a>
                     </td>
                 </tr>
                 <!-- Mock Row 2 -->
                 <tr style="border-bottom: 1px solid #f1f5f9; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
-                    <td style="padding: 1rem; font-weight: 600; color: #1e293b;">Artificial Intelligence 2026</td>
-                    <td style="padding: 1rem;">AI</td>
-                    <td style="padding: 1rem;">2026</td>
+                    <td style="padding: 1rem; font-weight: 600; color: #1e293b;">BIT_AI_K20B</td>
+                    <td style="padding: 1rem;">Bachelor Program of IT, Artificial Intelligence</td>
+                    <td style="padding: 1rem; color: #64748b; font-size: 0.875rem; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Provides deep knowledge in machine learning, neural networks, and AI applications...</td>
+                    <td style="padding: 1rem;">578/QĐ-ĐHFPT 05/15/2026</td>
                     <td style="padding: 1rem;">142</td>
-                    <td style="padding: 1rem;">
-                        <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background-color: #bbf7d0; color: #166534;">APPROVED</span>
-                    </td>
                     <td style="padding: 1rem; text-align: right;">
-                        <button class="action-button" onclick="alert('Viewing Curriculum Detail: Overview, Study Plan, Subject List, Prerequisites')" style="padding: 6px 12px; font-size: 0.75rem;">View Detail</button>
+                        <a href="${pageContext.request.contextPath}/views/curriculum/curriculum-detail.jsp" class="action-button" style="padding: 6px 12px; font-size: 0.75rem; text-decoration: none; display: inline-block;">View Detail</a>
                     </td>
                 </tr>
             </tbody>

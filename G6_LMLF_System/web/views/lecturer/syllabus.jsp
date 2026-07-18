@@ -48,10 +48,8 @@
                     <td style="padding: 1rem;">
                         <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background-color: #bfdbfe; color: #1e40af;">PUBLISHED</span>
                     </td>
-                    <td style="padding: 1rem; text-align: right; display: flex; gap: 0.5rem; justify-content: flex-end;">
-                        <button class="action-button" onclick="alert('Viewing Syllabus Detail...')" style="padding: 6px 12px; font-size: 0.75rem;">View</button>
-                        <button class="action-button" onclick="alert('Downloading PDF...')" style="padding: 6px 12px; font-size: 0.75rem; color: #f26f21; border-color: #f26f21;">PDF</button>
-                        <button class="action-button" onclick="alert('Viewing Version History...')" style="padding: 6px 12px; font-size: 0.75rem;">History</button>
+                    <td style="padding: 1rem; text-align: right;">
+                        <a href="${pageContext.request.contextPath}/views/syllabus/syllabus-detail.jsp" class="action-button" style="padding: 6px 12px; font-size: 0.75rem; text-decoration: none; display: inline-block;">View Detail</a>
                     </td>
                 </tr>
                 <!-- Mock Row 2 -->
@@ -63,10 +61,8 @@
                     <td style="padding: 1rem;">
                         <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background-color: #bfdbfe; color: #1e40af;">PUBLISHED</span>
                     </td>
-                    <td style="padding: 1rem; text-align: right; display: flex; gap: 0.5rem; justify-content: flex-end;">
-                        <button class="action-button" onclick="alert('Viewing Syllabus Detail...')" style="padding: 6px 12px; font-size: 0.75rem;">View</button>
-                        <button class="action-button" onclick="alert('Downloading PDF...')" style="padding: 6px 12px; font-size: 0.75rem; color: #f26f21; border-color: #f26f21;">PDF</button>
-                        <button class="action-button" onclick="alert('Viewing Version History...')" style="padding: 6px 12px; font-size: 0.75rem;">History</button>
+                    <td style="padding: 1rem; text-align: right;">
+                        <a href="${pageContext.request.contextPath}/views/syllabus/syllabus-detail.jsp" class="action-button" style="padding: 6px 12px; font-size: 0.75rem; text-decoration: none; display: inline-block;">View Detail</a>
                     </td>
                 </tr>
             </tbody>

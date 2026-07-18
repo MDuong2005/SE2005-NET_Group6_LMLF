@@ -203,7 +203,7 @@ public class CurriculumServlet extends HttpServlet {
             request.setAttribute("curriculum", curriculum);
             request.setAttribute("availableCourses", availableCourses);
             request.setAttribute("pageTitle", "View Curriculum - " + curriculum.getVersion());
-            request.getRequestDispatcher("/views/curriculum/curriculum.jsp").forward(request, response);
+            request.getRequestDispatcher("/views/curriculum/curriculum-detail.jsp").forward(request, response);
         } catch (NumberFormatException e) {
             response.sendRedirect("curriculum?action=list&error=Invalid curriculum ID");
         }
