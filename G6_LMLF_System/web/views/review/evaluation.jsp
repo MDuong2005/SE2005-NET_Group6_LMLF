@@ -485,6 +485,143 @@
             line-height: 1.6;
         }
 
+
+        /* ============================================================
+           Reviewer CLO-PLO matrix
+           ============================================================ */
+        .clo-plo-review-list {
+            display: grid;
+            gap: 18px;
+        }
+
+        .clo-plo-curriculum-card {
+            overflow: hidden;
+            border: 1px solid #fed7aa;
+            border-radius: 16px;
+            background: #ffffff;
+        }
+
+        .clo-plo-curriculum-header {
+            padding: 16px 18px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            background: #fff7ed;
+            border-bottom: 1px solid #fed7aa;
+        }
+
+        .clo-plo-curriculum-title {
+            margin: 0;
+            color: #9a3412;
+            font-size: 16px;
+            font-weight: 900;
+            line-height: 1.45;
+        }
+
+        .clo-plo-course-line {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .clo-plo-semester-badge {
+            flex: 0 0 auto;
+            padding: 8px 12px;
+            border: 1px solid #fb923c;
+            border-radius: 999px;
+            color: #9a3412;
+            background: #ffffff;
+            font-size: 12px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .clo-plo-table-wrap {
+            padding: 14px;
+            overflow-x: auto;
+        }
+
+        .section-content .clo-plo-matrix {
+            width: 100%;
+            min-width: 680px;
+            border-collapse: collapse;
+        }
+
+        .section-content .clo-plo-matrix th,
+        .section-content .clo-plo-matrix td {
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .section-content .clo-plo-matrix th {
+            color: #ffffff;
+            background: #fb923c;
+            font-size: 12px;
+            text-transform: none;
+        }
+
+        .section-content .clo-plo-matrix .clo-column {
+            min-width: 320px;
+            text-align: left;
+        }
+
+        .clo-code {
+            color: #0f172a;
+            font-weight: 900;
+        }
+
+        .clo-description {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .plo-header-code {
+            display: block;
+            font-weight: 900;
+        }
+
+        .plo-header-description {
+            display: block;
+            max-width: 190px;
+            margin: 4px auto 0;
+            color: #fff7ed;
+            font-size: 10px;
+            font-weight: 600;
+            line-height: 1.35;
+            text-transform: none;
+        }
+
+        .mapping-check {
+            width: 26px;
+            height: 26px;
+            margin: 0 auto;
+            display: grid;
+            place-items: center;
+            border-radius: 7px;
+            color: #166534;
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            font-size: 17px;
+            font-weight: 900;
+        }
+
+        .mapping-empty {
+            color: #cbd5e1;
+            font-size: 18px;
+        }
+
+        .clo-plo-empty-group {
+            padding: 20px;
+            color: #64748b;
+            text-align: center;
+        }
+
         @media (max-width: 1050px) {
             .sidebar {
                 width: 220px;

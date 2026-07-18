@@ -1279,28 +1279,48 @@ public class SyllabusAssignmentDAO extends DBContext {
         }
         return false;
     }
+
     /**
-     * Lightweight existence check for the external-expert waiting room.
-     * Returns true if the user already has at least one syllabus assignment
-     * (as designer or reviewer). Kept intentionally minimal - no JOINs or
-     * display data - since the waiting-room routing only needs a yes/no.
+     * Returns true when the user has at least one Designer or Reviewer task.
+     *
+     * Reviewer assignments are checked in both the legacy reviewer_id column
+     * and the current multi-Reviewer junction table.
      */
     public boolean hasAssignments(long userId) {
-        String sql = "SELECT 1 FROM syllabus_assignments "
-                + "WHERE designer_id = ? OR reviewer_id = ?";
+        String sql = """
+                SELECT TOP (1) 1
+                FROM syllabus_assignments assignmentRow
+                WHERE assignmentRow.designer_id = ?
+                   OR assignmentRow.reviewer_id = ?
+                   OR EXISTS (
+                        SELECT 1
+                        FROM syllabus_assignment_reviewers assignmentReviewer
+                        WHERE assignmentReviewer.assignment_id
+                                = assignmentRow.assignment_id
+                          AND assignmentReviewer.reviewer_id = ?
+                   )
+                """;
+
         try {
-            if (connection != null) {
-                try (PreparedStatement ps = connection.prepareStatement(sql)) {
-                    ps.setLong(1, userId);
-                    ps.setLong(2, userId);
-                    try (ResultSet rs = ps.executeQuery()) {
-                        return rs.next();
-                    }
+            if (connection == null || connection.isClosed()) {
+                return false;
+            }
+
+            try (PreparedStatement statement
+                         = connection.prepareStatement(sql)) {
+
+                statement.setLong(1, userId);
+                statement.setLong(2, userId);
+                statement.setLong(3, userId);
+
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    return resultSet.next();
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
+
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            return false;
         }
-        return false;
     }
 }
