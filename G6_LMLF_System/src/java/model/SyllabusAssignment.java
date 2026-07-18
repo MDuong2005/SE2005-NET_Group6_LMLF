@@ -23,6 +23,14 @@ public class SyllabusAssignment {
     private String assignmentStatus;
     private Long templateFileId;
     private Long submittedVersionId;
+    
+    // New DB fields
+    private Long assignedBy;
+    private Long syllabusId;
+    private Timestamp dueDate;
+    private Timestamp acceptedAt;
+    private Timestamp submittedAt;
+    private Timestamp completedAt;
 
     // Display helpers (for showing lecturer name/email/course code on front end)
     private String courseCode;
@@ -32,6 +40,7 @@ public class SyllabusAssignment {
     private String reviewerName;
     private String reviewerEmail;
     private List<Long> reviewerIds = new ArrayList<>();
+    private String assignedByName;
 
     public SyllabusAssignment() {
     }
@@ -180,8 +189,6 @@ public class SyllabusAssignment {
         this.templateFileId = templateFileId;
     }
 
-    private Timestamp dueDate;
-
     public Long getSubmittedVersionId() {
         return submittedVersionId;
     }
@@ -190,11 +197,59 @@ public class SyllabusAssignment {
         this.submittedVersionId = submittedVersionId;
     }
 
+    public Long getAssignedBy() {
+        return assignedBy;
+    }
+
+    public void setAssignedBy(Long assignedBy) {
+        this.assignedBy = assignedBy;
+    }
+
+    public Long getSyllabusId() {
+        return syllabusId;
+    }
+
+    public void setSyllabusId(Long syllabusId) {
+        this.syllabusId = syllabusId;
+    }
+
     public Timestamp getDueDate() {
         return dueDate;
     }
 
     public void setDueDate(Timestamp dueDate) {
         this.dueDate = dueDate;
+    }
+
+    public Timestamp getAcceptedAt() {
+        return acceptedAt;
+    }
+
+    public void setAcceptedAt(Timestamp acceptedAt) {
+        this.acceptedAt = acceptedAt;
+    }
+
+    public Timestamp getSubmittedAt() {
+        return submittedAt;
+    }
+
+    public void setSubmittedAt(Timestamp submittedAt) {
+        this.submittedAt = submittedAt;
+    }
+
+    public Timestamp getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(Timestamp completedAt) {
+        this.completedAt = completedAt;
+    }
+
+    public String getAssignedByName() {
+        return assignedByName;
+    }
+
+    public void setAssignedByName(String assignedByName) {
+        this.assignedByName = assignedByName;
     }
 }

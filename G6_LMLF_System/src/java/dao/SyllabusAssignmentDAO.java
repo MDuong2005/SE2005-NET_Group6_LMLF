@@ -1323,4 +1323,70 @@ public class SyllabusAssignmentDAO extends DBContext {
             return false;
         }
     }
+
+    /**
+     * Get all assignments for a specific user (either as designer or reviewer)
+     */
+    public List<SyllabusAssignment> getAssignmentsByUser(long userId) {
+        List<SyllabusAssignment> list = new ArrayList<>();
+        String sql = "SELECT sa.*, "
+                + "       c.code AS course_code, "
+                + "       c.name AS course_name, "
+                + "       d.first_name + ' ' + d.last_name AS designer_name, "
+                + "       d.email AS designer_email, "
+                + "       r.first_name + ' ' + r.last_name AS reviewer_name, "
+                + "       r.email AS reviewer_email, "
+                + "       ab.first_name + ' ' + ab.last_name AS assigned_by_name "
+                + "FROM syllabus_assignments sa "
+                + "JOIN courses c ON sa.course_id = c.course_id "
+                + "JOIN users d ON sa.designer_id = d.user_id "
+                + "JOIN users r ON sa.reviewer_id = r.user_id "
+                + "LEFT JOIN users ab ON sa.assigned_by = ab.user_id "
+                + "WHERE sa.designer_id = ? OR sa.reviewer_id = ? "
+                + "ORDER BY sa.assigned_at DESC";
+
+        try {
+            if (connection != null) {
+                PreparedStatement ps = connection.prepareStatement(sql);
+                ps.setLong(1, userId);
+                ps.setLong(2, userId);
+                ResultSet rs = ps.executeQuery();
+                while (rs.next()) {
+                    SyllabusAssignment sa = new SyllabusAssignment();
+                    sa.setAssignmentId(rs.getLong("assignment_id"));
+                    sa.setCourseId(rs.getLong("course_id"));
+                    sa.setDesignerId(rs.getLong("designer_id"));
+                    sa.setReviewerId(rs.getLong("reviewer_id"));
+                    sa.setSemester(rs.getString("semester"));
+                    sa.setAcademicYear(rs.getInt("academic_year"));
+                    sa.setAssignedAt(rs.getTimestamp("assigned_at"));
+                    sa.setAssignmentStatus(rs.getString("assignment_status"));
+                    
+                    // New DB fields
+                    sa.setAssignedBy(rs.getLong("assigned_by"));
+                    sa.setSyllabusId(rs.getLong("syllabus_id"));
+                    sa.setDueDate(rs.getTimestamp("due_date"));
+                    sa.setAcceptedAt(rs.getTimestamp("accepted_at"));
+                    sa.setSubmittedAt(rs.getTimestamp("submitted_at"));
+                    sa.setCompletedAt(rs.getTimestamp("completed_at"));
+                    
+                    // Display helpers
+                    sa.setCourseCode(rs.getString("course_code"));
+                    sa.setCourseName(rs.getString("course_name"));
+                    sa.setDesignerName(rs.getString("designer_name").trim());
+                    sa.setDesignerEmail(rs.getString("designer_email"));
+                    sa.setReviewerName(rs.getString("reviewer_name").trim());
+                    sa.setReviewerEmail(rs.getString("reviewer_email"));
+                    
+                    String assigner = rs.getString("assigned_by_name");
+                    sa.setAssignedByName(assigner != null ? assigner.trim() : "System Admin");
+                    
+                    list.add(sa);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 }

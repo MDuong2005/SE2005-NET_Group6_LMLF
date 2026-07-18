@@ -3,9 +3,10 @@
 
 <div class="content-header">
     <div>
-        <h2>Lecturer Portal</h2>
-        <p>Welcome back, <c:out value="${sessionScope.user.firstName}" />. Manage your assigned courses and materials.</p>
+        <h2>Lecturer Dashboard</h2>
+        <p>Welcome back, <c:out value="${sessionScope.user.firstName}" />. Manage your tasks and access quick links.</p>
     </div>
+    <!-- Huy hiệu Lịch -->
     <div class="date-badge">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -14,58 +15,138 @@
     </div>
 </div>
 
-<!-- BA THẺ TÁC VỤ AN TOÀN -->
-<div class="stats-grid">
-    <!-- Card 1 -->
-    <div class="stat-card">
-        <div class="stat-icon bg-orange" style="position: absolute; top: 1.5rem; left: 1.5rem;">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-        </div>
-        <h3 style="margin-top: 3.5rem;">Assigned Courses</h3>
-        <p>Courses you are currently teaching.</p>
-        <div class="stat-value">04</div>
-    </div>
-
-    <!-- Card 2 -->
-    <div class="stat-card">
-        <div class="stat-icon bg-orange" style="position: absolute; top: 1.5rem; left: 1.5rem;">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-        </div>
-        <h3 style="margin-top: 3.5rem;">Active Syllabuses</h3>
-        <p>Syllabuses for your teaching courses.</p>
-        <div class="stat-value">04</div>
-    </div>
-
-    <!-- Card 3 -->
-    <div class="stat-card">
-        <div class="stat-icon bg-orange" style="position: absolute; top: 1.5rem; left: 1.5rem;">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-        </div>
-        <h3 style="margin-top: 3.5rem;">Recent Notifications</h3>
-        <p>Unread messages and alerts.</p>
-        <div class="stat-value">03</div>
-    </div>
-</div>
-
 <!-- QUICK ACTIONS -->
-<div class="panel">
+<div class="panel" style="margin-bottom: 2rem;">
     <div class="panel-header">
         <h3 class="panel-title">Quick Actions</h3>
     </div>
-    <div class="panel-body p-6">
-        <div class="flex flex-wrap gap-4">
-            <button class="action-button">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                My Courses
-            </button>
-            <button class="action-button">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                Report Syllabus Issue
-            </button>
-            <button class="action-button">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                View Course Syllabuses
-            </button>
-        </div>
+    <div class="panel-body" style="padding: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+        <a href="${pageContext.request.contextPath}/lecturer-ui?page=curriculum" class="action-button">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            Search Curriculum
+        </a>
+        <a href="${pageContext.request.contextPath}/lecturer-ui?page=syllabus" class="action-button">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Search Syllabus
+        </a>
+        <a href="${pageContext.request.contextPath}/lecturer-ui?page=materials" class="action-button" style="background-color: var(--fpt-orange-light); color: var(--fpt-orange); border-color: var(--fpt-orange-border);">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Upload Material
+        </a>
+        <a href="${pageContext.request.contextPath}/assigned-roles" class="action-button">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 112-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            My Tasks
+        </a>
     </div>
 </div>
+
+<div class="two-col-grid">
+    <!-- LEFT COLUMN -->
+    <div style="display: flex; flex-direction: column; gap: 2rem;">
+        
+        <!-- RECENTLY VIEWED CURRICULUMS -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3 class="panel-title">Recently Viewed Curriculums</h3>
+                <a href="${pageContext.request.contextPath}/lecturer-ui?page=curriculum" class="view-all">View All</a>
+            </div>
+            <div class="panel-body">
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Curriculum Name</th>
+                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Major</th>
+                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 1rem; font-weight: 600; color: #1e293b;">Software Engineering 2026</td>
+                            <td style="padding: 1rem;">SE</td>
+                            <td style="padding: 1rem;"><span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background-color: #bbf7d0; color: #166534;">APPROVED</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- RECENTLY VIEWED SYLLABUSES -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3 class="panel-title">Recently Viewed Syllabuses</h3>
+                <a href="${pageContext.request.contextPath}/lecturer-ui?page=syllabus" class="view-all">View All</a>
+            </div>
+            <div class="panel-body">
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Subject Code</th>
+                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Version</th>
+                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 1rem; font-weight: 600; color: #1e293b;">SWP391</td>
+                            <td style="padding: 1rem;">1.2</td>
+                            <td style="padding: 1rem;"><span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background-color: #bfdbfe; color: #1e40af;">PUBLISHED</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div style="display: flex; flex-direction: column; gap: 2rem;">
+        
+        <!-- RECENT TEACHING MATERIALS -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3 class="panel-title">Recent Teaching Materials</h3>
+                <a href="${pageContext.request.contextPath}/lecturer-ui?page=materials" class="view-all">Manage</a>
+            </div>
+            <div class="panel-body" style="padding: 1.5rem;">
+                <div class="list-group">
+                    <div class="list-item" style="padding: 0.75rem; border: 1px solid #e2e8f0;">
+                        <div class="list-item-icon" style="padding: 0.5rem;"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg></div>
+                        <div class="list-item-content">
+                            <h4 class="list-item-title">SWP391_Lecture1_Slides.pdf</h4>
+                            <p class="list-item-desc">Uploaded today</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LATEST NOTIFICATIONS -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3 class="panel-title">Latest Notifications</h3>
+                <a href="${pageContext.request.contextPath}/lecturer-ui?page=notifications" class="view-all">View All</a>
+            </div>
+            <div class="panel-body" style="padding: 1.5rem;">
+                <div class="list-group">
+                    <div class="list-item" style="padding: 0.75rem; border: 1px solid #e2e8f0; border-left: 4px solid var(--fpt-orange);">
+                        <div class="list-item-content">
+                            <h4 class="list-item-title" style="font-size: 0.8rem;">New Syllabus Version Published</h4>
+                            <p class="list-item-desc" style="font-size: 0.7rem;">PRJ301 v2.0 is now available.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+

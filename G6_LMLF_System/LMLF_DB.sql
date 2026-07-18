@@ -466,5 +466,26 @@ GO
 
 USE LMLF;
 GO
-SELECT SCHEMA_NAME(schema_id) AS SchemaName, name AS TableName 
-FROM sys.tables;
+-- =======================================================
+-- 23. LECTURER MATERIALS
+-- =======================================================
+CREATE TABLE lecturer_materials (
+    lecturer_material_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    course_id BIGINT NOT NULL,
+    lecturer_id BIGINT NOT NULL,
+    title NVARCHAR(255) NOT NULL,
+    file_url NVARCHAR(255) NOT NULL,
+    uploaded_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    category NVARCHAR(100),
+    material_type NVARCHAR(50)
+);
+GO
+
+CREATE TABLE shared_materials (
+    material_id BIGINT NOT NULL,
+    shared_with_email NVARCHAR(255) NOT NULL,
+    shared_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    CONSTRAINT pk_shared_materials PRIMARY KEY (material_id, shared_with_email),
+    CONSTRAINT fk_sm_material FOREIGN KEY (material_id) REFERENCES lecturer_materials(lecturer_material_id) ON DELETE CASCADE
+);
+GO
