@@ -230,16 +230,17 @@
 <body>
 <div class="dashboard-wrapper">
 
-    <jsp:include page="../layout_designer/sidebar_designer.jsp"/>
+    <jsp:include page="/views/layout/sidebar.jsp">
+        <jsp:param name="currentRole"
+                   value="SYLLABUS_DESIGNER"/>
+    </jsp:include>
 
     <main class="dashboard-main">
 
-        <header class="top-header">
-            <strong>Designer Workspace</strong>
-            <span class="text-muted small">
-                Reviewer Feedback
-            </span>
-        </header>
+        <jsp:include page="/views/layout/header.jsp">
+            <jsp:param name="currentRole"
+                       value="SYLLABUS_DESIGNER"/>
+        </jsp:include>
 
         <section class="review-result-page">
 

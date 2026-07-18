@@ -286,21 +286,17 @@
 
 <div class="dashboard-wrapper">
 
-    <jsp:include page="../layout_designer/sidebar_designer.jsp"/>
+    <jsp:include page="/views/layout/sidebar.jsp">
+        <jsp:param name="currentRole"
+                   value="SYLLABUS_DESIGNER"/>
+    </jsp:include>
 
     <main class="dashboard-main">
 
-        <header class="top-header">
-
-            <div>
-                <strong>Designer Workspace</strong>
-            </div>
-
-            <div class="text-muted small">
-                Assigned by Academic Office
-            </div>
-
-        </header>
+        <jsp:include page="/views/layout/header.jsp">
+            <jsp:param name="currentRole"
+                       value="SYLLABUS_DESIGNER"/>
+        </jsp:include>
 
         <section class="dashboard-content">
 

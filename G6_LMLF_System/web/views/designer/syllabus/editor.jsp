@@ -19,9 +19,15 @@
 </head>
 <body data-context-path="${pageContext.request.contextPath}">
 <div class="dashboard-wrapper">
-    <jsp:include page="../layout_designer/sidebar_designer.jsp"/>
+    <jsp:include page="/views/layout/sidebar.jsp">
+        <jsp:param name="currentRole"
+                   value="SYLLABUS_DESIGNER"/>
+    </jsp:include>
     <main class="dashboard-main">
-        <header class="top-header"><strong>Designer Workspace</strong><span class="text-muted small">Structured Syllabus Editor</span></header>
+        <jsp:include page="/views/layout/header.jsp">
+            <jsp:param name="currentRole"
+                       value="SYLLABUS_DESIGNER"/>
+        </jsp:include>
         <section class="dashboard-content">
             <div class="editor-shell">
                 <div class="page-heading">
