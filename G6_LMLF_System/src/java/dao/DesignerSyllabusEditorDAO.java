@@ -88,7 +88,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
 
                     statement.setLong(1, syllabusId);
                     statement.setLong(2, assignmentId);
-                    statement.setLong(3, designerId);
+statement.setLong(3, designerId);
                     statement.executeUpdate();
                 }
             }
@@ -184,7 +184,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
         loadClos(versionId, data);
         loadTasks(versionId, data);
         loadResources(versionId, data);
-        loadSchedule(versionId, data);
+loadSchedule(versionId, data);
         loadAssessments(versionId, data);
         loadPlos(versionId, data);
         loadMappings(versionId, data);
@@ -288,7 +288,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     WHERE assignment_id = ?
                       AND designer_id = ?
                       AND assignment_status NOT IN (
-                            'CANCELLED',
+'CANCELLED',
                             'COMPLETED'
                       )
                     """;
@@ -380,7 +380,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     WHERE version_id = ?
                       AND created_by = ?
                       AND status = 'DRAFT'
-                    """;
+""";
 
             try (PreparedStatement statement
                          = connection.prepareStatement(updateVersionSql)) {
@@ -423,18 +423,6 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 }
             }
 
-            int assignedReviewerCount = createPendingReviewAssignments(
-                    assignmentId,
-                    versionId,
-                    designerId
-            );
-
-            if (assignedReviewerCount == 0) {
-                throw new SQLException(
-                        "No active Reviewer has been assigned to this syllabus assignment."
-                );
-            }
-
             String updateSyllabusSql = """
                     UPDATE syllabuses
                     SET current_version = ?,
@@ -464,174 +452,6 @@ public class DesignerSyllabusEditorDAO extends DBContext {
         }
     }
 
-    /**
-     * Creates the version-level Reviewer queue when Designer submits.
-     *
-     * Preferred source:
-     *   syllabus_assignment_reviewers
-     *   (supports more than one Reviewer when that table exists).
-     *
-     * Compatibility fallback:
-     *   syllabus_assignments.reviewer_id
-     *   (current Academic Office implementation).
-     *
-     * Only ACTIVE users having the REVIEWER role are inserted.
-     */
-    private int createPendingReviewAssignments(
-            long assignmentId,
-            long versionId,
-            long designerId
-    ) throws SQLException {
-
-        boolean hasMultipleReviewerTable = false;
-
-        String tableCheckSql = """
-                SELECT CASE
-                    WHEN OBJECT_ID(
-                        N'dbo.syllabus_assignment_reviewers',
-                        N'U'
-                    ) IS NOT NULL
-                    THEN 1
-                    ELSE 0
-                END AS table_exists
-                """;
-
-        try (PreparedStatement statement
-                     = connection.prepareStatement(tableCheckSql);
-             ResultSet resultSet = statement.executeQuery()) {
-
-            if (resultSet.next()) {
-                hasMultipleReviewerTable
-                        = resultSet.getInt("table_exists") == 1;
-            }
-        }
-
-        if (hasMultipleReviewerTable) {
-            String insertMultipleSql = """
-                    INSERT INTO syllabus_version_review_assignments (
-                        version_id,
-                        reviewer_id,
-                        assigned_by,
-                        status,
-                        assigned_at,
-                        completed_at
-                    )
-                    SELECT
-                        ?,
-                        assignmentReviewer.reviewer_id,
-                        assignmentRow.assigned_by,
-                        'PENDING',
-                        SYSDATETIME(),
-                        NULL
-                    FROM syllabus_assignment_reviewers assignmentReviewer
-                    INNER JOIN syllabus_assignments assignmentRow
-                        ON assignmentRow.assignment_id
-                            = assignmentReviewer.assignment_id
-                    INNER JOIN users reviewer
-                        ON reviewer.user_id
-                            = assignmentReviewer.reviewer_id
-                    INNER JOIN user_roles userRole
-                        ON userRole.user_id = reviewer.user_id
-                    INNER JOIN roles roleRow
-                        ON roleRow.role_id = userRole.role_id
-                       AND roleRow.role_name = 'REVIEWER'
-                    WHERE assignmentReviewer.assignment_id = ?
-                      AND assignmentRow.designer_id = ?
-                      AND reviewer.status = 'ACTIVE'
-                      AND reviewer.deleted_at IS NULL
-                      AND NOT EXISTS (
-                            SELECT 1
-                            FROM syllabus_version_review_assignments existingRow
-                            WHERE existingRow.version_id = ?
-                              AND existingRow.reviewer_id
-                                    = assignmentReviewer.reviewer_id
-                      )
-                    """;
-
-            try (PreparedStatement statement
-                         = connection.prepareStatement(insertMultipleSql)) {
-
-                statement.setLong(1, versionId);
-                statement.setLong(2, assignmentId);
-                statement.setLong(3, designerId);
-                statement.setLong(4, versionId);
-                statement.executeUpdate();
-            }
-        }
-
-        /*
-         * Current Academic Office code stores one selected Reviewer directly
-         * in syllabus_assignments.reviewer_id. Use it as a fallback and also
-         * as compatibility support for existing assignments.
-         */
-        String insertSingleSql = """
-                INSERT INTO syllabus_version_review_assignments (
-                    version_id,
-                    reviewer_id,
-                    assigned_by,
-                    status,
-                    assigned_at,
-                    completed_at
-                )
-                SELECT
-                    ?,
-                    assignmentRow.reviewer_id,
-                    assignmentRow.assigned_by,
-                    'PENDING',
-                    SYSDATETIME(),
-                    NULL
-                FROM syllabus_assignments assignmentRow
-                INNER JOIN users reviewer
-                    ON reviewer.user_id = assignmentRow.reviewer_id
-                INNER JOIN user_roles userRole
-                    ON userRole.user_id = reviewer.user_id
-                INNER JOIN roles roleRow
-                    ON roleRow.role_id = userRole.role_id
-                   AND roleRow.role_name = 'REVIEWER'
-                WHERE assignmentRow.assignment_id = ?
-                  AND assignmentRow.designer_id = ?
-                  AND assignmentRow.reviewer_id IS NOT NULL
-                  AND reviewer.status = 'ACTIVE'
-                  AND reviewer.deleted_at IS NULL
-                  AND NOT EXISTS (
-                        SELECT 1
-                        FROM syllabus_version_review_assignments existingRow
-                        WHERE existingRow.version_id = ?
-                          AND existingRow.reviewer_id
-                                = assignmentRow.reviewer_id
-                  )
-                """;
-
-        try (PreparedStatement statement
-                     = connection.prepareStatement(insertSingleSql)) {
-
-            statement.setLong(1, versionId);
-            statement.setLong(2, assignmentId);
-            statement.setLong(3, designerId);
-            statement.setLong(4, versionId);
-            statement.executeUpdate();
-        }
-
-        String countSql = """
-                SELECT COUNT(*) AS reviewer_count
-                FROM syllabus_version_review_assignments
-                WHERE version_id = ?
-                  AND status IN ('PENDING', 'IN_PROGRESS')
-                """;
-
-        try (PreparedStatement statement
-                     = connection.prepareStatement(countSql)) {
-
-            statement.setLong(1, versionId);
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                return resultSet.next()
-                        ? resultSet.getInt("reviewer_count")
-                        : 0;
-            }
-        }
-    }
-
     public long saveImportedFile(
             long assignmentId,
             long versionId,
@@ -651,8 +471,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
         ensureEditableOwner(versionId, designerId, true);
 
         long syllabusId;
-
-        String versionSql = """
+String versionSql = """
                 SELECT syllabus_id
                 FROM syllabus_versions
                 WHERE version_id = ?
@@ -748,7 +567,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
 
     public void logImport(
             long assignmentId,
-            long versionId,
+long versionId,
             Long fileId,
             long designerId,
             String status,
@@ -841,7 +660,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             }
 
             if (!codes.add(code)) {
-                throw new SQLException("Duplicate CLO code: " + code);
+throw new SQLException("Duplicate CLO code: " + code);
             }
 
             clo.setCode(code);
@@ -926,7 +745,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
 
 
     private void insertGeneral(
-            long versionId,
+long versionId,
             SyllabusEditorData.GeneralInformation information
     ) throws SQLException {
 
@@ -1028,8 +847,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 }
                 code = "CLO" + generatedNumber;
             }
-
-            if (outcomeIds.containsKey(code)) {
+if (outcomeIds.containsKey(code)) {
                 throw new SQLException("Duplicate CLO code: " + code);
             }
 
@@ -1129,8 +947,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 """;
 
         int displayOrder = 1;
-
-        for (SyllabusEditorData.ResourceItem item : safe(items)) {
+for (SyllabusEditorData.ResourceItem item : safe(items)) {
             if (item == null
                     || (blank(item.getTitle())
                     && blank(item.getDescription())
@@ -1211,7 +1028,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 setNullableString(statement, 3, item.getCategory());
                 setNullableString(statement, 4, item.getTopic());
                 setNullableString(statement, 5, item.getMaterials());
-                setNullableString(statement, 6, item.getActivities());
+setNullableString(statement, 6, item.getActivities());
                 statement.setInt(7, displayOrder++);
                 statement.executeUpdate();
 
@@ -1310,7 +1127,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 SELECT itu_term_id
                 FROM syllabus_itu_terms
                 WHERE version_id = ?
-                  AND UPPER(code) = UPPER(?)
+AND UPPER(code) = UPPER(?)
                 """;
 
         try (PreparedStatement statement
@@ -1416,8 +1233,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             List<SyllabusEditorData.AssessmentItem> items,
             Map<String, Long> cloIds
     ) throws SQLException {
-
-        String insertAssessmentSql = """
+String insertAssessmentSql = """
                 INSERT INTO syllabus_assessments (
                     version_id,
                     assessment_type,
@@ -1495,8 +1311,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     assessmentId = generatedKeys.getLong(1);
                 }
             }
-
-            insertAssessmentCloMappings(
+insertAssessmentCloMappings(
                     assessmentId,
                     item.getCloCodes(),
                     cloIds
@@ -1600,8 +1415,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 String normalizedCloCode
                         = normalizeClo(entry.getKey());
                 Long outcomeId = cloIds.get(normalizedCloCode);
-
-                if (outcomeId == null) {
+if (outcomeId == null) {
                     throw new SQLException(
                             "CLO-PLO mapping contains an unknown CLO: "
                             + entry.getKey()
@@ -1694,8 +1508,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 "7"
             }
         };
-
-        try (PreparedStatement statement
+try (PreparedStatement statement
                      = connection.prepareStatement(
                              "DELETE FROM syllabus_version_sections "
                              + "WHERE version_id = ?"
@@ -1783,7 +1596,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                         resultSet.getString("time_allocation")
                 );
                 information.setPrerequisiteText(
-                        resultSet.getString("prerequisite_text")
+resultSet.getString("prerequisite_text")
                 );
                 information.setCourseDescription(
                         resultSet.getString("course_description")
@@ -1881,7 +1694,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     description
                 FROM syllabus_learning_resources
                 WHERE version_id = ?
-                ORDER BY display_order, resource_id
+ORDER BY display_order, resource_id
                 """;
 
         try (PreparedStatement statement
@@ -1952,7 +1765,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                         INNER JOIN syllabus_itu_terms ituTerm
                             ON ituTerm.itu_term_id = scheduleItu.itu_term_id
                         WHERE scheduleItu.schedule_item_id
-                            = scheduleItem.schedule_item_id
+= scheduleItem.schedule_item_id
                     ) ituList
                 ) ituMapping
                 WHERE scheduleItem.version_id = ?
@@ -2027,7 +1840,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                             = assessment.assessment_id
                     ) cloList
                 ) cloMapping
-                WHERE assessment.version_id = ?
+WHERE assessment.version_id = ?
                 ORDER BY
                     assessment.display_order,
                     assessment.assessment_id
@@ -2106,7 +1919,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
 
         String sql = """
                 SELECT
-                    scope.scope_id,
+scope.scope_id,
                     scope.academic_curriculum_id AS curriculum_id,
                     scope.curriculum_code_snapshot,
                     scope.curriculum_name_snapshot,
@@ -2180,7 +1993,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     /*
                      * The UI continues to use the JSON property "ploId",
                      * but its value is the Designer-owned snapshot option ID,
-                     * not the Academic Office table ID.
+* not the Academic Office table ID.
                      */
                     item.setPloId(optionId);
                     item.setAcademicPloId(
@@ -2268,7 +2081,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
          * only reads them. All INSERT, UPDATE and DELETE statements target
          * Designer-owned snapshot/mapping tables.
          *
-         * Designer visibility is driven by actual Academic Course-PLO
+* Designer visibility is driven by actual Academic Course-PLO
          * mappings. A Curriculum is included when it contains this Course
          * and Academic Office has mapped at least one PLO to the Course.
          *
@@ -2342,7 +2155,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     scopeRow.curriculum_version_snapshot
                         = curriculum.version,
                     scopeRow.major_code_snapshot = major.code,
-                    scopeRow.major_name_snapshot = major.name,
+scopeRow.major_name_snapshot = major.name,
                     scopeRow.course_code_snapshot = course.code,
                     scopeRow.course_name_snapshot = course.name,
                     scopeRow.semester_snapshot
@@ -2410,7 +2223,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     ON major.major_id = curriculum.major_id
                 WHERE curriculumCourse.course_id = ?
                   AND EXISTS (
-                        SELECT 1
+SELECT 1
                         FROM curriculum_course_plo_mappings mappedPlo
                         WHERE mappedPlo.curriculum_id
                                 = curriculumCourse.curriculum_id
@@ -2477,7 +2290,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
         /* Add PLOs newly assigned to the Course by Academic Office. */
         String insertOptionSql = """
                 INSERT INTO syllabus_version_plo_options (
-                    scope_id,
+scope_id,
                     version_id,
                     academic_plo_id,
                     plo_code_snapshot,
@@ -2543,7 +2356,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                         SELECT 1
                         FROM curriculum_courses curriculumCourse
                         INNER JOIN curriculums curriculum
-                            ON curriculum.curriculum_id
+ON curriculum.curriculum_id
                                 = curriculumCourse.curriculum_id
                         INNER JOIN curriculum_course_plo_mappings coursePlo
                             ON coursePlo.curriculum_id
@@ -2599,7 +2412,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                             ON course.course_id
                                 = curriculumCourse.course_id
                         WHERE curriculumCourse.curriculum_id
-                                = scopeRow.academic_curriculum_id
+= scopeRow.academic_curriculum_id
                           AND curriculumCourse.course_id = scopeRow.course_id
                           AND academicPlo.plo_id
                                 = optionRow.academic_plo_id
@@ -2668,7 +2481,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 INNER JOIN syllabus_version_curriculum_scopes scope
                     ON scope.scope_id = optionRow.scope_id
                    AND scope.version_id = optionRow.version_id
-                WHERE optionRow.version_id = ?
+WHERE optionRow.version_id = ?
                 ORDER BY
                     scope.curriculum_code_snapshot,
                     optionRow.plo_code_snapshot,
@@ -2749,8 +2562,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     : mappings.entrySet()) {
 
                 String cloCode = normalizeClo(entry.getKey());
-
-                if (cloCode == null || !cloCodes.contains(cloCode)) {
+if (cloCode == null || !cloCodes.contains(cloCode)) {
                     throw new SQLException(
                             "CLO-PLO mapping contains an unknown CLO: "
                             + entry.getKey()
@@ -2838,8 +2650,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             buildReviewerCloPloSnapshot(
                     long versionId
             ) throws SQLException {
-
-        Map<Long, ReviewerCurriculumMappingSnapshot> groups
+Map<Long, ReviewerCurriculumMappingSnapshot> groups
                 = new LinkedHashMap<>();
 
         String groupSql = """
@@ -2910,7 +2721,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
 
                     Long optionId = getNullableLong(
                             resultSet,
-                            "plo_option_id"
+"plo_option_id"
                     );
 
                     if (optionId != null) {
@@ -2983,7 +2794,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                     ReviewerCloPloMappingSnapshot mapping
                             = new ReviewerCloPloMappingSnapshot();
                     mapping.cloCode
-                            = resultSet.getString("clo_code");
+= resultSet.getString("clo_code");
                     mapping.cloDescription
                             = resultSet.getString("clo_description");
                     mapping.ploId
@@ -3058,7 +2869,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 information.assignmentStatus = resultSet.getString(
                         "assignment_status"
                 );
-                information.courseCode = resultSet.getString("course_code");
+information.courseCode = resultSet.getString("course_code");
                 information.courseName = resultSet.getString("course_name");
                 information.versionStatus = resultSet.getString(
                         "version_status"
@@ -3157,7 +2968,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
         try (PreparedStatement statement
                      = connection.prepareStatement(
                              sql,
-                             Statement.RETURN_GENERATED_KEYS
+Statement.RETURN_GENERATED_KEYS
                      )) {
 
             statement.setLong(1, syllabusId);
@@ -3255,7 +3066,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
 
             statement.setLong(1, assignmentId);
             statement.setLong(2, designerId);
-            statement.setLong(3, versionId);
+statement.setLong(3, versionId);
             statement.setLong(4, designerId);
 
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -3358,8 +3169,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 if (range.length == 2) {
                     Integer start = extractCloNumber(range[0]);
                     Integer end = extractCloNumber(range[1]);
-
-                    if (start != null && end != null) {
+if (start != null && end != null) {
                         int minimum = Math.min(start, end);
                         int maximum = Math.max(start, end);
 
@@ -3473,8 +3283,7 @@ public class DesignerSyllabusEditorDAO extends DBContext {
             statement.setInt(parameterIndex, parsed);
         }
     }
-
-    private void setNullableString(
+private void setNullableString(
             PreparedStatement statement,
             int parameterIndex,
             String value
