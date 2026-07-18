@@ -113,7 +113,7 @@ public class SyllabusReviewDAO extends DBContext {
 
                 workflowStatus = WORKFLOW_REJECTED;
 
-            } else if (assignedCount >= 2
+            } else if (assignedCount >= 1
                     && completedCount == assignedCount
                     && approvedCount == assignedCount) {
 

@@ -12,8 +12,9 @@ import java.io.IOException;
 
 /**
  * Servlet for serving static UI prototypes for the Lecturer Module
+ * (Forced update to trigger recompile)
  */
-@WebServlet("/lecturer-ui")
+@WebServlet(name = "LecturerUIServlet", urlPatterns = {"/lecturer-ui"})
 public class LecturerUIServlet extends HttpServlet {
 
     @Override
