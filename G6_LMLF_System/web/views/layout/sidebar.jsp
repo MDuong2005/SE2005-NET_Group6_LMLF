@@ -59,8 +59,8 @@
 
 <style>
     .lmlf-shared-sidebar {
-        width: 270px;
-        flex: 0 0 270px;
+        width: 278px;
+        flex: 0 0 278px;
         min-height: 100vh;
         display: flex;
         flex-direction: column;
@@ -72,8 +72,8 @@
     }
 
     .lmlf-shared-sidebar .sidebar-header {
-        min-height: 88px;
-        padding: 18px 20px;
+        min-height: 94px;
+        padding: 20px 24px;
         display: flex;
         align-items: center;
         gap: 12px;
@@ -81,15 +81,15 @@
     }
 
     .lmlf-shared-sidebar .sidebar-logo-icon {
-        width: 46px;
-        height: 46px;
-        flex: 0 0 46px;
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
         display: grid;
         place-items: center;
-        border-radius: 13px;
+        border-radius: 10px;
         background: #f97316;
         color: #ffffff;
-        font-size: 15px;
+        font-size: 12px;
         font-weight: 900;
     }
 
@@ -118,7 +118,7 @@
 
     .lmlf-shared-sidebar .sidebar-nav {
         flex: 1;
-        padding: 18px 14px 26px;
+        padding: 20px 16px 28px;
         overflow-y: auto;
     }
 
@@ -136,9 +136,9 @@
     }
 
     .lmlf-shared-sidebar .nav-item {
-        min-height: 44px;
-        margin-bottom: 5px;
-        padding: 10px 12px;
+        min-height: 42px;
+        margin-bottom: 4px;
+        padding: 9px 12px;
         display: flex;
         align-items: center;
         gap: 11px;
@@ -206,7 +206,7 @@
 
 <aside class="sidebar lmlf-shared-sidebar">
     <div class="sidebar-header">
-        <div class="sidebar-logo-icon">LM</div>
+        <div class="sidebar-logo-icon">LMF</div>
 
         <div class="sidebar-title">
             <h1>
@@ -216,7 +216,7 @@
                     </c:when>
 
                     <c:when test="${layoutRole == 'ACADEMIC_OFFICE'}">
-                        LMLF Academic
+                        LMLF Office
                     </c:when>
 
                     <c:when test="${layoutRole == 'SYLLABUS_DESIGNER'}">
@@ -233,7 +233,7 @@
                 </c:choose>
             </h1>
 
-            <p>Syllabus Management</p>
+            <p>Curriculum Portal</p>
         </div>
     </div>
 
@@ -562,9 +562,8 @@
             </a>
         </c:if>
 
-        <div class="nav-section-title">Account</div>
-
         <a href="#"
+           id="lmlfSidebarNotificationLink"
            class="nav-item">
             <svg fill="none"
                  stroke="currentColor"

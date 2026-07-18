@@ -60,8 +60,8 @@
 
 <style>
     .lmlf-shared-header {
-        min-height: 72px;
-        padding: 0 30px;
+        min-height: 74px;
+        padding: 0 28px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -92,10 +92,10 @@
         width: 100%;
         height: 42px;
         padding: 0 16px 0 43px;
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
+        border: 0;
+        border-radius: 999px;
         outline: none;
-        background: #f8fafc;
+        background: #f1f5f9;
         color: #0f172a;
         font: inherit;
         font-size: 13px;
@@ -136,6 +136,143 @@
     .lmlf-shared-header .header-icon-button svg {
         width: 19px;
         height: 19px;
+    }
+
+
+    .lmlf-notification-menu {
+        position: relative;
+        z-index: 1700;
+    }
+
+    .lmlf-notification-button {
+        position: relative;
+    }
+
+    .lmlf-notification-badge {
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        position: absolute;
+        top: -7px;
+        right: -7px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #ffffff;
+        border-radius: 999px;
+        background: #ef4444;
+        color: #ffffff;
+        font-size: 10px;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .lmlf-notification-dropdown {
+        width: 370px;
+        max-height: 520px;
+        position: absolute;
+        top: calc(100% + 10px);
+        right: 0;
+        display: none;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #ffffff;
+        box-shadow:
+            0 20px 45px rgba(15, 23, 42, 0.16),
+            0 7px 16px rgba(15, 23, 42, 0.08);
+    }
+
+    .lmlf-notification-menu.open
+    .lmlf-notification-dropdown {
+        display: block;
+    }
+
+    .lmlf-notification-header {
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .lmlf-notification-header strong {
+        color: #0f172a;
+        font-size: 15px;
+    }
+
+    .lmlf-notification-mark-all {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: #f97316;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .lmlf-notification-mark-all:hover {
+        text-decoration: underline;
+    }
+
+    .lmlf-notification-list {
+        max-height: 420px;
+        overflow-y: auto;
+    }
+
+    .lmlf-notification-item {
+        width: 100%;
+        padding: 13px 16px;
+        display: block;
+        border: 0;
+        border-bottom: 1px solid #f1f5f9;
+        background: #ffffff;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .lmlf-notification-item:hover {
+        background: #f8fafc;
+    }
+
+    .lmlf-notification-item.unread {
+        background: #fff7ed;
+    }
+
+    .lmlf-notification-subject {
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 850;
+        line-height: 1.35;
+    }
+
+    .lmlf-notification-body {
+        margin-top: 4px;
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
+    .lmlf-notification-time {
+        margin-top: 7px;
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 650;
+    }
+
+    .lmlf-notification-empty {
+        padding: 34px 20px;
+        color: #94a3b8;
+        text-align: center;
+        font-size: 13px;
+    }
+
+    @media (max-width: 520px) {
+        .lmlf-notification-dropdown {
+            width: min(340px, calc(100vw - 24px));
+            right: -65px;
+        }
     }
 
     .lmlf-account-menu {
@@ -257,7 +394,6 @@
 
     .lmlf-account-dropdown .lmlf-logout-link {
         color: #dc2626;
-        border-top: 1px solid #e2e8f0;
     }
 
     .lmlf-account-dropdown .lmlf-logout-link:hover {
@@ -308,64 +444,57 @@
     </div>
 
     <div class="header-actions">
-        <button class="header-icon-button"
-                type="button"
-                aria-label="Notifications">
-            <svg fill="none"
-                 stroke="currentColor"
-                 viewBox="0 0 24 24">
-                <path stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M15 17h5l-1.405-1.405A2.032
-                         2.032 0 0118 14.158V11a6.002
-                         6.002 0 00-4-5.659V5a2 2 0
-                         10-4 0v.341C7.67 6.165 6
-                         8.388 6 11v3.159c0 .538-.214
-                         1.055-.595 1.436L4 17h5m6
-                         0v1a3 3 0 11-6 0v-1m6 0H9">
-                </path>
-            </svg>
-        </button>
+        <div class="lmlf-notification-menu"
+             id="lmlfNotificationMenu">
+            <button class="header-icon-button lmlf-notification-button"
+                    id="lmlfNotificationButton"
+                    type="button"
+                    aria-label="Notifications"
+                    aria-expanded="false">
+                <svg fill="none"
+                     stroke="currentColor"
+                     viewBox="0 0 24 24">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M15 17h5l-1.405-1.405A2.032
+                             2.032 0 0118 14.158V11a6.002
+                             6.002 0 00-4-5.659V5a2 2 0
+                             10-4 0v.341C7.67 6.165 6
+                             8.388 6 11v3.159c0 .538-.214
+                             1.055-.595 1.436L4 17h5m6
+                             0v1a3 3 0 11-6 0v-1m6 0H9">
+                    </path>
+                </svg>
 
-        <button class="header-icon-button"
-                type="button"
-                aria-label="Settings">
-            <svg fill="none"
-                 stroke="currentColor"
-                 viewBox="0 0 24 24">
-                <path stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M10.325 4.317c.426-1.756
-                         2.924-1.756 3.35 0a1.724
-                         1.724 0 002.573 1.066c1.543-.94
-                         3.31.826 2.37 2.37a1.724 1.724
-                         0 001.065 2.572c1.756.426
-                         1.756 2.924 0 3.35a1.724
-                         1.724 0 00-1.066 2.573c.94
-                         1.543-.826 3.31-2.37
-                         2.37a1.724 1.724 0
-                         00-2.572 1.065c-.426
-                         1.756-2.924 1.756-3.35
-                         0a1.724 1.724 0
-                         00-2.573-1.066c-1.543.94-3.31
-                         -.826-2.37-2.37a1.724 1.724
-                         0 00-1.065-2.572c-1.756-.426
-                         -1.756-2.924 0-3.35a1.724
-                         1.724 0 001.066-2.573c-.94
-                         -1.543.826-3.31 2.37-2.37.996
-                         .608 2.296.07 2.572-1.065z">
-                </path>
+                <span class="lmlf-notification-badge"
+                      id="lmlfNotificationBadge">
+                    0
+                </span>
+            </button>
 
-                <path stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M15 12a3 3 0 11-6 0
-                         3 3 0 016 0z">
-                </path>
-            </svg>
-        </button>
+            <div class="lmlf-notification-dropdown"
+                 id="lmlfNotificationDropdown">
+                <div class="lmlf-notification-header">
+                    <strong>Notifications</strong>
+
+                    <button class="lmlf-notification-mark-all"
+                            id="lmlfNotificationMarkAll"
+                            type="button">
+                        Mark all as read
+                    </button>
+                </div>
+
+                <div class="lmlf-notification-list"
+                     id="lmlfNotificationList">
+                    <div class="lmlf-notification-empty">
+                        Loading notifications...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
 
         <div class="lmlf-account-menu">
             <button class="lmlf-account-trigger"
@@ -449,21 +578,7 @@
 
             <div class="lmlf-account-dropdown">
                 <div class="lmlf-account-dropdown-content">
-                    <a href="#">
-                        <svg fill="none"
-                             stroke="currentColor"
-                             viewBox="0 0 24 24">
-                            <path stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="2"
-                                  d="M16 7a4 4 0 11-8 0
-                                     4 4 0 018 0zM12 14a7
-                                     7 0 00-7 7h14a7 7
-                                     0 00-7-7z">
-                            </path>
-                        </svg>
-                        My Profile
-                    </a>
+                    
 
                     <a class="lmlf-logout-link"
                        href="${pageContext.request.contextPath}/logout">
@@ -487,3 +602,256 @@
         </div>
     </div>
 </header>
+
+<script>
+    (function () {
+        const contextPath = '${pageContext.request.contextPath}';
+        const menu = document.getElementById('lmlfNotificationMenu');
+        const button = document.getElementById('lmlfNotificationButton');
+        const badge = document.getElementById('lmlfNotificationBadge');
+        const list = document.getElementById('lmlfNotificationList');
+        const markAllButton = document.getElementById(
+                'lmlfNotificationMarkAll'
+        );
+
+        if (!menu || !button || !badge || !list || !markAllButton) {
+            return;
+        }
+
+        function escapeHtml(value) {
+            return String(value == null ? '' : value)
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;')
+                    .replaceAll('"', '&quot;')
+                    .replaceAll("'", '&#039;');
+        }
+
+        function formatTime(value) {
+            if (!value) {
+                return '';
+            }
+
+            const date = new Date(value);
+
+            if (Number.isNaN(date.getTime())) {
+                return '';
+            }
+
+            return new Intl.DateTimeFormat('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(date);
+        }
+
+        function updateBadge(unreadCount) {
+            const count = Number(unreadCount || 0);
+
+            badge.textContent = count > 99 ? '99+' : String(count);
+            badge.style.display = count > 0 ? 'flex' : 'none';
+        }
+
+        async function markAsRead(notificationId) {
+            const body = new URLSearchParams();
+            body.set('action', 'read');
+            body.set('notificationId', notificationId);
+
+            const response = await fetch(
+                    contextPath + '/notifications',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type':
+                                    'application/x-www-form-urlencoded'
+                        },
+                        body: body.toString()
+                    }
+            );
+
+            if (!response.ok) {
+                throw new Error('Cannot mark notification as read.');
+            }
+
+            return response.json();
+        }
+
+        async function openNotification(
+                notificationId,
+                targetUrl
+        ) {
+            try {
+                const result = await markAsRead(notificationId);
+                updateBadge(result.unreadCount);
+            } catch (error) {
+                console.error(error);
+            }
+
+            window.location.href = contextPath
+                    + (targetUrl || '/dashboard');
+        }
+
+        function renderNotifications(payload) {
+            const notifications = Array.isArray(payload.notifications)
+                    ? payload.notifications
+                    : [];
+
+            updateBadge(payload.unreadCount);
+
+            if (notifications.length === 0) {
+                list.innerHTML = `
+                    <div class="lmlf-notification-empty">
+                        You do not have any notifications.
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = notifications.map(function (item) {
+                const unreadClass = item.read ? '' : ' unread';
+                const subject = escapeHtml(item.subject);
+                const body = escapeHtml(item.body);
+                const time = escapeHtml(formatTime(item.sentAt));
+                const id = Number(item.notificationId);
+                const targetUrl = escapeHtml(item.targetUrl);
+
+                return `
+                    <button type="button"
+                            class="lmlf-notification-item${unreadClass}"
+                            data-notification-id="${id}"
+                            data-target-url="${targetUrl}">
+                        <div class="lmlf-notification-subject">
+                            ${subject}
+                        </div>
+
+                        <div class="lmlf-notification-body">
+                            ${body}
+                        </div>
+
+                        <div class="lmlf-notification-time">
+                            ${time}
+                        </div>
+                    </button>
+                `;
+            }).join('');
+
+            list.querySelectorAll('.lmlf-notification-item')
+                    .forEach(function (itemButton) {
+                        itemButton.addEventListener('click', function () {
+                            openNotification(
+                                    itemButton.dataset.notificationId,
+                                    itemButton.dataset.targetUrl
+                            );
+                        });
+                    });
+        }
+
+        async function loadNotifications() {
+            try {
+                const response = await fetch(
+                        contextPath + '/notifications',
+                        {
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Cannot load notifications.');
+                }
+
+                renderNotifications(await response.json());
+
+            } catch (error) {
+                console.error(error);
+
+                list.innerHTML = `
+                    <div class="lmlf-notification-empty">
+                        Cannot load notifications.
+                    </div>
+                `;
+            }
+        }
+
+        button.addEventListener('click', function (event) {
+            event.stopPropagation();
+
+            const open = menu.classList.toggle('open');
+            button.setAttribute(
+                    'aria-expanded',
+                    open ? 'true' : 'false'
+            );
+
+            if (open) {
+                loadNotifications();
+            }
+        });
+
+        const sidebarNotificationLink =
+                document.getElementById(
+                        'lmlfSidebarNotificationLink'
+                );
+
+        if (sidebarNotificationLink) {
+            sidebarNotificationLink.addEventListener(
+                    'click',
+                    function (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        menu.classList.add('open');
+                        button.setAttribute(
+                                'aria-expanded',
+                                'true'
+                        );
+
+                        loadNotifications();
+                    }
+            );
+        }
+
+        markAllButton.addEventListener('click', async function () {
+            const body = new URLSearchParams();
+            body.set('action', 'read-all');
+
+            try {
+                const response = await fetch(
+                        contextPath + '/notifications',
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type':
+                                        'application/x-www-form-urlencoded'
+                            },
+                            body: body.toString()
+                        }
+                );
+
+                if (!response.ok) {
+                    throw new Error(
+                            'Cannot mark all notifications as read.'
+                    );
+                }
+
+                updateBadge(0);
+                await loadNotifications();
+
+            } catch (error) {
+                console.error(error);
+            }
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!menu.contains(event.target)) {
+                menu.classList.remove('open');
+                button.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        loadNotifications();
+    })();
+</script>
+
