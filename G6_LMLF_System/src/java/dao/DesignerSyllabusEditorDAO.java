@@ -33,11 +33,6 @@ public class DesignerSyllabusEditorDAO extends DBContext {
 
         boolean oldAutoCommit = connection.getAutoCommit();
 
-        Long draftVersionId = null;
-        Long rejectedSourceVersionId = null;
-        Long draftCourseId = null;
-        boolean initializeFromRejectedVersion = false;
-
         try {
             connection.setAutoCommit(false);
 
@@ -51,57 +46,22 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 throw new SQLException("Assignment not found.");
             }
 
-            draftCourseId = assignment.courseId;
+            if ("CANCELLED".equalsIgnoreCase(assignment.assignmentStatus)
+                    || "COMPLETED".equalsIgnoreCase(assignment.assignmentStatus)) {
+                throw new SQLException("This assignment is read-only.");
+            }
 
-            if ("CANCELLED".equalsIgnoreCase(
-                    assignment.assignmentStatus
-            )
-                    || "COMPLETED".equalsIgnoreCase(
-                            assignment.assignmentStatus
-                    )) {
+            if (assignment.submittedVersionId != null
+                    && "SUBMITTED".equalsIgnoreCase(assignment.versionStatus)) {
                 throw new SQLException(
-                        "This assignment is read-only."
+                        "The current version is waiting for review and cannot be edited."
                 );
             }
 
             if (assignment.submittedVersionId != null
-                    && "SUBMITTED".equalsIgnoreCase(
-                            assignment.versionStatus
-                    )) {
-                throw new SQLException(
-                        "The current version is waiting for review "
-                        + "and cannot be edited."
-                );
-            }
-
-            if (assignment.submittedVersionId != null
-                    && ("APPROVED".equalsIgnoreCase(
-                            assignment.versionStatus
-                    )
-                    || "ARCHIVED".equalsIgnoreCase(
-                            assignment.versionStatus
-                    ))) {
-                throw new SQLException(
-                        "The current version is read-only."
-                );
-            }
-
-            boolean isReviewerRejectedVersion
-                    = assignment.submittedVersionId != null
-                    && "REJECTED".equalsIgnoreCase(
-                            assignment.versionStatus
-                    );
-
-            /*
-             * assignment_status=REJECTED without a rejected submitted
-             * version means that the Designer rejected the original job.
-             */
-            if ("REJECTED".equalsIgnoreCase(
-                    assignment.assignmentStatus
-            ) && !isReviewerRejectedVersion) {
-                throw new SQLException(
-                        "This assignment was rejected by the Designer."
-                );
+                    && ("APPROVED".equalsIgnoreCase(assignment.versionStatus)
+                    || "ARCHIVED".equalsIgnoreCase(assignment.versionStatus))) {
+                throw new SQLException("The current version is read-only.");
             }
 
             Long syllabusId = assignment.syllabusId;
@@ -124,18 +84,16 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                         """;
 
                 try (PreparedStatement statement
-                             = connection.prepareStatement(
-                                     updateAssignmentSql
-                             )) {
+                             = connection.prepareStatement(updateAssignmentSql)) {
 
                     statement.setLong(1, syllabusId);
                     statement.setLong(2, assignmentId);
-                    statement.setLong(3, designerId);
+statement.setLong(3, designerId);
                     statement.executeUpdate();
                 }
             }
 
-            draftVersionId = findDraftVersion(
+            Long draftVersionId = findDraftVersion(
                     syllabusId,
                     designerId
             );
@@ -148,21 +106,13 @@ public class DesignerSyllabusEditorDAO extends DBContext {
                 );
             }
 
-            /*
-             * A previous failed resubmit attempt may already have created
-             * an empty DRAFT. Reuse and initialize that DRAFT instead of
-             * creating another version.
-             */
-            if (isReviewerRejectedVersion
-                    && !hasStructuredDraftData(draftVersionId)) {
-
-                rejectedSourceVersionId
-                        = assignment.submittedVersionId;
-
-                initializeFromRejectedVersion = true;
-            }
+            captureVersionCurriculumScope(
+                    draftVersionId,
+                    assignment.courseId
+            );
 
             connection.commit();
+            return draftVersionId;
 
         } catch (SQLException exception) {
             connection.rollback();
@@ -171,195 +121,6 @@ public class DesignerSyllabusEditorDAO extends DBContext {
         } finally {
             connection.setAutoCommit(oldAutoCommit);
         }
-
-        /*
-         * Capture the current Academic Curriculum/Course/PLO snapshot before
-         * copying mappings. Each syllabus version owns different
-         * plo_option_id values.
-         */
-        if (draftVersionId != null && draftCourseId != null) {
-            captureVersionCurriculumScope(
-                    draftVersionId,
-                    draftCourseId
-            );
-        }
-
-        if (initializeFromRejectedVersion
-                && rejectedSourceVersionId != null) {
-
-            SyllabusEditorData rejectedData = load(
-                    rejectedSourceVersionId,
-                    designerId
-            );
-
-            remapCopiedCloPloMappings(
-                    rejectedSourceVersionId,
-                    draftVersionId,
-                    rejectedData
-            );
-
-            /*
-             * Replace the old version's visible PLO snapshot with the new
-             * DRAFT snapshot so the editor and reviewer JSON use current IDs.
-             */
-            SyllabusEditorData targetPloData
-                    = new SyllabusEditorData();
-
-            loadPlos(
-                    draftVersionId,
-                    targetPloData
-            );
-
-            rejectedData.setCurriculumPloGroups(
-                    targetPloData.getCurriculumPloGroups()
-            );
-
-            rejectedData.setPlos(
-                    targetPloData.getPlos()
-            );
-
-            saveDraft(
-                    assignmentId,
-                    draftVersionId,
-                    designerId,
-                    rejectedData
-            );
-        }
-
-        return draftVersionId;
-    }
-
-    private boolean hasStructuredDraftData(
-            long versionId
-    ) throws SQLException {
-
-        String sql = """
-                SELECT
-                    CASE
-                        WHEN EXISTS (
-                            SELECT 1
-                            FROM syllabus_general_information
-                            WHERE version_id = ?
-                        )
-                        OR EXISTS (
-                            SELECT 1
-                            FROM learning_outcomes
-                            WHERE version_id = ?
-                        )
-                        OR EXISTS (
-                            SELECT 1
-                            FROM syllabus_student_tasks
-                            WHERE version_id = ?
-                        )
-                        OR EXISTS (
-                            SELECT 1
-                            FROM syllabus_learning_resources
-                            WHERE version_id = ?
-                        )
-                        OR EXISTS (
-                            SELECT 1
-                            FROM syllabus_course_schedule_items
-                            WHERE version_id = ?
-                        )
-                        OR EXISTS (
-                            SELECT 1
-                            FROM syllabus_assessments
-                            WHERE version_id = ?
-                        )
-                        THEN 1
-                        ELSE 0
-                    END AS has_data
-                """;
-
-        try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
-
-            for (int index = 1; index <= 6; index++) {
-                statement.setLong(index, versionId);
-            }
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                return resultSet.next()
-                        && resultSet.getInt("has_data") == 1;
-            }
-        }
-    }
-
-    private void remapCopiedCloPloMappings(
-            long sourceVersionId,
-            long targetVersionId,
-            SyllabusEditorData data
-    ) throws SQLException {
-
-        Map<Long, AllowedPloScope> sourceOptions
-                = loadAllowedPloScope(sourceVersionId);
-
-        Map<Long, AllowedPloScope> targetOptions
-                = loadAllowedPloScope(targetVersionId);
-
-        Map<String, Long> targetOptionByAcademicKey
-                = new LinkedHashMap<>();
-
-        for (AllowedPloScope target : targetOptions.values()) {
-            targetOptionByAcademicKey.put(
-                    curriculumPloKey(
-                            target.curriculumId,
-                            target.academicPloId
-                    ),
-                    target.ploId
-            );
-        }
-
-        Map<String, List<Long>> remapped
-                = new LinkedHashMap<>();
-
-        for (Map.Entry<String, List<Long>> entry
-                : data.getCloPloMappings().entrySet()) {
-
-            Set<Long> targetIds = new LinkedHashSet<>();
-
-            for (Long sourceOptionId : safe(entry.getValue())) {
-                if (sourceOptionId == null) {
-                    continue;
-                }
-
-                AllowedPloScope sourceOption
-                        = sourceOptions.get(sourceOptionId);
-
-                if (sourceOption == null) {
-                    continue;
-                }
-
-                Long targetOptionId = targetOptionByAcademicKey.get(
-                        curriculumPloKey(
-                                sourceOption.curriculumId,
-                                sourceOption.academicPloId
-                        )
-                );
-
-                /*
-                 * Academic Office may have removed an old Course-PLO link.
-                 * In that case the obsolete mapping is intentionally skipped.
-                 */
-                if (targetOptionId != null) {
-                    targetIds.add(targetOptionId);
-                }
-            }
-
-            remapped.put(
-                    entry.getKey(),
-                    new ArrayList<>(targetIds)
-            );
-        }
-
-        data.setCloPloMappings(remapped);
-    }
-
-    private String curriculumPloKey(
-            long curriculumId,
-            long academicPloId
-    ) {
-        return curriculumId + ":" + academicPloId;
     }
 
     public SyllabusEditorData load(
