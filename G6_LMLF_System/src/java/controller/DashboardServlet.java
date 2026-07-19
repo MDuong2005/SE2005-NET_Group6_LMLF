@@ -127,6 +127,17 @@ public class DashboardServlet extends HttpServlet {
         } else if (user.hasRole("ACADEMIC_OFFICE")) {
             contentPage = "academic/dashboard.jsp";
             cssFile = "academic/academic.css";
+            
+            dao.CourseDAO courseDAO = new dao.CourseDAO();
+            dao.CurriculumDAO curriculumDAO = new dao.CurriculumDAO();
+            dao.MajorDAO majorDAO = new dao.MajorDAO();
+            dao.SyllabusAssignmentDAO assignmentDAO = new dao.SyllabusAssignmentDAO();
+            
+            request.setAttribute("totalCourses", courseDAO.listAll().size());
+            request.setAttribute("totalCurriculums", curriculumDAO.getAll().size());
+            request.setAttribute("totalMajors", majorDAO.getAllMajors().size());
+            request.setAttribute("totalAssignments", assignmentDAO.listAll().size());
+            request.setAttribute("recentAssignments", assignmentDAO.listRecent(5));
         }
 
         request.setAttribute("contentPage", contentPage);

@@ -537,7 +537,7 @@
                             <i class="fas fa-table"></i> Mapping Matrix of Program Objectives (PO) - Program Learning Outcomes (PLO)
                         </div>
                         <p style="color:var(--text-muted); font-size:14px; margin-bottom: 20px;">
-                            The mapping indicates the compatibility between Program Learning Outcomes (PLO) and Program Objectives (PO). Click directly on a cell to toggle the link (updates immediately).
+                            The mapping indicates the compatibility between Program Learning Outcomes (PLO) and Program Objectives (PO).
                         </p>
                         <div style="overflow-x: auto;">
                             <table class="matrix-table">
@@ -634,7 +634,7 @@
                             <i class="fas fa-th"></i> Mapping subjects of the Curriculum <span style="color: var(--fpt-orange);"><%= curriculum.getCurriculumCode() %></span> to program learning outcomes
                         </div>
                         <p style="color:var(--text-muted); font-size:14px; margin-bottom: 20px;">
-                            Click directly on a cell to toggle the mapping link between Course/Subject and PLO (updates immediately in database).
+                            The mapping indicates the compatibility between Course/Subject and PLO.
                         </p>
                         <div style="overflow-x: auto;">
                             <table class="matrix-table" id="coursePloMatrixDetail">
@@ -674,7 +674,7 @@
                 for (int i = 0; i < dbPos.size(); i++) {
                     CurriculumPO po = dbPos.get(i);
             %>
-            { id: '<%= po.getCode() %>', text: '<%= po.getDescription().replace("'", "\\'").replace("\n", " ").replace("\r", "") %>' }<%= i < dbPos.size() - 1 ? "," : "" %>
+            { id: '<%= po.getCode().trim().toUpperCase() %>', text: '<%= po.getDescription().replace("'", "\\'").replace("\n", " ").replace("\r", "") %>' }<%= i < dbPos.size() - 1 ? "," : "" %>
             <% } %>
         ];
 
@@ -684,7 +684,7 @@
                 for (int i = 0; i < dbPlos.size(); i++) {
                     CurriculumPLO plo = dbPlos.get(i);
             %>
-            { id: '<%= plo.getCode() %>', text: '<%= plo.getDescription().replace("'", "\\'").replace("\n", " ").replace("\r", "") %>' }<%= i < dbPlos.size() - 1 ? "," : "" %>
+            { id: '<%= plo.getCode().trim().toUpperCase() %>', text: '<%= plo.getDescription().replace("'", "\\'").replace("\n", " ").replace("\r", "") %>' }<%= i < dbPlos.size() - 1 ? "," : "" %>
             <% } %>
         ];
 
@@ -708,7 +708,7 @@
                         }
                     }
                     if (ploCode != null && poCode != null) {
-                        grouped.computeIfAbsent(ploCode, k -> new ArrayList<>()).add(poCode);
+                        grouped.computeIfAbsent(ploCode.trim().toUpperCase(), k -> new ArrayList<>()).add(poCode.trim().toUpperCase());
                     }
                 }
                 int groupIdx = 0;
@@ -729,7 +729,7 @@
                     CurriculumCourse cc = dbCoursesList.get(i);
                     Course c = cc.getCourse();
             %>
-            { code: '<%= c.getCode() %>', name: '<%= c.getName().replace("\'", "\\\'") %>', knowledgeBlock: '<%= cc.getKnowledgeBlock() != null ? cc.getKnowledgeBlock().replace("\'", "\\\'") : "" %>' }<%= i < dbCoursesList.size() - 1 ? "," : "" %>
+            { code: '<%= c.getCode().trim().toUpperCase() %>', name: '<%= c.getName().replace("\'", "\\\'") %>', knowledgeBlock: '<%= cc.getKnowledgeBlock() != null ? cc.getKnowledgeBlock().replace("\'", "\\\'") : "" %>' }<%= i < dbCoursesList.size() - 1 ? "," : "" %>
             <% } %>
         ];
 
@@ -738,7 +738,7 @@
                 List<String[]> dbCoursePloMaps = curriculum.getCoursePloMappings();
                 java.util.Map<String, List<String>> groupedCoursePlo = new java.util.HashMap<>();
                 for (String[] map : dbCoursePloMaps) {
-                    groupedCoursePlo.computeIfAbsent(map[0], k -> new ArrayList<>()).add(map[1]);
+                    groupedCoursePlo.computeIfAbsent(map[0].trim().toUpperCase(), k -> new ArrayList<>()).add(map[1].trim().toUpperCase());
                 }
                 int cgIdx = 0;
                 for (java.util.Map.Entry<String, List<String>> entry : groupedCoursePlo.entrySet()) {
@@ -931,7 +931,7 @@
             // Header columns
             headerRow.innerHTML = '<th style="text-align: left; font-weight: 800; min-width: 150px;">PLO(s) \\ PO(s)</th>';
             detailPoList.forEach(po => {
-                headerRow.innerHTML += `<th style="text-align: center; font-weight: 800; min-width: 80px;">\${po.id}</th>`;
+                headerRow.innerHTML += '<th style="text-align: center; font-weight: 800; min-width: 80px;">' + po.id + '</th>';
             });
             
             // Rows
@@ -939,17 +939,18 @@
             detailPloList.forEach(plo => {
                 let cellsHtml = '';
                 detailPoList.forEach(po => {
-                    const isSelected = (presetMappings[plo.id] && presetMappings[plo.id].includes(po.id));
+                    const ploId = plo.id.trim().toUpperCase();
+                    const poId = po.id.trim().toUpperCase();
+                    const isSelected = (presetMappings[ploId] && presetMappings[ploId].includes(poId));
                     const cellVal = isSelected ? '✓' : '';
-                    cellsHtml += `<td style="text-align: center; font-weight: 800; font-size: 16px; color: #1E293B; cursor: default; user-select: none;">\${cellVal}</td>`;
+                    cellsHtml += '<td style="text-align: center; font-weight: 800; font-size: 16px; color: #1E293B; user-select: none;">' + cellVal + '</td>';
                 });
                 
-                tbody.innerHTML += `
-                    <tr data-plo="\${plo.id}">
-                        <td class="plo-col">\${plo.id}</td>
-                        \${cellsHtml}
-                    </tr>
-                `;
+                tbody.innerHTML += 
+                    '<tr data-plo="' + plo.id + '">' +
+                        '<td class="plo-col">' + plo.id + '</td>' +
+                        cellsHtml +
+                    '</tr>';
             });
         }
 
@@ -961,29 +962,27 @@
             // Header columns
             headerRow.innerHTML = '<th style="text-align: left; font-weight: 800; min-width: 150px;">Subject Code</th>';
             detailPloList.forEach(plo => {
-                headerRow.innerHTML += `<th style="text-align: center; font-weight: 800; min-width: 80px;">\${plo.id}</th>`;
+                headerRow.innerHTML += '<th style="text-align: center; font-weight: 800; min-width: 80px;">' + plo.id + '</th>';
             });
             
             tbody.innerHTML = '';
             
             if (detailCourseList.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="\${detailPloList.length + 1}" style="text-align: center; padding: 20px; color: var(--text-muted); font-style: italic;">
-                            No courses available.
-                        </td>
-                    </tr>
-                `;
+                tbody.innerHTML = 
+                    '<tr>' +
+                        '<td colspan="' + (detailPloList.length + 1) + '" style="text-align: center; padding: 20px; color: var(--text-muted); font-style: italic;">' +
+                            'No courses available.' +
+                        '</td>' +
+                    '</tr>';
                 return;
             }
             if (detailPloList.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="\${detailCourseList.length + 1}" style="text-align: center; padding: 20px; color: var(--text-muted); font-style: italic;">
-                            No PLOs available.
-                        </td>
-                    </tr>
-                `;
+                tbody.innerHTML = 
+                    '<tr>' +
+                        '<td colspan="' + (detailCourseList.length + 1) + '" style="text-align: center; padding: 20px; color: var(--text-muted); font-style: italic;">' +
+                            'No PLOs available.' +
+                        '</td>' +
+                    '</tr>';
                 return;
             }
             
@@ -994,41 +993,127 @@
                 'Elective combo knowledge and skills_Khối kiến thức combo lựa chọn'
             ];
             
+            // Render standard blocks
             blocks.forEach(blockName => {
-                const blockCourses = detailCourseList.filter(c => c.knowledgeBlock === blockName);
+                const blockCourses = detailCourseList.filter(c => {
+                    if (!c.knowledgeBlock) return false;
+                    const prefixA = c.knowledgeBlock.split('_')[0].trim().toLowerCase();
+                    const prefixB = blockName.split('_')[0].trim().toLowerCase();
+                    return prefixA === prefixB;
+                });
                 if (blockCourses.length === 0) return;
                 
                 // Red category group header row
-                tbody.innerHTML += `
-                    <tr>
-                        <td colspan="\${detailPloList.length + 1}" style="text-align: center; color: #EF4444; font-weight: 800; background-color: #FEF2F2; font-size: 13.5px; border-bottom: 1px solid #E2E8F0; padding: 8px;">
-                            \${blockName}
-                        </td>
-                    </tr>
-                `;
+                tbody.innerHTML += 
+                    '<tr>' +
+                        '<td colspan="' + (detailPloList.length + 1) + '" style="text-align: center; color: #EF4444; font-weight: 800; background-color: #FEF2F2; font-size: 13.5px; border-bottom: 1px solid #E2E8F0; padding: 8px;">' +
+                            blockName +
+                        '</td>' +
+                    '</tr>';
                 
                 blockCourses.forEach(course => {
                     let cellsHtml = '';
                     detailPloList.forEach(plo => {
-                        const isSelected = (presetCoursePloMappings[course.code] && presetCoursePloMappings[course.code].includes(plo.id));
+                        const courseCode = course.code.trim().toUpperCase();
+                        const ploId = plo.id.trim().toUpperCase();
+                        const isSelected = (presetCoursePloMappings[courseCode] && presetCoursePloMappings[courseCode].includes(ploId));
                         const cellVal = isSelected ? '✓' : '';
-                        cellsHtml += `<td onclick="toggleCoursePloCellDetail(this, '\${course.code}', '\${plo.id}')" style="text-align: center; font-weight: 800; font-size: 16px; color: #1E293B; cursor: pointer; user-select: none;">\${cellVal}</td>`;
+                        cellsHtml += '<td style="text-align: center; font-weight: 800; font-size: 16px; color: #1E293B; user-select: none;">' + cellVal + '</td>';
                     });
                     
-                    tbody.innerHTML += `
-                        <tr data-course="\${course.code}">
-                            <td class="plo-col" style="text-align: left; font-weight: 700; color: #3b82f6; background-color: #FFFFFF;">\${course.code}</td>
-                            \${cellsHtml}
-                        </tr>
-                    `;
+                    tbody.innerHTML += 
+                        '<tr data-course="' + course.code + '">' +
+                            '<td class="plo-col" style="text-align: left; font-weight: 700; color: #3b82f6; background-color: #FFFFFF;">' + course.code + '</td>' +
+                            cellsHtml +
+                        '</tr>';
                 });
+            });
+
+            // Render remaining courses (uncategorized / empty knowledge block)
+            const otherCourses = detailCourseList.filter(c => {
+                if (!c.knowledgeBlock) return true;
+                const matchesAny = blocks.some(blockName => {
+                    const prefixA = c.knowledgeBlock.split('_')[0].trim().toLowerCase();
+                    const prefixB = blockName.split('_')[0].trim().toLowerCase();
+                    return prefixA === prefixB;
+                });
+                return !matchesAny;
+            });
+
+            if (otherCourses.length > 0) {
+                // Group header row for Other courses
+                tbody.innerHTML += 
+                    '<tr>' +
+                        '<td colspan="' + (detailPloList.length + 1) + '" style="text-align: center; color: #EF4444; font-weight: 800; background-color: #FEF2F2; font-size: 13.5px; border-bottom: 1px solid #E2E8F0; padding: 8px;">' +
+                            'Other / Uncategorized' +
+                        '</td>' +
+                    '</tr>';
+                
+                otherCourses.forEach(course => {
+                    let cellsHtml = '';
+                    detailPloList.forEach(plo => {
+                        const courseCode = course.code.trim().toUpperCase();
+                        const ploId = plo.id.trim().toUpperCase();
+                        const isSelected = (presetCoursePloMappings[courseCode] && presetCoursePloMappings[courseCode].includes(ploId));
+                        const cellVal = isSelected ? '✓' : '';
+                        cellsHtml += '<td style="text-align: center; font-weight: 800; font-size: 16px; color: #1E293B; user-select: none;">' + cellVal + '</td>';
+                    });
+                    
+                    tbody.innerHTML += 
+                        '<tr data-course="' + course.code + '">' +
+                            '<td class="plo-col" style="text-align: left; font-weight: 700; color: #3b82f6; background-color: #FFFFFF;">' + course.code + '</td>' +
+                            cellsHtml +
+                        '</tr>';
+                });
+            }
+        }
+
+        function togglePoPloCellDetail(cell, ploCode, poCode) {
+            const curriculumId = <%= id %>;
+            const params = new URLSearchParams();
+            params.append('action', 'toggleMapping');
+            params.append('curriculumId', curriculumId);
+            params.append('ploCode', ploCode);
+            params.append('poCode', poCode);
+            
+            fetch('${pageContext.request.contextPath}/curriculum', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success) {
+                    if (cell.textContent === '✓') {
+                        cell.textContent = '';
+                        if (presetMappings[ploCode]) {
+                            presetMappings[ploCode] = presetMappings[ploCode].filter(x => x !== poCode);
+                        }
+                    } else {
+                        cell.textContent = '✓';
+                        if (!presetMappings[ploCode]) {
+                            presetMappings[ploCode] = [];
+                        }
+                        if (!presetMappings[ploCode].includes(poCode)) {
+                            presetMappings[ploCode].push(poCode);
+                        }
+                    }
+                    showToast('PO-PLO mapping updated successfully!', true);
+                } else {
+                    showToast('Failed to update PO-PLO mapping.', false);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('An error occurred.', false);
             });
         }
 
         function toggleCoursePloCellDetail(cell, courseCode, ploCode) {
+            const curriculumId = <%= id %>;
             const params = new URLSearchParams();
             params.append('action', 'toggleCoursePloMapping');
-            params.append('curriculumId', '<%= id %>');
+            params.append('curriculumId', curriculumId);
             params.append('courseCode', courseCode);
             params.append('ploCode', ploCode);
             
@@ -1043,65 +1128,25 @@
                     if (cell.textContent === '✓') {
                         cell.textContent = '';
                         if (presetCoursePloMappings[courseCode]) {
-                            presetCoursePloMappings[courseCode] = presetCoursePloMappings[courseCode].filter(item => item !== ploCode);
+                            presetCoursePloMappings[courseCode] = presetCoursePloMappings[courseCode].filter(x => x !== ploCode);
                         }
                     } else {
                         cell.textContent = '✓';
                         if (!presetCoursePloMappings[courseCode]) {
                             presetCoursePloMappings[courseCode] = [];
                         }
-                        presetCoursePloMappings[courseCode].push(ploCode);
+                        if (!presetCoursePloMappings[courseCode].includes(ploCode)) {
+                            presetCoursePloMappings[courseCode].push(ploCode);
+                        }
                     }
+                    showToast('Course-PLO mapping updated successfully!', true);
                 } else {
-                    alert('Failed to toggle course PLO mapping in database.');
+                    showToast('Failed to update Course-PLO mapping.', false);
                 }
             })
             .catch(err => {
                 console.error(err);
-                alert('An error occurred.');
-            });
-        }
-
-        function toggleCellDetail(cell) {
-            const row = cell.parentElement;
-            const ploCode = row.getAttribute('data-plo');
-            const cellIndex = cell.cellIndex;
-            const poCode = detailPoList[cellIndex - 1].id;
-            
-            const params = new URLSearchParams();
-            params.append('action', 'toggleMapping');
-            params.append('curriculumId', '<%= id %>');
-            params.append('ploCode', ploCode);
-            params.append('poCode', poCode);
-            
-            fetch('${pageContext.request.contextPath}/curriculum', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: params
-            })
-            .then(res => res.json())
-            .then(res => {
-                if (res.success) {
-                    if (cell.textContent === '✓') {
-                        cell.textContent = '';
-                        // Update local presetMappings
-                        if (presetMappings[ploCode]) {
-                            presetMappings[ploCode] = presetMappings[ploCode].filter(item => item !== poCode);
-                        }
-                    } else {
-                        cell.textContent = '✓';
-                        if (!presetMappings[ploCode]) {
-                            presetMappings[ploCode] = [];
-                        }
-                        presetMappings[ploCode].push(poCode);
-                    }
-                } else {
-                    alert('Failed to toggle mapping in database.');
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                alert('An error occurred.');
+                showToast('An error occurred.', false);
             });
         }
 

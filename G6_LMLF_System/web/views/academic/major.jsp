@@ -221,28 +221,28 @@
         
         .btn-link-edit {
             color: var(--primary);
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             transition: var(--transition);
         }
         
         .btn-link-edit:hover {
             color: var(--primary-hover);
-            text-decoration: underline;
+            transform: scale(1.1);
         }
         
         .btn-link-delete {
             color: var(--text-muted);
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             transition: var(--transition);
         }
         
         .btn-link-delete:hover {
             color: var(--danger);
-            text-decoration: underline;
+            transform: scale(1.1);
         }
         
         /* Empty State inside table */
@@ -525,12 +525,14 @@
                         </select>
                     </div>
                     
-                    <div class="form-group search-group">
-                        <label for="searchKeyword">Search Course</label>
-                        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                        <input type="text" id="searchKeyword" name="keyword" class="form-input" 
-                               placeholder="Enter major code or name..." 
-                               value="<%= request.getAttribute("keyword") == null ? "" : request.getAttribute("keyword") %>">
+                    <div class="form-group" style="flex: 2;">
+                        <label for="searchKeyword">Search Major</label>
+                        <div style="position: relative; width: 100%;">
+                            <svg style="position: absolute; left: 14px; top: 12px; width: 18px; height: 18px; fill: var(--text-muted);" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                            <input type="text" id="searchKeyword" name="keyword" class="form-input" style="padding-left: 44px; width: 100%; box-sizing: border-box;" 
+                                   placeholder="Enter major code or name..." 
+                                   value="<%= request.getAttribute("keyword") == null ? "" : request.getAttribute("keyword") %>">
+                        </div>
                     </div>
                     
                     <button type="submit" class="btn-search">Search</button>
@@ -561,10 +563,23 @@
                             <td><%= majorItem.getDescription() == null ? "" : majorItem.getDescription() %></td>
                             <td>
                                 <div class="actions-cell">
-                                    <a href="${pageContext.request.contextPath}/major?action=edit&id=<%= majorItem.getMajorId() %>" class="btn-link-edit">Edit</a>
+                                    <a href="${pageContext.request.contextPath}/major?action=edit&id=<%= majorItem.getMajorId() %>" class="btn-link-edit" title="Edit Major">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </a>
                                     <a href="${pageContext.request.contextPath}/major?action=delete&id=<%= majorItem.getMajorId() %>" 
                                        class="btn-link-delete" 
-                                       onclick="return confirm('Delete this major?')">Delete</a>
+                                       title="Delete Major"
+                                       onclick="return confirm('Delete this major?')">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                        </svg>
+                                    </a>
                                 </div>
                             </td>
                         </tr>

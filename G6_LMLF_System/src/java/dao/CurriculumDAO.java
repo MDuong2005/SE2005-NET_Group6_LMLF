@@ -658,32 +658,47 @@ public class CurriculumDAO extends DBContext {
             
             // Check if mapping exists
             String checkSql = "SELECT COUNT(*) FROM curriculum_plo_po_mappings WHERE plo_id = ? AND po_id = ?";
+            boolean exists = false;
             try (PreparedStatement psCheck = connection.prepareStatement(checkSql)) {
                 psCheck.setLong(1, ploId);
                 psCheck.setLong(2, poId);
                 try (ResultSet rs = psCheck.executeQuery()) {
                     if (rs.next() && rs.getInt(1) > 0) {
-                        // Delete mapping
-                        String deleteSql = "DELETE FROM curriculum_plo_po_mappings WHERE plo_id = ? AND po_id = ?";
-                        try (PreparedStatement psDel = connection.prepareStatement(deleteSql)) {
-                            psDel.setLong(1, ploId);
-                            psDel.setLong(2, poId);
-                            psDel.executeUpdate();
-                        }
-                    } else {
-                        // Insert mapping
-                        String insertSql = "INSERT INTO curriculum_plo_po_mappings (plo_id, po_id, mapped_at) VALUES (?, ?, ?)";
-                        try (PreparedStatement psIns = connection.prepareStatement(insertSql)) {
-                            psIns.setLong(1, ploId);
-                            psIns.setLong(2, poId);
-                            psIns.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
-                            psIns.executeUpdate();
-                        }
+                        exists = true;
                     }
                 }
             }
-            updateCurriculumTimestamp(curriculumId);
-            return true;
+            
+            boolean originalAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                if (exists) {
+                    // Delete mapping
+                    String deleteSql = "DELETE FROM curriculum_plo_po_mappings WHERE plo_id = ? AND po_id = ?";
+                    try (PreparedStatement psDel = connection.prepareStatement(deleteSql)) {
+                        psDel.setLong(1, ploId);
+                        psDel.setLong(2, poId);
+                        psDel.executeUpdate();
+                    }
+                } else {
+                    // Insert mapping
+                    String insertSql = "INSERT INTO curriculum_plo_po_mappings (plo_id, po_id, mapped_at) VALUES (?, ?, ?)";
+                    try (PreparedStatement psIns = connection.prepareStatement(insertSql)) {
+                        psIns.setLong(1, ploId);
+                        psIns.setLong(2, poId);
+                        psIns.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
+                        psIns.executeUpdate();
+                    }
+                }
+                connection.commit();
+                updateCurriculumTimestamp(curriculumId);
+                return true;
+            } catch (Exception e) {
+                connection.rollback();
+                e.printStackTrace();
+            } finally {
+                connection.setAutoCommit(originalAutoCommit);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -803,8 +818,8 @@ public class CurriculumDAO extends DBContext {
             String insertMapSql = "INSERT INTO curriculum_plo_po_mappings (plo_id, po_id, mapped_at) VALUES (?, ?, ?)";
             try (PreparedStatement ps = conn.prepareStatement(insertMapSql)) {
                 for (String[] mapping : mappingCodes) {
-                    Long ploId = ploCodeToId.get(mapping[0]);
-                    Long poId = poCodeToId.get(mapping[1]);
+                    Long ploId = ploCodeToId.get(mapping[0].trim());
+                    Long poId = poCodeToId.get(mapping[1].trim());
                     if (ploId != null && poId != null) {
                         ps.setLong(1, ploId);
                         ps.setLong(2, poId);
@@ -818,11 +833,14 @@ public class CurriculumDAO extends DBContext {
             }
 
             // 6. Insert Course-PLO Mappings
+            System.out.println("[DEBUG] Inserting Course-PLO mappings. Size: " + coursePloMappings.size());
             String insertCoursePloSql = "INSERT INTO curriculum_course_plo_mappings (curriculum_id, course_id, plo_id, mapped_at) VALUES (?, ?, ?, ?)";
             try (PreparedStatement ps = conn.prepareStatement(insertCoursePloSql)) {
                 for (String[] mapping : coursePloMappings) {
-                    Course course = courseDAO.getByCode(mapping[0]);
-                    Long ploId = ploCodeToId.get(mapping[1]);
+                    Course course = courseDAO.getByCode(mapping[0].trim());
+                    Long ploId = ploCodeToId.get(mapping[1].trim());
+                    System.out.println("[DEBUG] CourseCode: " + mapping[0].trim() + " -> Course: " + (course == null ? "null" : course.getCourseId()) +
+                                       " | PLO: " + mapping[1].trim() + " -> ploId: " + ploId);
                     if (course != null && ploId != null) {
                         ps.setLong(1, curriculumId);
                         ps.setLong(2, course.getCourseId());
@@ -832,7 +850,8 @@ public class CurriculumDAO extends DBContext {
                     }
                 }
                 if (!coursePloMappings.isEmpty()) {
-                    ps.executeBatch();
+                    int[] results = ps.executeBatch();
+                    System.out.println("[DEBUG] Batch execute results size: " + results.length);
                 }
             }
             
@@ -949,28 +968,40 @@ public class CurriculumDAO extends DBContext {
             e.printStackTrace();
         }
         
-        if (exists) {
-            // Delete
-            String delSql = "DELETE FROM curriculum_course_plo_mappings WHERE curriculum_id = ? AND course_id = ? AND plo_id = ?";
-            try (PreparedStatement ps = connection.prepareStatement(delSql)) {
-                ps.setLong(1, curriculumId);
-                ps.setLong(2, courseId);
-                ps.setLong(3, ploId);
-                return ps.executeUpdate() > 0;
+        try {
+            boolean originalAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                if (exists) {
+                    // Delete
+                    String delSql = "DELETE FROM curriculum_course_plo_mappings WHERE curriculum_id = ? AND course_id = ? AND plo_id = ?";
+                    try (PreparedStatement ps = connection.prepareStatement(delSql)) {
+                        ps.setLong(1, curriculumId);
+                        ps.setLong(2, courseId);
+                        ps.setLong(3, ploId);
+                        ps.executeUpdate();
+                    }
+                } else {
+                    // Insert
+                    String insSql = "INSERT INTO curriculum_course_plo_mappings (curriculum_id, course_id, plo_id) VALUES (?, ?, ?)";
+                    try (PreparedStatement ps = connection.prepareStatement(insSql)) {
+                        ps.setLong(1, curriculumId);
+                        ps.setLong(2, courseId);
+                        ps.setLong(3, ploId);
+                        ps.executeUpdate();
+                    }
+                }
+                connection.commit();
+                updateCurriculumTimestamp(curriculumId);
+                return true;
             } catch (Exception e) {
+                connection.rollback();
                 e.printStackTrace();
+            } finally {
+                connection.setAutoCommit(originalAutoCommit);
             }
-        } else {
-            // Insert
-            String insSql = "INSERT INTO curriculum_course_plo_mappings (curriculum_id, course_id, plo_id) VALUES (?, ?, ?)";
-            try (PreparedStatement ps = connection.prepareStatement(insSql)) {
-                ps.setLong(1, curriculumId);
-                ps.setLong(2, courseId);
-                ps.setLong(3, ploId);
-                return ps.executeUpdate() > 0;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return false;
     }
