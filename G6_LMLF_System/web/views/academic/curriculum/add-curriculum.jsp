@@ -1830,8 +1830,15 @@
             .then(res => res.json())
             .then(res => {
                 if (res.success && res.courses) {
+                    let countImported = 0;
                     res.courses.forEach(cc => {
                         if (cc.course) {
+                            // Filter: Only import courses of the corresponding knowledge block
+                            let sourceBlock = cc.knowledgeBlock;
+                            if (sourceBlock && sourceBlock.trim().toLowerCase() !== activeImportTargetBlock.trim().toLowerCase()) {
+                                return; // Skip since it belongs to a different block
+                            }
+
                             if (courseList.some(existing => existing.code === cc.course.code)) {
                                 return; // Skip duplicate
                             }
@@ -1845,6 +1852,7 @@
                                 prerequisites: prereqs,
                                 knowledgeBlock: kBlock
                             });
+                            countImported++;
                         }
                     });
                     
@@ -1853,9 +1861,12 @@
                             window.coursePloSelections = {};
                         }
                         res.coursePloMappings.forEach(m => {
-                            const ploId = m[1].replace('PLO', 'PLO-');
-                            const selectionKey = `${m[0]}_${ploId}`;
-                            window.coursePloSelections[selectionKey] = true;
+                            // Only map if the course code exists in our current courseList
+                            if (courseList.some(c => c.code === m[0])) {
+                                const ploId = m[1].replace('PLO', 'PLO-');
+                                const selectionKey = `${m[0]}_${ploId}`;
+                                window.coursePloSelections[selectionKey] = true;
+                            }
                         });
                     }
                     
@@ -1863,7 +1874,7 @@
                     renderCoursesList();
                     
                     document.getElementById('importCoursesFormContainer').style.display = 'none';
-                    showToast(`Successfully imported courses from curriculum: "${selectedText}"!`, true);
+                    showToast(`Successfully imported ${countImported} course(s) from curriculum: "${selectedText}"!`, true);
                 } else {
                     showToast('Failed to import courses from selected curriculum.', false);
                 }
@@ -2388,7 +2399,12 @@
                 if (!tbody) return;
                 tbody.innerHTML = '';
                 
-                const blockCourses = courseList.filter(c => c.knowledgeBlock === blockName);
+                const blockCourses = courseList.filter(c => {
+                    if (!c.knowledgeBlock) return false;
+                    const prefixA = c.knowledgeBlock.split('_')[0].trim().toLowerCase();
+                    const prefixB = blockName.split('_')[0].trim().toLowerCase();
+                    return prefixA === prefixB;
+                });
                 
                 if (blockCourses.length === 0) {
                     tbody.innerHTML = 
@@ -2440,19 +2456,18 @@
             // Header columns
             headerRow.innerHTML = '<th style="text-align: left; font-weight: 800; min-width: 120px;">PLO(s)</th>';
             poList.forEach(po => {
-                headerRow.innerHTML += `<th style="text-align: center; font-weight: 800; min-width: 80px;">\${po.id.replace('-', '')}</th>`;
+                headerRow.innerHTML += '<th style="text-align: center; font-weight: 800; min-width: 80px;">' + po.id.replace('-', '') + '</th>';
             });
             
             // Rows
             body.innerHTML = '';
             if (ploList.length === 0) {
-                body.innerHTML = `
-                    <tr>
-                        <td colspan="\${poList.length + 1}" style="text-align: center; padding: 20px; color: #64748B; font-style: italic;">
-                            No PLOs available to build the matrix. Please add PLOs in Step 3.
-                        </td>
-                    </tr>
-                `;
+                body.innerHTML = 
+                    '<tr>' +
+                        '<td colspan="' + (poList.length + 1) + '" style="text-align: center; padding: 20px; color: #64748B; font-style: italic;">' +
+                            'No PLOs available to build the matrix. Please add PLOs in Step 3.' +
+                        '</td>' +
+                    '</tr>';
                 return;
             }
             
@@ -2481,15 +2496,14 @@
                 poList.forEach(po => {
                     const isSelected = (presetMappings[plo.id] && presetMappings[plo.id].includes(po.id));
                     const cellVal = isSelected ? '✓' : '';
-                    cellsHtml += `<td onclick="toggleCell(this)" style="text-align: center; font-weight: 800; font-size: 16px; color: #1E293B; user-select: none;">\${cellVal}</td>`;
+                    cellsHtml += '<td onclick="toggleCell(this)" style="text-align: center; font-weight: 800; font-size: 16px; color: #1E293B; user-select: none;">' + cellVal + '</td>';
                 });
                 
-                body.innerHTML += `
-                    <tr data-plo="\${plo.id}">
-                        <td style="text-align: left; font-weight: 700; color: #1E293B; background-color: #FFFFFF;">\${plo.id.replace('-', '')}</td>
-                        \${cellsHtml}
-                    </tr>
-                `;
+                body.innerHTML += 
+                    '<tr data-plo="' + plo.id + '">' +
+                        '<td style="text-align: left; font-weight: 700; color: #1E293B; background-color: #FFFFFF;">' + plo.id.replace('-', '') + '</td>' +
+                        cellsHtml +
+                    '</tr>';
             });
         }
 
@@ -2518,29 +2532,27 @@
             // Header columns
             headerRow.innerHTML = '<th style="text-align: left; font-weight: 800; min-width: 140px;">Subject Code</th>';
             ploList.forEach(plo => {
-                headerRow.innerHTML += `<th style="text-align: center; font-weight: 800; min-width: 80px;">\${plo.id.replace('-', '')}</th>`;
+                headerRow.innerHTML += '<th style="text-align: center; font-weight: 800; min-width: 80px;">' + plo.id.replace('-', '') + '</th>';
             });
             
             body.innerHTML = '';
             
             if (courseList.length === 0) {
-                body.innerHTML = `
-                    <tr>
-                        <td colspan="\${ploList.length + 1}" style="text-align: center; padding: 20px; color: #64748B; font-style: italic;">
-                            No subjects/courses allocated to the curriculum. Please add courses in Step 5.
-                        </td>
-                    </tr>
-                `;
+                body.innerHTML = 
+                    '<tr>' +
+                        '<td colspan="' + (ploList.length + 1) + '" style="text-align: center; padding: 20px; color: #64748B; font-style: italic;">' +
+                            'No subjects/courses allocated to the curriculum. Please add courses in Step 5.' +
+                        '</td>' +
+                    '</tr>';
                 return;
             }
             if (ploList.length === 0) {
-                body.innerHTML = `
-                    <tr>
-                        <td colspan="\${ploList.length + 1}" style="text-align: center; padding: 20px; color: #64748B; font-style: italic;">
-                            No PLOs available. Please add PLOs in Step 3.
-                        </td>
-                    </tr>
-                `;
+                body.innerHTML = 
+                    '<tr>' +
+                        '<td colspan="' + (ploList.length + 1) + '" style="text-align: center; padding: 20px; color: #64748B; font-style: italic;">' +
+                            'No PLOs available. Please add PLOs in Step 3.' +
+                        '</td>' +
+                    '</tr>';
                 return;
             }
 
@@ -2556,35 +2568,75 @@
             }
             
             blocks.forEach(blockName => {
-                const blockCourses = courseList.filter(c => c.knowledgeBlock === blockName);
+                const blockCourses = courseList.filter(c => {
+                    if (!c.knowledgeBlock) return false;
+                    const prefixA = c.knowledgeBlock.split('_')[0].trim().toLowerCase();
+                    const prefixB = blockName.split('_')[0].trim().toLowerCase();
+                    return prefixA === prefixB;
+                });
                 if (blockCourses.length === 0) return;
                 
                 // Red category group header row
-                body.innerHTML += `
-                    <tr>
-                        <td colspan="\${ploList.length + 1}" style="text-align: center; color: #EF4444; font-weight: 800; background-color: #FEF2F2; font-size: 13.5px; border-bottom: 1px solid #E2E8F0; padding: 8px;">
-                            \${blockName}
-                        </td>
-                    </tr>
-                `;
+                body.innerHTML += 
+                    '<tr>' +
+                        '<td colspan="' + (ploList.length + 1) + '" style="text-align: center; color: #EF4444; font-weight: 800; background-color: #FEF2F2; font-size: 13.5px; border-bottom: 1px solid #E2E8F0; padding: 8px;">' +
+                            blockName +
+                        '</td>' +
+                    '</tr>';
                 
                 blockCourses.forEach(course => {
                     let cellsHtml = '';
                     ploList.forEach(plo => {
-                        const selectionKey = `\${course.code}_\${plo.id}`;
+                        const selectionKey = course.code + '_' + plo.id;
                         const isSelected = window.coursePloSelections[selectionKey] || false;
                         const cellVal = isSelected ? '✓' : '';
-                        cellsHtml += `<td onclick="toggleCoursePloCell(this, '\${course.code}', '\${plo.id}')" style="text-align: center; font-weight: 800; font-size: 16px; color: #1E293B; user-select: none;">\${cellVal}</td>`;
+                        cellsHtml += '<td onclick="toggleCoursePloCell(this, \'' + course.code + '\', \'' + plo.id + '\')" style="text-align: center; font-weight: 800; font-size: 16px; color: #1E293B; user-select: none;">' + cellVal + '</td>';
                     });
                     
-                    body.innerHTML += `
-                        <tr data-course="\${course.code}">
-                            <td style="text-align: left; font-weight: 700; color: #3b82f6; background-color: #FFFFFF;">\${course.code}</td>
-                            \${cellsHtml}
-                        </tr>
-                    `;
+                    body.innerHTML += 
+                        '<tr data-course="' + course.code + '">' +
+                            '<td style="text-align: left; font-weight: 700; color: #3b82f6; background-color: #FFFFFF;">' + course.code + '</td>' +
+                            cellsHtml +
+                        '</tr>';
                 });
             });
+
+            // Render remaining courses (uncategorized / empty knowledge block)
+            const otherCourses = courseList.filter(c => {
+                if (!c.knowledgeBlock) return true;
+                const matchesAny = blocks.some(blockName => {
+                    const prefixA = c.knowledgeBlock.split('_')[0].trim().toLowerCase();
+                    const prefixB = blockName.split('_')[0].trim().toLowerCase();
+                    return prefixA === prefixB;
+                });
+                return !matchesAny;
+            });
+
+            if (otherCourses.length > 0) {
+                // Group header row for Other courses
+                body.innerHTML += 
+                    '<tr>' +
+                        '<td colspan="' + (ploList.length + 1) + '" style="text-align: center; color: #EF4444; font-weight: 800; background-color: #FEF2F2; font-size: 13.5px; border-bottom: 1px solid #E2E8F0; padding: 8px;">' +
+                            'Other / Uncategorized' +
+                        '</td>' +
+                    '</tr>';
+                
+                otherCourses.forEach(course => {
+                    let cellsHtml = '';
+                    ploList.forEach(plo => {
+                        const selectionKey = course.code + '_' + plo.id;
+                        const isSelected = window.coursePloSelections[selectionKey] || false;
+                        const cellVal = isSelected ? '✓' : '';
+                        cellsHtml += '<td onclick="toggleCoursePloCell(this, \'' + course.code + '\', \'' + plo.id + '\')" style="text-align: center; font-weight: 800; font-size: 16px; color: #1E293B; user-select: none;">' + cellVal + '</td>';
+                    });
+                    
+                    body.innerHTML += 
+                        '<tr data-course="' + course.code + '">' +
+                            '<td style="text-align: left; font-weight: 700; color: #3b82f6; background-color: #FFFFFF;">' + course.code + '</td>' +
+                            cellsHtml +
+                        '</tr>';
+                });
+            }
         }
 
         function toggleCoursePloCell(cell, courseCode, ploId) {
@@ -2600,18 +2652,20 @@
 
         function collectCoursePloMappings() {
             const mappings = [];
-            if (window.coursePloSelections) {
-                for (const key in window.coursePloSelections) {
-                    if (window.coursePloSelections[key]) {
-                        const parts = key.split('_');
-                        if (parts.length >= 2) {
-                            const ploId = parts[parts.length - 1];
-                            const courseCode = parts.slice(0, parts.length - 1).join('_');
+            const rows = document.querySelectorAll('#coursePloMatrixBody tr');
+            rows.forEach(row => {
+                const courseCode = row.getAttribute('data-course');
+                if (!courseCode) return;
+                const cells = row.querySelectorAll('td');
+                for (let i = 1; i < cells.length; i++) {
+                    if (cells[i].textContent === '✓') {
+                        if (ploList[i - 1]) {
+                            const ploId = ploList[i - 1].id;
                             mappings.push({ courseCode: courseCode, ploCode: ploId });
                         }
                     }
                 }
-            }
+            });
             return mappings;
         }
 
