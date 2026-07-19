@@ -24,22 +24,16 @@
         </div>
     </a>
 
-    <div class="quick-action-card">
-        <div class="quick-action-content">
-            <h4>Download semester material</h4>
-        </div>
-    </div>
-
-    <div class="quick-action-card">
+    <a href="${pageContext.request.contextPath}/student-dashboard?page=learning-path" class="quick-action-card" style="text-decoration: none; color: inherit;">
         <div class="quick-action-content">
             <h4>Show Learning Path of a Subject</h4>
         </div>
-    </div>
+    </a>
 
-    <div class="quick-action-card">
+    <a href="${pageContext.request.contextPath}/student-dashboard?page=prerequisite" class="quick-action-card" style="text-decoration: none; color: inherit;">
         <div class="quick-action-content">
             <h4>A subject is the pre-requisite of</h4>
         </div>
-    </div>
+    </a>
 
 </div>
