@@ -2,7 +2,7 @@ package controller;
 
 import dao.ReviewAssignmentDAO;
 import dao.ReviewCriteriaDAO;
-import dao.ReviewerNotificationDAO;
+import dao.NotificationDAO;
 import dao.ReviewerSectionDAO;
 import dao.ReviewerVersionDAO;
 import dao.SyllabusReviewDAO;
@@ -27,7 +27,7 @@ public class ReviewServlet extends HttpServlet {
     private ReviewCriteriaDAO criteriaDAO;
     private ReviewAssignmentDAO assignmentDAO;
     private ReviewerSectionDAO sectionDAO;
-    private ReviewerNotificationDAO notificationDAO;
+    private NotificationDAO notificationDAO;
 
     @Override
     public void init() {
@@ -36,7 +36,7 @@ public class ReviewServlet extends HttpServlet {
         criteriaDAO = new ReviewCriteriaDAO();
         assignmentDAO = new ReviewAssignmentDAO();
         sectionDAO = new ReviewerSectionDAO();
-        notificationDAO = new ReviewerNotificationDAO();
+        notificationDAO = new NotificationDAO();
     }
 
     @Override
@@ -330,18 +330,17 @@ public class ReviewServlet extends HttpServlet {
                             sectionDecisions
                     );
 
-            if (result.isRejected()) {
-                notificationDAO.notifyDesignerAfterReview(
-                        versionId,
-                        reviewerId,
-                        "REJECTED"
-                );
-
-            } else if (result.isAllApproved()) {
-                notificationDAO.notifyAcademicWhenAllReviewersApproved(
-                        versionId,
-                        reviewerId
-                );
+            /*
+             * Designer and Reviewer do not receive in-app notifications.
+             * Their tasks and review results are already visible in their
+             * own work screens.
+             */
+            if (result.isAllApproved()) {
+                notificationDAO
+                        .notifyAcademicWhenAllReviewersApproved(
+                                versionId,
+                                reviewerId
+                        );
             }
 
             response.sendRedirect(

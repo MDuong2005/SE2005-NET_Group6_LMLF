@@ -2,6 +2,7 @@ package controller;
 
 import dao.AccountRequestDAO;
 import dao.RoleDAO;
+import dao.NotificationDAO;
 import dao.UserDAO;
 import model.AccountRequest;
 import model.Role;
@@ -25,6 +26,7 @@ public class MyTasksServlet extends HttpServlet {
     private final AccountRequestDAO requestDAO = new AccountRequestDAO();
     private final UserDAO userDAO = new UserDAO();
     private final RoleDAO roleDAO = new RoleDAO();
+    private final NotificationDAO notificationDAO = new NotificationDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -102,7 +104,30 @@ public class MyTasksServlet extends HttpServlet {
                             boolean emailSent = EmailUtil.sendExternalUserCredentials(accReq.getEmail(), plainPassword, extRole.getRoleName());
                             
                             if (emailSent) {
-                                request.getSession().setAttribute("successMessage", "Account approved and email sent successfully.");
+                                String externalName = (
+                                        (accReq.getFirstName() == null
+                                                ? ""
+                                                : accReq.getFirstName())
+                                        + " "
+                                        + (accReq.getLastName() == null
+                                                ? ""
+                                                : accReq.getLastName())
+                                ).trim();
+
+                                notificationDAO
+                                        .notifyAcademicExternalAccountApproved(
+                                                accReq.getRequestedBy(),
+                                                currentUser.getUserId(),
+                                                requestId,
+                                                newUserId,
+                                                externalName,
+                                                accReq.getEmail()
+                                        );
+
+                                request.getSession().setAttribute(
+                                        "successMessage",
+                                        "Account approved and email sent successfully."
+                                );
                             } else {
                                 // 7. Compensating Transaction (Rollback)
                                 boolean undone = userDAO.undoApproveExpertRequestTx(newUserId, requestId);
