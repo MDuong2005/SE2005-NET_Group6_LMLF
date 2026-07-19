@@ -14,10 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * CurriculumServlet maps the "/curriculum" URL to "views/curriculum.jsp".
- */
-@WebServlet(name = "CurriculumServlet", urlPatterns = {"/curriculum"})
+@WebServlet("/curriculum")
 public class CurriculumServlet extends HttpServlet {
 
     private CurriculumDAO curriculumDAO;
@@ -32,7 +29,7 @@ public class CurriculumServlet extends HttpServlet {
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
         // KHÔNG CẦN ĐĂNG NHẬP
@@ -51,7 +48,6 @@ public class CurriculumServlet extends HttpServlet {
                     showCreateForm(request, response);
                     break;
                 case "view":
-                case "detail":
                     viewCurriculum(request, response);
                     break;
                 case "delete":
@@ -81,7 +77,7 @@ public class CurriculumServlet extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
         // KHÔNG CẦN ĐĂNG NHẬP
@@ -112,7 +108,7 @@ public class CurriculumServlet extends HttpServlet {
         request.setAttribute("curriculums", curriculums);
         request.setAttribute("majors", majors);
         request.setAttribute("totalCurriculums", curriculums.size());
-        request.getRequestDispatcher("/views/academic/curriculum/curriculum.jsp").forward(request, response);
+        request.getRequestDispatcher("/views/curriculum/curriculum.jsp").forward(request, response);
     }
 
     // ==================== SHOW CREATE FORM ====================
@@ -122,7 +118,7 @@ public class CurriculumServlet extends HttpServlet {
         request.setAttribute("mode", "create");
         request.setAttribute("pageTitle", "Create New Curriculum");
         request.setAttribute("majors", majors);
-        request.getRequestDispatcher("/views/academic/curriculum/curriculum.jsp").forward(request, response);
+        request.getRequestDispatcher("/views/curriculum/curriculum.jsp").forward(request, response);
     }
 
     // ==================== CREATE CURRICULUM ====================
@@ -207,13 +203,7 @@ public class CurriculumServlet extends HttpServlet {
             request.setAttribute("curriculum", curriculum);
             request.setAttribute("availableCourses", availableCourses);
             request.setAttribute("pageTitle", "View Curriculum - " + curriculum.getVersion());
-
-            String requestedAction = request.getParameter("action");
-            String targetPage = "detail".equals(requestedAction)
-                    ? "/views/academic/curriculum/curriculum-detail.jsp"
-                    : "/views/academic/curriculum/curriculum.jsp";
-
-            request.getRequestDispatcher(targetPage).forward(request, response);
+            request.getRequestDispatcher("/views/curriculum/curriculum-detail.jsp").forward(request, response);
         } catch (NumberFormatException e) {
             response.sendRedirect("curriculum?action=list&error=Invalid curriculum ID");
         }
@@ -292,7 +282,7 @@ public class CurriculumServlet extends HttpServlet {
             request.setAttribute("curriculum", curriculum);
             request.setAttribute("availableCourses", availableCourses);
             request.setAttribute("pageTitle", "Add Course to Curriculum");
-            request.getRequestDispatcher("/views/academic/curriculum/curriculum.jsp").forward(request, response);
+            request.getRequestDispatcher("/views/curriculum/curriculum.jsp").forward(request, response);
         } catch (NumberFormatException e) {
             response.sendRedirect("curriculum?action=list&error=Invalid curriculum ID");
         }
@@ -413,7 +403,7 @@ public class CurriculumServlet extends HttpServlet {
             request.setAttribute("course", targetCourse.getCourse());
             request.setAttribute("currentSemester", targetCourse.getSemester());
             request.setAttribute("pageTitle", "Assign Semester for " + targetCourse.getCourse().getCode());
-            request.getRequestDispatcher("/views/academic/curriculum/curriculum.jsp").forward(request, response);
+            request.getRequestDispatcher("/views/curriculum/curriculum.jsp").forward(request, response);
         } catch (NumberFormatException e) {
             response.sendRedirect("curriculum?action=list&error=Invalid parameters");
         }
