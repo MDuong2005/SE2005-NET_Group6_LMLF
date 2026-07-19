@@ -9,6 +9,25 @@
         <form action="${pageContext.request.contextPath}/admin/users" method="POST">
             <input type="hidden" name="action" value="create">
 
+            <c:if test="${not empty param.error}">
+                <div style="background-color: #fee2e2; color: #991b1b; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #f87171;">
+                    <c:choose>
+                        <c:when test="${param.error == 'invalid_data'}">
+                            <strong>Validation Error:</strong> Username must be 3-20 characters (letters, numbers, underscore only, NO DOTS). Email, First Name, and Last Name are required.
+                        </c:when>
+                        <c:when test="${param.error == 'invalid_role'}">
+                            <strong>Error:</strong> Please select a valid role.
+                        </c:when>
+                        <c:when test="${param.error == 'db_error'}">
+                            <strong>Database Error:</strong> Failed to create user. The email or username might already exist.
+                        </c:when>
+                        <c:otherwise>
+                            <strong>Error:</strong> An unexpected error occurred.
+                        </c:otherwise>
+                    </c:choose>
+                </div>
+            </c:if>
+
             <div class="form-group">
                 <label>Username</label>
                 <input type="text" name="username" required placeholder="e.g. johndoe">
