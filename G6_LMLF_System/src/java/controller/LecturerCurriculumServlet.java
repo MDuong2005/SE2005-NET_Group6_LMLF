@@ -1,8 +1,6 @@
 package controller;
 
-import dao.CurriculumDAO;
-import model.Curriculum;
-import model.Course;
+import dao.LecturerCurriculumDAO;
 import utils.SessionUtil;
 
 import jakarta.servlet.ServletException;
@@ -12,15 +10,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet(name = "LecturerCurriculumServlet", urlPatterns = {"/lecturer/curriculum"})
 public class LecturerCurriculumServlet extends HttpServlet {
 
-    private CurriculumDAO curriculumDAO;
+    private LecturerCurriculumDAO curriculumDAO;
 
     @Override
     public void init() throws ServletException {
-        curriculumDAO = new CurriculumDAO();
+        curriculumDAO = new LecturerCurriculumDAO();
     }
 
     @Override
@@ -58,12 +57,36 @@ public class LecturerCurriculumServlet extends HttpServlet {
 
     private void listCurriculums(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
+            
+        String search = request.getParameter("search");
+        if (search == null) search = "";
         
-        List<Curriculum> curriculums = curriculumDAO.getAll(); // Or get only Active ones if needed
+        int page = 1;
+        int pageSize = 10;
+        
+        String pageParam = request.getParameter("page");
+        if (pageParam != null && !pageParam.trim().isEmpty()) {
+            try {
+                page = Integer.parseInt(pageParam);
+                if (page < 1) page = 1;
+            } catch (NumberFormatException e) {
+                page = 1;
+            }
+        }
+        
+        int totalRecords = curriculumDAO.getTotalActiveCurriculums(search);
+        int totalPages = (int) Math.ceil((double) totalRecords / pageSize);
+        if (page > totalPages && totalPages > 0) page = totalPages;
+        
+        List<Map<String, Object>> curriculums = curriculumDAO.getActiveCurriculums(search, page, pageSize);
+        
         request.setAttribute("curriculums", curriculums);
+        request.setAttribute("currentPage", page);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("search", search);
         
-        // Use the unified layout
-        request.setAttribute("contentPage", "lecturer/curriculum/list.jsp");
+        // Use the user's custom layout
+        request.setAttribute("contentPage", "lecturer/curriculum.jsp");
         request.setAttribute("cssFile", "lecturer/lecturer.css");
         request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
     }
@@ -79,21 +102,22 @@ public class LecturerCurriculumServlet extends HttpServlet {
         
         try {
             Long curriculumId = Long.parseLong(idParam);
-            Curriculum curriculum = curriculumDAO.getById(curriculumId);
+            Map<String, Object> curriculum = curriculumDAO.getCurriculumDetail(curriculumId);
             
-            if (curriculum == null) {
+            if (curriculum == null || curriculum.isEmpty()) {
                 response.sendRedirect(request.getContextPath() + "/lecturer/curriculum?error=NotFound");
                 return;
             }
             
-            List<Course> courses = curriculumDAO.getAvailableCoursesForCurriculum(curriculumId);
+            List<Map<String, Object>> ploList = curriculumDAO.getCurriculumPLOs(curriculumId);
+            List<Map<String, Object>> subjectList = curriculumDAO.getCurriculumSubjects(curriculumId);
             
             request.setAttribute("curriculum", curriculum);
-            request.setAttribute("availableCourses", courses);
+            request.setAttribute("ploList", ploList);
+            request.setAttribute("subjectList", subjectList);
             
-            request.setAttribute("contentPage", "lecturer/curriculum/detail.jsp");
-            request.setAttribute("cssFile", "lecturer/lecturer.css");
-            request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
+            // Forward directly to the standalone custom detail page
+            request.getRequestDispatcher("/views/curriculum/curriculum-detail.jsp").forward(request, response);
             
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/lecturer/curriculum?error=InvalidID");

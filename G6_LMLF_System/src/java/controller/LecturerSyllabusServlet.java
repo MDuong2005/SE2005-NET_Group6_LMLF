@@ -57,12 +57,36 @@ public class LecturerSyllabusServlet extends HttpServlet {
 
     private void listSyllabuses(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
+            
+        String search = request.getParameter("search");
+        if (search == null) search = "";
         
-        List<Map<String, Object>> syllabuses = syllabusDAO.getPublishedSyllabuses();
+        int page = 1;
+        int pageSize = 10;
+        
+        String pageParam = request.getParameter("page");
+        if (pageParam != null && !pageParam.trim().isEmpty()) {
+            try {
+                page = Integer.parseInt(pageParam);
+                if (page < 1) page = 1;
+            } catch (NumberFormatException e) {
+                page = 1;
+            }
+        }
+        
+        int totalRecords = syllabusDAO.getTotalSyllabuses(search);
+        int totalPages = (int) Math.ceil((double) totalRecords / pageSize);
+        if (page > totalPages && totalPages > 0) page = totalPages;
+        
+        List<Map<String, Object>> syllabuses = syllabusDAO.getSyllabuses(search, page, pageSize);
+        
         request.setAttribute("syllabuses", syllabuses);
+        request.setAttribute("currentPage", page);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("search", search);
         
-        // Use the unified layout
-        request.setAttribute("contentPage", "lecturer/syllabus/list.jsp");
+        // Use the user's custom layout
+        request.setAttribute("contentPage", "lecturer/syllabus.jsp");
         request.setAttribute("cssFile", "lecturer/lecturer.css");
         request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
     }
@@ -85,11 +109,16 @@ public class LecturerSyllabusServlet extends HttpServlet {
                 return;
             }
             
+            if (syllabus.get("versionId") != null) {
+                long versionId = (Long) syllabus.get("versionId");
+                List<Map<String, Object>> studentTasks = syllabusDAO.getSyllabusStudentTasks(versionId);
+                request.setAttribute("studentTasks", studentTasks);
+            }
+            
             request.setAttribute("syllabus", syllabus);
             
-            request.setAttribute("contentPage", "lecturer/syllabus/detail.jsp");
-            request.setAttribute("cssFile", "lecturer/lecturer.css");
-            request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
+            // Forward directly to the standalone custom detail page
+            request.getRequestDispatcher("/views/syllabus/syllabus-detail.jsp").forward(request, response);
             
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/lecturer/syllabus?error=InvalidID");

@@ -38,13 +38,13 @@
                     <c:when test="${not empty curriculums}">
                         <c:forEach var="c" items="${curriculums}">
                             <tr style="border-bottom: 1px solid #f1f5f9; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
-                                <td style="padding: 1rem; font-weight: 600; color: #1e293b;">${c.major.code} - ${c.major.name}</td>
+                                <td style="padding: 1rem; font-weight: 600; color: #1e293b;">${c.majorCode} - ${c.majorName}</td>
                                 <td style="padding: 1rem;">${c.version}</td>
                                 <td style="padding: 1rem; color: #64748b; font-size: 0.875rem; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.description}</td>
                                 <td style="padding: 1rem;">${c.decisionNo != null ? c.decisionNo : 'N/A'}</td>
                                 <td style="padding: 1rem;">${c.totalCredits}</td>
                                 <td style="padding: 1rem; text-align: right;">
-                                    <a href="${pageContext.request.contextPath}/lecturer/curriculum?action=detail&id=${c.curriculumId}" class="action-button" style="padding: 6px 12px; font-size: 0.75rem; text-decoration: none; display: inline-block;">View Detail</a>
+                                    <a href="${pageContext.request.contextPath}/curriculum?action=detail&id=${c.curriculumId}" class="action-button" style="padding: 6px 12px; font-size: 0.75rem; text-decoration: none; display: inline-block;">View Detail</a>
                                 </td>
                             </tr>
                         </c:forEach>
