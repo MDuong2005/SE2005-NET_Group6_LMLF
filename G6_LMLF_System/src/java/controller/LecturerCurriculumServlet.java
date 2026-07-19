@@ -120,7 +120,7 @@ public class LecturerCurriculumServlet extends HttpServlet {
                 recentCurriculums = new java.util.ArrayList<>();
             }
             // Remove if exists to move to top
-            recentCurriculums.removeIf(c -> c.get("curriculumId").toString().equals(curriculum.get("curriculumId").toString()));
+            recentCurriculums.removeIf(c -> c.get("curriculumId") != null && c.get("curriculumId").toString().equals(curriculum.get("curriculumId").toString()));
             
             // Create light version to save session memory
             java.util.Map<String, Object> lightCurr = new java.util.HashMap<>();

@@ -123,7 +123,7 @@ public class LecturerSyllabusServlet extends HttpServlet {
                 recentSyllabuses = new java.util.ArrayList<>();
             }
             // Remove if exists to move to top
-            recentSyllabuses.removeIf(s -> s.get("syllabusId").toString().equals(syllabus.get("syllabusId").toString()));
+            recentSyllabuses.removeIf(s -> s.get("syllabusId") != null && s.get("syllabusId").toString().equals(syllabus.get("syllabusId").toString()));
             
             // Create light version to save session memory
             java.util.Map<String, Object> lightSyl = new java.util.HashMap<>();
