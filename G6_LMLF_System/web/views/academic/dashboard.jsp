@@ -365,5 +365,29 @@
                 <p>Assign roles to teachers</p>
             </div>
         </div>
+        <!-- Action 5: Syllabus Browser -->
+        <div class="quick-action-card" onclick="window.location.href='${pageContext.request.contextPath}/academic/syllabus'">
+            <div class="quick-action-icon bg-blue-light">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <div class="quick-action-content">
+                <h4>Syllabus Browser</h4>
+                <p>Browse and inspect syllabuses</p>
+            </div>
+        </div>
+        <!-- Action 4: Major -->
+        <div class="quick-action-card" onclick="window.location.href='${pageContext.request.contextPath}/major'">
+            <div class="quick-action-icon bg-purple-light">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+            </div>
+            <div class="quick-action-content">
+                <h4>Manage Majors</h4>
+                <p>Manage academic majors and codes</p>
+            </div>
+        </div>
     </div>
 </div>
