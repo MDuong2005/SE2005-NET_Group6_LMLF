@@ -24,6 +24,26 @@
 
         return String.valueOf(value);
     }
+
+    private boolean isAcademicInformation(
+            String criteriaCode,
+            String criteriaName
+    ) {
+        String code = criteriaCode == null
+                ? ""
+                : criteriaCode.trim().toUpperCase();
+
+        String name = criteriaName == null
+                ? ""
+                : criteriaName.trim().toUpperCase();
+
+        return "GENERAL_INFORMATION".equals(code)
+                || "ACADEMIC_INFORMATION".equals(code)
+                || "ACADEMIC_INFO".equals(code)
+                || "01_ACADEMIC_INFO".equals(code)
+                || name.contains("ACADEMIC INFORMATION")
+                || name.contains("GENERAL INFORMATION");
+    }
 %>
 
 <%
@@ -382,6 +402,25 @@
             border-radius: 10px;
         }
 
+        .reference-only-panel {
+            padding: 13px 15px;
+            margin-top: 16px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            background: #eff6ff;
+            color: #1e3a8a;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .reference-only-panel strong {
+            display: block;
+            margin-bottom: 2px;
+        }
+
         .decision-area {
             margin-top: 20px;
             padding-top: 18px;
@@ -715,8 +754,8 @@
                 <div>
                     <h2>Section Evaluation</h2>
                     <p>
-                        Approve or reject every section. Rejecting one section
-                        rejects the whole review.
+                        Evaluate every editable syllabus section. Academic Information
+                        is provided for reference only.
                     </p>
                 </div>
 
@@ -879,15 +918,34 @@
                                     ""
                             );
 
+                            boolean academicInformation
+                                    = isAcademicInformation(
+                                            criteriaCode,
+                                            criteriaName
+                                    );
+
                             String sectionJson = sectionContentMap == null
                                     ? null
                                     : sectionContentMap.get(criteriaCode);
                     %>
                         <section class="review-card"
-                                 data-review-card="<%= criteriaId %>">
+                                 data-section-card="<%= criteriaId %>"
+                                 <%= academicInformation
+                                         ? "data-reference-only=\"true\""
+                                         : "data-review-card=\""
+                                           + criteriaId
+                                           + "\"" %>>
                             <div class="panel-header">
-                                <h3><%= h(criteriaName) %></h3>
-                                <p><%= h(criteriaDescription) %></p>
+                                <h3>
+                                    <%= academicInformation
+                                            ? "Academic Information"
+                                            : h(criteriaName) %>
+                                </h3>
+                                <p>
+                                    <%= academicInformation
+                                            ? "Controlled by Academic Office and shown for reference only."
+                                            : h(criteriaDescription) %>
+                                </p>
                             </div>
 
                             <div class="panel-body">
@@ -906,37 +964,49 @@
                                     <% } %>
                                 </div>
 
-                                <div class="decision-area">
-                                    <div class="decision-title">
-                                        Section decision
+                                <% if (academicInformation) { %>
+                                    <div class="reference-only-panel">
+                                        <div>🔒</div>
+                                        <div>
+                                            <strong>Reference only</strong>
+                                            Reviewer cannot approve, reject or comment
+                                            on Academic Information. This section does
+                                            not affect the final review decision.
+                                        </div>
                                     </div>
+                                <% } else { %>
+                                    <div class="decision-area">
+                                        <div class="decision-title">
+                                            Section decision
+                                        </div>
 
-                                    <div class="decision-options">
-                                        <label class="decision-option approve">
-                                            <input type="radio"
-                                                   name="decision_<%= criteriaId %>"
-                                                   value="APPROVED"
-                                                   required>
-                                            Approve
-                                        </label>
+                                        <div class="decision-options">
+                                            <label class="decision-option approve">
+                                                <input type="radio"
+                                                       name="decision_<%= criteriaId %>"
+                                                       value="APPROVED"
+                                                       required>
+                                                Approve
+                                            </label>
 
-                                        <label class="decision-option reject">
-                                            <input type="radio"
-                                                   name="decision_<%= criteriaId %>"
-                                                   value="REJECTED"
-                                                   required>
-                                            Reject
-                                        </label>
+                                            <label class="decision-option reject">
+                                                <input type="radio"
+                                                       name="decision_<%= criteriaId %>"
+                                                       value="REJECTED"
+                                                       required>
+                                                Reject
+                                            </label>
+                                        </div>
+
+                                        <textarea name="comment_<%= criteriaId %>"
+                                                  data-comment-for="<%= criteriaId %>"
+                                                  placeholder="Comment for this section. Required when rejected."></textarea>
+
+                                        <div class="comment-hint">
+                                            Comment is optional for Approve and required for Reject.
+                                        </div>
                                     </div>
-
-                                    <textarea name="comment_<%= criteriaId %>"
-                                              data-comment-for="<%= criteriaId %>"
-                                              placeholder="Comment for this section. Required when rejected."></textarea>
-
-                                    <div class="comment-hint">
-                                        Comment is optional for Approve and required for Reject.
-                                    </div>
-                                </div>
+                                <% } %>
                             </div>
                         </section>
                     <%  }
@@ -946,8 +1016,8 @@
                         <div class="panel-header">
                             <h3>Final Review</h3>
                             <p>
-                                The system calculates the final result. One
-                                rejected section makes this review rejected.
+                                The system calculates the final result from evaluated sections only.
+                                Academic Information is excluded.
                             </p>
                         </div>
 
@@ -1516,9 +1586,11 @@
     }
 
     document.addEventListener("DOMContentLoaded", function () {
-        var cards = document.querySelectorAll("[data-review-card]");
+        var sectionCards = document.querySelectorAll(
+                "[data-section-card]"
+        );
 
-        cards.forEach(function (card) {
+        sectionCards.forEach(function (card) {
             var target = card.querySelector(".section-content");
             var source = card.querySelector(".section-json-source");
 
@@ -1526,8 +1598,10 @@
                 renderSection(target, source);
             }
 
-            bindDecisionInputs(card);
-            updateCommentRequirement(card);
+            if (card.hasAttribute("data-review-card")) {
+                bindDecisionInputs(card);
+                updateCommentRequirement(card);
+            }
         });
 
         var form = document.getElementById("reviewForm");
@@ -1541,7 +1615,7 @@
             if (!validateReviewForm(form)) {
                 event.preventDefault();
                 window.alert(
-                        "Select a decision for every section and provide "
+                        "Select a decision for every evaluable section and provide "
                         + "a comment for each rejected section."
                 );
                 return;

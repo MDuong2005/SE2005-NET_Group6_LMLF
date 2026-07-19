@@ -74,10 +74,19 @@ if ("/designer/editor/import".equals(path)) importExcel(request, response, user)
         Long fileId=null;
         try(InputStream in=Files.newInputStream(stored)){
             SyllabusEditorData imported=importService.parse(in);
-            editorDAO.saveDraft(assignmentId,versionId,user.getUserId(),imported);
+            editorDAO.saveImportedDraft(
+                    assignmentId,
+                    versionId,
+                    user.getUserId(),
+                    imported
+            );
             fileId=editorDAO.saveImportedFile(assignmentId,versionId,user.getUserId(),original,stored.toAbsolutePath().toString(),part.getSize(),part.getContentType());
             editorDAO.logImport(assignmentId,versionId,fileId,user.getUserId(),"SUCCESS",7,0,0,null);
-            request.getSession().setAttribute("successMessage","Excel imported successfully. Review the populated sections and complete missing information.");
+            request.getSession().setAttribute(
+                    "successMessage",
+                    "Academic Office template imported successfully. "
+                    + "Academic Information is now locked for manual web editing."
+            );
         }catch(Exception e){
             editorDAO.logImport(assignmentId,versionId,fileId,user.getUserId(),"FAILED",0,0,7,e.getMessage());
             Files.deleteIfExists(stored);
