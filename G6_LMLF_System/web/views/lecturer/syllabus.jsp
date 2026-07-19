@@ -31,8 +31,8 @@
                     <c:when test="${not empty syllabuses}">
                         <c:forEach var="s" items="${syllabuses}">
                             <tr style="border-bottom: 1px solid #f1f5f9; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
-                                <td style="padding: 1rem; font-weight: 600; color: #1e293b;">${s.course_code}</td>
-                                <td style="padding: 1rem;">${s.course_name}</td>
+                                <td style="padding: 1rem; font-weight: 600; color: #1e293b;">${s.courseCode}</td>
+                                <td style="padding: 1rem;">${s.courseName}</td>
                                 <td style="padding: 1rem;">${s.currentVersion}</td>
                                 <td style="padding: 1rem;">
                                     <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background-color: #bfdbfe; color: #1e40af;">${s.status}</span>
