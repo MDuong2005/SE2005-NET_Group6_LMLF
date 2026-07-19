@@ -22,7 +22,7 @@ public class ForgotPasswordServlet extends HttpServlet {
         // If already logged in, redirect to dashboard
         if (SessionUtil.isLoggedIn(request)) {
             response.sendRedirect(request.getContextPath() + "/dashboard");
-            return;
+            return; 
         }
 
         request.getRequestDispatcher("/views/auth/forgot_password.jsp").forward(request, response);
