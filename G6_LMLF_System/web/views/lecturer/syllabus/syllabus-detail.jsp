@@ -111,15 +111,11 @@ The numerous visual models that will be represented to illustrate the requiremen
                     <%-- Later replace with ${syllabus.decisionNo} --%>
                     <td>377/QĐ-ĐHFPT dated 04/09/2026</td>
                 </tr>
-<<<<<<< Updated upstream
                 <tr>
                     <th>IsApproved</th>
                     <%-- Later replace with ${syllabus.isApproved} --%>
                     <td>True</td>
                 </tr>
-=======
-
->>>>>>> Stashed changes
                 <tr>
                     <th>Note</th>
                     <%-- Later replace with ${syllabus.note} --%>
@@ -130,7 +126,6 @@ The numerous visual models that will be represented to illustrate the requiremen
                     <%-- Later replace with ${syllabus.minAvgMarkToPass} --%>
                     <td>5</td>
                 </tr>
-<<<<<<< Updated upstream
                 <tr>
                     <th>IsActive</th>
                     <%-- Later replace with ${syllabus.isActive} --%>
@@ -141,9 +136,6 @@ The numerous visual models that will be represented to illustrate the requiremen
                     <%-- Later replace with ${syllabus.approvedDate} --%>
                     <td>4/9/2026</td>
                 </tr>
-=======
-
->>>>>>> Stashed changes
             </tbody>
         </table>
 
