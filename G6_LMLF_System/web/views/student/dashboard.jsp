@@ -12,17 +12,17 @@
 <!-- Simple Feature List -->
 <div class="quick-actions-grid" style="grid-template-columns: 1fr;">
 
-    <div class="quick-action-card">
+    <a href="${pageContext.request.contextPath}/lecturer/curriculum" class="quick-action-card" style="text-decoration: none; color: inherit;">
         <div class="quick-action-content">
             <h4>View Curriculum</h4>
         </div>
-    </div>
+    </a>
 
-    <div class="quick-action-card">
+    <a href="${pageContext.request.contextPath}/lecturer/syllabus" class="quick-action-card" style="text-decoration: none; color: inherit;">
         <div class="quick-action-content">
             <h4>View Syllabus</h4>
         </div>
-    </div>
+    </a>
 
     <div class="quick-action-card">
         <div class="quick-action-content">
