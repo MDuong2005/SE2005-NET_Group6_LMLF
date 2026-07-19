@@ -63,6 +63,8 @@ public class SyllabusAssignmentDAO extends DBContext {
         return list;
     }
 
+
+
     /**
      * Get assignment by courseId, semester, and academicYear
      */
@@ -276,112 +278,236 @@ public class SyllabusAssignmentDAO extends DBContext {
      * List all syllabus assignments
      */
     public List<SyllabusAssignment> listAll() {
-        List<SyllabusAssignment> list = new ArrayList<>();
-        String sql = "SELECT sa.*, "
-                + "       c.code AS course_code, "
-                + "       c.name AS course_name, "
-                + "       d.first_name + ' ' + d.last_name AS designer_name, "
-                + "       d.email AS designer_email, "
-                + "       r.first_name + ' ' + r.last_name AS reviewer_name, "
-                + "       r.email AS reviewer_email "
-                + "FROM syllabus_assignments sa "
-                + "JOIN courses c ON sa.course_id = c.course_id "
-                + "JOIN users d ON sa.designer_id = d.user_id "
-                + "JOIN users r ON sa.reviewer_id = r.user_id "
-                + "ORDER BY sa.assigned_at DESC";
 
-        try {
-            if (connection != null) {
-                PreparedStatement ps = connection.prepareStatement(sql);
-                ResultSet rs = ps.executeQuery();
-                while (rs.next()) {
-                    SyllabusAssignment sa = new SyllabusAssignment();
-                    sa.setAssignmentId(rs.getLong("assignment_id"));
-                    sa.setCourseId(rs.getLong("course_id"));
-                    sa.setDesignerId(rs.getLong("designer_id"));
-                    sa.setReviewerId(rs.getLong("reviewer_id"));
-                    sa.setSemester(rs.getString("semester"));
-                    sa.setAcademicYear(rs.getInt("academic_year"));
-                    sa.setAssignedAt(rs.getTimestamp("assigned_at"));
-                    sa.setAssignmentStatus(rs.getString("assignment_status"));
-                    sa.setDueDate(rs.getTimestamp("due_date"));
-                    
-                    // Display helpers
-                    sa.setCourseCode(rs.getString("course_code"));
-                    sa.setCourseName(rs.getString("course_name"));
-                    sa.setDesignerName(rs.getString("designer_name").trim());
-                    sa.setDesignerEmail(rs.getString("designer_email"));
-                    sa.setReviewerName(rs.getString("reviewer_name").trim());
-                    sa.setReviewerEmail(rs.getString("reviewer_email"));
-                    list.add(sa);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        List<SyllabusAssignment> assignments = new ArrayList<>();
+
+        String sql = """
+                SELECT
+                    assignmentRow.*,
+                    course.code AS course_code,
+                    course.name AS course_name,
+                    designer.first_name + ' '
+                        + designer.last_name AS designer_name,
+                    designer.email AS designer_email,
+                    legacyReviewer.first_name + ' '
+                        + legacyReviewer.last_name AS reviewer_name,
+                    legacyReviewer.email AS reviewer_email
+                FROM syllabus_assignments assignmentRow
+                INNER JOIN courses course
+                    ON course.course_id = assignmentRow.course_id
+                INNER JOIN users designer
+                    ON designer.user_id = assignmentRow.designer_id
+                LEFT JOIN users legacyReviewer
+                    ON legacyReviewer.user_id
+                        = assignmentRow.reviewer_id
+                ORDER BY assignmentRow.assigned_at DESC
+                """;
+
+        if (connection == null) {
+            return assignments;
         }
-        return list;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+
+            while (resultSet.next()) {
+                assignments.add(
+                        mapAssignmentSummary(resultSet)
+                );
+            }
+
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            return assignments;
+        }
+
+        /*
+         * syllabus_assignments.reviewer_id contains only the first Reviewer
+         * for backward compatibility. Load the complete Reviewer list from
+         * syllabus_assignment_reviewers before sending data to the JSP.
+         */
+        enrichReviewerData(assignments);
+
+        return assignments;
     }
 
-    /**
-     * Search assignments by keyword
-     */
-    public List<SyllabusAssignment> search(String keyword) {
-        List<SyllabusAssignment> list = new ArrayList<>();
-        String sql = "SELECT sa.*, "
-                + "       c.code AS course_code, "
-                + "       c.name AS course_name, "
-                + "       d.first_name + ' ' + d.last_name AS designer_name, "
-                + "       d.email AS designer_email, "
-                + "       r.first_name + ' ' + r.last_name AS reviewer_name, "
-                + "       r.email AS reviewer_email "
-                + "FROM syllabus_assignments sa "
-                + "JOIN courses c ON sa.course_id = c.course_id "
-                + "JOIN users d ON sa.designer_id = d.user_id "
-                + "JOIN users r ON sa.reviewer_id = r.user_id "
-                + "WHERE c.code LIKE ? OR c.name LIKE ? "
-                + "   OR d.first_name LIKE ? OR d.last_name LIKE ? "
-                + "   OR r.first_name LIKE ? OR r.last_name LIKE ? "
-                + "ORDER BY sa.assigned_at DESC";
+    public List<SyllabusAssignment> search(
+            String keyword
+    ) {
 
-        try {
-            if (connection != null) {
-                PreparedStatement ps = connection.prepareStatement(sql);
-                String pattern = "%" + keyword + "%";
-                for (int i = 1; i <= 6; i++) {
-                    ps.setString(i, pattern);
-                }
-                ResultSet rs = ps.executeQuery();
-                while (rs.next()) {
-                    SyllabusAssignment sa = new SyllabusAssignment();
-                    sa.setAssignmentId(rs.getLong("assignment_id"));
-                    sa.setCourseId(rs.getLong("course_id"));
-                    sa.setDesignerId(rs.getLong("designer_id"));
-                    sa.setReviewerId(rs.getLong("reviewer_id"));
-                    sa.setSemester(rs.getString("semester"));
-                    sa.setAcademicYear(rs.getInt("academic_year"));
-                    sa.setAssignedAt(rs.getTimestamp("assigned_at"));
-                    sa.setAssignmentStatus(rs.getString("assignment_status"));
-                    sa.setDueDate(rs.getTimestamp("due_date"));
-                    
-                    // Display helpers
-                    sa.setCourseCode(rs.getString("course_code"));
-                    sa.setCourseName(rs.getString("course_name"));
-                    sa.setDesignerName(rs.getString("designer_name").trim());
-                    sa.setDesignerEmail(rs.getString("designer_email"));
-                    sa.setReviewerName(rs.getString("reviewer_name").trim());
-                    sa.setReviewerEmail(rs.getString("reviewer_email"));
-                    list.add(sa);
+        List<SyllabusAssignment> assignments = new ArrayList<>();
+
+        String normalizedKeyword = keyword == null
+                ? ""
+                : keyword.trim();
+
+        if (normalizedKeyword.isEmpty()) {
+            return listAll();
+        }
+
+        String sql = """
+                SELECT
+                    assignmentRow.*,
+                    course.code AS course_code,
+                    course.name AS course_name,
+                    designer.first_name + ' '
+                        + designer.last_name AS designer_name,
+                    designer.email AS designer_email,
+                    legacyReviewer.first_name + ' '
+                        + legacyReviewer.last_name AS reviewer_name,
+                    legacyReviewer.email AS reviewer_email
+                FROM syllabus_assignments assignmentRow
+                INNER JOIN courses course
+                    ON course.course_id = assignmentRow.course_id
+                INNER JOIN users designer
+                    ON designer.user_id = assignmentRow.designer_id
+                LEFT JOIN users legacyReviewer
+                    ON legacyReviewer.user_id
+                        = assignmentRow.reviewer_id
+                WHERE course.code LIKE ?
+                   OR course.name LIKE ?
+                   OR designer.first_name LIKE ?
+                   OR designer.last_name LIKE ?
+                   OR designer.email LIKE ?
+                   OR EXISTS (
+                        SELECT 1
+                        FROM syllabus_assignment_reviewers
+                            assignmentReviewer
+                        INNER JOIN users reviewer
+                            ON reviewer.user_id
+                                = assignmentReviewer.reviewer_id
+                        WHERE assignmentReviewer.assignment_id
+                                = assignmentRow.assignment_id
+                          AND (
+                                reviewer.first_name LIKE ?
+                                OR reviewer.last_name LIKE ?
+                                OR reviewer.email LIKE ?
+                          )
+                   )
+                ORDER BY assignmentRow.assigned_at DESC
+                """;
+
+        if (connection == null) {
+            return assignments;
+        }
+
+        String pattern = "%" + normalizedKeyword + "%";
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(sql)) {
+
+            for (int parameterIndex = 1;
+                    parameterIndex <= 8;
+                    parameterIndex++) {
+
+                statement.setString(parameterIndex, pattern);
+            }
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    assignments.add(
+                            mapAssignmentSummary(resultSet)
+                    );
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
+
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            return assignments;
         }
-        return list;
+
+        /*
+         * Also replaces the legacy first-reviewer display with all Reviewers.
+         */
+        enrichReviewerData(assignments);
+
+        return assignments;
     }
 
-    /**
-     * Get assignment by id
-     */
+    private SyllabusAssignment mapAssignmentSummary(
+            ResultSet resultSet
+    ) throws SQLException {
+
+        SyllabusAssignment assignment
+                = new SyllabusAssignment();
+
+        assignment.setAssignmentId(
+                resultSet.getLong("assignment_id")
+        );
+
+        assignment.setCourseId(
+                resultSet.getLong("course_id")
+        );
+
+        assignment.setDesignerId(
+                resultSet.getLong("designer_id")
+        );
+
+        long reviewerId
+                = resultSet.getLong("reviewer_id");
+
+        if (!resultSet.wasNull()) {
+            assignment.setReviewerId(reviewerId);
+        }
+
+        assignment.setSemester(
+                resultSet.getString("semester")
+        );
+
+        assignment.setAcademicYear(
+                resultSet.getInt("academic_year")
+        );
+
+        assignment.setAssignedAt(
+                resultSet.getTimestamp("assigned_at")
+        );
+
+        assignment.setAssignmentStatus(
+                resultSet.getString("assignment_status")
+        );
+
+        assignment.setDueDate(
+                resultSet.getTimestamp("due_date")
+        );
+
+        assignment.setCourseCode(
+                resultSet.getString("course_code")
+        );
+
+        assignment.setCourseName(
+                resultSet.getString("course_name")
+        );
+
+        String designerName
+                = resultSet.getString("designer_name");
+
+        assignment.setDesignerName(
+                designerName == null
+                        ? null
+                        : designerName.trim()
+        );
+
+        assignment.setDesignerEmail(
+                resultSet.getString("designer_email")
+        );
+
+        String reviewerName
+                = resultSet.getString("reviewer_name");
+
+        assignment.setReviewerName(
+                reviewerName == null
+                        ? null
+                        : reviewerName.trim()
+        );
+
+        assignment.setReviewerEmail(
+                resultSet.getString("reviewer_email")
+        );
+
+        return assignment;
+    }
+
     public SyllabusAssignment getById(long id) {
 
         String sql = """
