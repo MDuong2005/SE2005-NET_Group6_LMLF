@@ -12,34 +12,34 @@
 <!-- Simple Feature List -->
 <div class="quick-actions-grid" style="grid-template-columns: 1fr;">
 
-    <a href="${pageContext.request.contextPath}/student/curriculum" class="quick-action-card">
+    <div class="quick-action-card">
         <div class="quick-action-content">
             <h4>View Curriculum</h4>
         </div>
-    </a>
+    </div>
 
-    <a href="${pageContext.request.contextPath}/student/syllabus" class="quick-action-card">
+    <div class="quick-action-card">
         <div class="quick-action-content">
             <h4>View Syllabus</h4>
         </div>
-    </a>
+    </div>
 
-    <a href="${pageContext.request.contextPath}/student/semester-materials" class="quick-action-card">
+    <div class="quick-action-card">
         <div class="quick-action-content">
             <h4>Download semester material</h4>
         </div>
-    </a>
+    </div>
 
-    <a href="${pageContext.request.contextPath}/student/learning-path" class="quick-action-card">
+    <div class="quick-action-card">
         <div class="quick-action-content">
             <h4>Show Learning Path of a Subject</h4>
         </div>
-    </a>
+    </div>
 
-    <a href="${pageContext.request.contextPath}/student/prerequisite-impact" class="quick-action-card">
+    <div class="quick-action-card">
         <div class="quick-action-content">
             <h4>A subject is the pre-requisite of</h4>
         </div>
-    </a>
+    </div>
 
 </div>
