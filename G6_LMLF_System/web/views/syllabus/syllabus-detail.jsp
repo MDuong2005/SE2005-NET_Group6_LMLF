@@ -16,28 +16,18 @@
     <!-- 2. TOP HEADER -->
     <header class="syl-header">
         <div class="syl-header-left">
-            <a href="${pageContext.request.contextPath}/" class="btn-home">
+            <a href="javascript:history.back()" class="btn-home">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
                 </svg>
-                Home
+                Back
             </a>
         </div>
         <div class="syl-header-center">
             <h1>FPT University Learning Materials</h1>
         </div>
         <div class="syl-header-right">
-            <div class="lang-selector">
-                <select>
-                    <option value="en">English</option>
-                    <option value="vi">Vietnamese</option>
-                </select>
-            </div>
-            <div class="user-avatar">
-                <%-- Later replace with dynamic avatar --%>
-                AD
-            </div>
+            <!-- Removed language selector and AD avatar -->
         </div>
     </header>
 
@@ -121,11 +111,15 @@ The numerous visual models that will be represented to illustrate the requiremen
                     <%-- Later replace with ${syllabus.decisionNo} --%>
                     <td>377/QĐ-ĐHFPT dated 04/09/2026</td>
                 </tr>
+<<<<<<< Updated upstream
                 <tr>
                     <th>IsApproved</th>
                     <%-- Later replace with ${syllabus.isApproved} --%>
                     <td>True</td>
                 </tr>
+=======
+
+>>>>>>> Stashed changes
                 <tr>
                     <th>Note</th>
                     <%-- Later replace with ${syllabus.note} --%>
@@ -136,6 +130,7 @@ The numerous visual models that will be represented to illustrate the requiremen
                     <%-- Later replace with ${syllabus.minAvgMarkToPass} --%>
                     <td>5</td>
                 </tr>
+<<<<<<< Updated upstream
                 <tr>
                     <th>IsActive</th>
                     <%-- Later replace with ${syllabus.isActive} --%>
@@ -146,6 +141,9 @@ The numerous visual models that will be represented to illustrate the requiremen
                     <%-- Later replace with ${syllabus.approvedDate} --%>
                     <td>4/9/2026</td>
                 </tr>
+=======
+
+>>>>>>> Stashed changes
             </tbody>
         </table>
 
