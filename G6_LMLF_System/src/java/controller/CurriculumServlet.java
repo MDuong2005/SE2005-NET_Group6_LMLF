@@ -549,11 +549,7 @@ public class CurriculumServlet extends HttpServlet {
             }
             
             Gson gson = new Gson();
-            String rawJson = sb.toString();
-            System.out.println("[DEBUG] Wizard Payload: " + rawJson);
-            WizardData data = gson.fromJson(rawJson, WizardData.class);
-            System.out.println("[DEBUG] Deserialized coursePloMappings: " + 
-                (data.coursePloMappings == null ? "null" : data.coursePloMappings.size()));
+            WizardData data = gson.fromJson(sb.toString(), WizardData.class);
             
             if (data == null) {
                 response.getWriter().write("{\"success\":false,\"message\":\"Empty payload\"}");
@@ -618,21 +614,17 @@ public class CurriculumServlet extends HttpServlet {
             List<String[]> mappingCodes = new ArrayList<>();
             if (data.mappings != null) {
                 for (MappingDto dto : data.mappings) {
-                    if (dto.ploCode != null && dto.poCode != null) {
-                        String cleanPlo = dto.ploCode.trim().replace("-", "");
-                        String cleanPo = dto.poCode.trim().replace("-", "");
-                        mappingCodes.add(new String[]{cleanPlo, cleanPo});
-                    }
+                    String cleanPlo = dto.ploCode.replace("-", "");
+                    String cleanPo = dto.poCode.replace("-", "");
+                    mappingCodes.add(new String[]{cleanPlo, cleanPo});
                 }
             }
             
             List<String[]> coursePloMappings = new ArrayList<>();
             if (data.coursePloMappings != null) {
                 for (CoursePloMappingDto dto : data.coursePloMappings) {
-                    if (dto.courseCode != null && dto.ploCode != null) {
-                        String cleanPlo = dto.ploCode.trim().replace("-", "");
-                        coursePloMappings.add(new String[]{dto.courseCode.trim(), cleanPlo});
-                    }
+                    String cleanPlo = dto.ploCode.replace("-", "");
+                    coursePloMappings.add(new String[]{dto.courseCode, cleanPlo});
                 }
             }
             

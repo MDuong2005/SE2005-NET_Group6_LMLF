@@ -115,6 +115,8 @@ public class DashboardServlet extends HttpServlet {
             dao.UserDAO userDAO = new dao.UserDAO();
             request.setAttribute("internalUsers", userDAO.getInternalUsersCount());
             request.setAttribute("externalUsersCount", userDAO.getExternalUsersCount());
+            request.setAttribute("activeUsers", userDAO.getActiveUsersCount());
+            request.setAttribute("bannedUsers", userDAO.getBannedUsersCount());
         } else if (user.hasRole("STUDENT")) {
             contentPage = "student/dashboard.jsp";
             cssFile = "student/student.css";
@@ -124,20 +126,25 @@ public class DashboardServlet extends HttpServlet {
         } else if (user.hasRole("LECTURER")) {
             contentPage = "lecturer/dashboard.jsp";
             cssFile = "lecturer/lecturer.css";
+            dao.SyllabusAssignmentDAO assignDAO = new dao.SyllabusAssignmentDAO();
+            List<model.SyllabusAssignment> lecturerAssignments = assignDAO.getAssignmentsByUser(user.getUserId());
+            request.setAttribute("lecturerAssignments", lecturerAssignments);
+        } else if (user.hasRole("DESIGNER")) {
+            response.sendRedirect(request.getContextPath() + "/syllabus/create?action=list");
+            return;
         } else if (user.hasRole("ACADEMIC_OFFICE")) {
             contentPage = "academic/dashboard.jsp";
             cssFile = "academic/academic.css";
-            
-            dao.CourseDAO courseDAO = new dao.CourseDAO();
-            dao.CurriculumDAO curriculumDAO = new dao.CurriculumDAO();
-            dao.MajorDAO majorDAO = new dao.MajorDAO();
-            dao.SyllabusAssignmentDAO assignmentDAO = new dao.SyllabusAssignmentDAO();
-            
-            request.setAttribute("totalCourses", courseDAO.listAll().size());
-            request.setAttribute("totalCurriculums", curriculumDAO.getAll().size());
-            request.setAttribute("totalMajors", majorDAO.getAllMajors().size());
-            request.setAttribute("totalAssignments", assignmentDAO.listAll().size());
-            request.setAttribute("recentAssignments", assignmentDAO.listRecent(5));
+        } else if (user.hasRole("EXTERNAL_EXPERT")) {
+            dao.SyllabusAssignmentDAO assignDAO = new dao.SyllabusAssignmentDAO();
+            if (!assignDAO.hasAssignments(user.getUserId())) {
+                // Chưa được Academic Office phân công -> vào phòng chờ
+                request.getRequestDispatcher("/views/expert/waiting_standalone.jsp").forward(request, response);
+            } else {
+                // External chỉ đóng vai reviewer -> vào thẳng màn hình review
+                response.sendRedirect(request.getContextPath() + "/review?action=pending");
+            }
+            return;
         }
 
         request.setAttribute("contentPage", contentPage);

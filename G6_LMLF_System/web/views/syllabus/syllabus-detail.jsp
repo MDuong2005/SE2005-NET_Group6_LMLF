@@ -1,5 +1,6 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%-- Later add JSTL taglibs --%>
+<%-- <%@ taglib prefix="c" uri="jakarta.tags.core" %> --%>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -51,32 +52,38 @@
             <tbody>
                 <tr>
                     <th>Syllabus ID</th>
-                    <td>${syllabus.syllabusId != null ? syllabus.syllabusId : 'N/A'}</td>
+                    <%-- Later replace with ${syllabus.syllabusId} --%>
+                    <td>14176</td>
                 </tr>
                 <tr>
                     <th>Syllabus Name</th>
-                    <td>${syllabus.courseName != null ? syllabus.courseName : 'N/A'}</td>
+                    <%-- Later replace with ${syllabus.syllabusName} --%>
+                    <td>Software Requirement_Yêu cầu phần mềm</td>
                 </tr>
                 <tr>
                     <th>Syllabus English</th>
-                    <%-- Static fallback: DB does not store English name --%>
-                    <td>${syllabus.courseName != null ? syllabus.courseName : 'Software Requirement'}</td>
+                    <%-- Later replace with ${syllabus.syllabusEnglish} --%>
+                    <td>Software Requirement</td>
                 </tr>
                 <tr>
                     <th>Subject Code</th>
-                    <td>${syllabus.courseCode != null ? syllabus.courseCode : 'N/A'}</td>
+                    <%-- Later replace with ${syllabus.subjectCode} --%>
+                    <td>SWR302</td>
                 </tr>
                 <tr>
                     <th>NoCredit</th>
-                    <td>${syllabus.credits != null ? syllabus.credits : '0'}</td>
+                    <%-- Later replace with ${syllabus.noCredit} --%>
+                    <td>3</td>
                 </tr>
                 <tr>
                     <th>Degree Level</th>
-                    <td>${syllabus.degreeLevel != null ? syllabus.degreeLevel : 'N/A'}</td>
+                    <%-- Later replace with ${syllabus.degreeLevel} --%>
+                    <td>Bachelor</td>
                 </tr>
                 <tr>
                     <th>Time Allocation</th>
-                    <td>${syllabus.timeAllocation != null ? syllabus.timeAllocation : 'N/A'}</td>
+                    <%-- Later replace with ${syllabus.timeAllocation} --%>
+                    <td>Study hour (150h) = 45h contact hours + 145-minute final exam + 102,6h self-study</td>
                 </tr>
                 <tr>
                     <th>Pre-Requisite</th>
@@ -85,26 +92,24 @@
                 </tr>
                 <tr>
                     <th>Description</th>
-                    <td style="white-space: pre-wrap;">${syllabus.description != null ? syllabus.description : 'N/A'}</td>
+                    <%-- Later replace with ${syllabus.description} --%>
+                    <td>This course is a model-based introduction to RE, providing the conceptual background and terminology on RE, addressing a variety of techniques for requirements development including Analysis and Requirements Elicitation; Requirements Evaluation; Requirements Specification and Documentation; Requirements Quality Assurance. To implement these frameworks, students will learn how to find appropriate customer representatives, elicit requirements from them, and document user requirements, business rules, functional requirements, data requirements, and nonfunctional requirements.
+
+The numerous visual models that will be represented to illustrate the requirements from various perspectives to supplement natural-language text. Other contents recommend the most effective requirements approaches for various specific classes of projects: agile projects developing products of any type, enhancement and replacement projects, projects that incorporate packaged solutions, outsourced projects, business process automation projects, business analytics projects, and embedded and other real-time systems.</td>
                 </tr>
                 <tr>
                     <th>StudentTasks</th>
-                    <td>
-                        <c:choose>
-                            <c:when test="${not empty studentTasks}">
-                                <ul style="margin: 0; padding-left: 20px;">
-                                    <c:forEach var="task" items="${studentTasks}">
-                                        <li>${task.taskContent}</li>
-                                    </c:forEach>
-                                </ul>
-                            </c:when>
-                            <c:otherwise>N/A</c:otherwise>
-                        </c:choose>
-                    </td>
+                    <%-- Later replace with ${syllabus.studentTasks} --%>
+                    <td>- Students must attend at least 80% of contact slots in order to be accepted to the final examination.
+- Student is responsible to do all exercises given by instructor in class or at home and submit on time.
+- Promptly access to the https://flm.fpt.edu.vn/ for up-to-date course information.</td>
                 </tr>
                 <tr>
                     <th>Tools</th>
-                    <td style="white-space: pre-wrap;">${syllabus.tools != null ? syllabus.tools : 'N/A'}</td>
+                    <%-- Later replace with ${syllabus.tools} --%>
+                    <td>- Microsoft Office for documents and presentation.
+- https://www.visual-paradigm.com/download/community.jsp students must install Visual Paradigm for drawing UML offline before taking Final Practical Exam.
+- BOUML (http://bouml.free.fr/) : UML Drawing software.</td>
                 </tr>
                 <tr>
                     <th>Scoring Scale</th>
@@ -118,12 +123,13 @@
                 </tr>
                 <tr>
                     <th>IsApproved</th>
-                    <%-- DB Status is used here --%>
-                    <td>${syllabus.status == 'PUBLISHED' ? 'True' : 'False'}</td>
+                    <%-- Later replace with ${syllabus.isApproved} --%>
+                    <td>True</td>
                 </tr>
                 <tr>
                     <th>Note</th>
-                    <td style="white-space: pre-wrap;">${syllabus.note != null ? syllabus.note : 'N/A'}</td>
+                    <%-- Later replace with ${syllabus.note} --%>
+                    <td>In the case: (5 > Final TE Score >=4) & (5 > Final PE Score >=4) & FR < 5, the student can choose to take the resit of both TE & PE OR just either TE or PE.</td>
                 </tr>
                 <tr>
                     <th>MinAvgMarkToPass</th>
@@ -132,12 +138,13 @@
                 </tr>
                 <tr>
                     <th>IsActive</th>
-                    <%-- DB Status is used here --%>
-                    <td>${syllabus.status == 'PUBLISHED' ? 'True' : 'False'}</td>
+                    <%-- Later replace with ${syllabus.isActive} --%>
+                    <td>True</td>
                 </tr>
                 <tr>
                     <th>ApprovedDate</th>
-                    <td>${syllabus.updatedAt != null ? syllabus.updatedAt : 'N/A'}</td>
+                    <%-- Later replace with ${syllabus.approvedDate} --%>
+                    <td>4/9/2026</td>
                 </tr>
             </tbody>
         </table>
