@@ -5,6 +5,8 @@
 package model;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -19,6 +21,8 @@ public class SyllabusAssignment {
     private int academicYear;
     private Timestamp assignedAt;
     private String assignmentStatus;
+    private Long templateFileId;
+    private Long submittedVersionId;
     
     // New DB fields
     private Long assignedBy;
@@ -35,6 +39,7 @@ public class SyllabusAssignment {
     private String designerEmail;
     private String reviewerName;
     private String reviewerEmail;
+    private List<Long> reviewerIds = new ArrayList<>();
     private String assignedByName;
 
     public SyllabusAssignment() {
@@ -154,12 +159,42 @@ public class SyllabusAssignment {
         this.reviewerEmail = reviewerEmail;
     }
 
+    public List<Long> getReviewerIds() {
+        return reviewerIds;
+    }
+
+    public void setReviewerIds(List<Long> reviewerIds) {
+        this.reviewerIds = reviewerIds == null
+                ? new ArrayList<>()
+                : new ArrayList<>(reviewerIds);
+    }
+
+    public boolean hasReviewer(long reviewerId) {
+        return reviewerIds != null && reviewerIds.contains(reviewerId);
+    }
+
     public String getAssignmentStatus() {
         return assignmentStatus;
     }
 
     public void setAssignmentStatus(String assignmentStatus) {
         this.assignmentStatus = assignmentStatus;
+    }
+
+    public Long getTemplateFileId() {
+        return templateFileId;
+    }
+
+    public void setTemplateFileId(Long templateFileId) {
+        this.templateFileId = templateFileId;
+    }
+
+    public Long getSubmittedVersionId() {
+        return submittedVersionId;
+    }
+
+    public void setSubmittedVersionId(Long submittedVersionId) {
+        this.submittedVersionId = submittedVersionId;
     }
 
     public Long getAssignedBy() {

@@ -188,8 +188,10 @@ public class DesignerServlet extends HttpServlet {
                 "Assigned Tasks"
         );
 
+        request.setAttribute("contentPage", "designer/syllabus/tasks.jsp");
+        request.setAttribute("cssFile", "designer/designer.css");
         request.getRequestDispatcher(
-                "/views/designer/syllabus/tasks.jsp"
+                "/views/dashboard.jsp"
         ).forward(request, response);
     }
 
@@ -235,8 +237,10 @@ public class DesignerServlet extends HttpServlet {
 
         request.setAttribute("task", task);
 
+        request.setAttribute("contentPage", "designer/syllabus/design.jsp");
+        request.setAttribute("cssFile", "designer/designer.css");
         request.getRequestDispatcher(
-                "/views/designer/syllabus/design.jsp"
+                "/views/dashboard.jsp"
         ).forward(request, response);
     }
 
@@ -454,8 +458,10 @@ public class DesignerServlet extends HttpServlet {
         request.setAttribute("versions", versions);
         request.setAttribute("versionList", versions);
 
+        request.setAttribute("contentPage", "designer/syllabus/version_history.jsp");
+        request.setAttribute("cssFile", "designer/designer.css");
         request.getRequestDispatcher(
-                "/views/designer/syllabus/version_history.jsp"
+                "/views/dashboard.jsp"
         ).forward(request, response);
     }
 
@@ -488,8 +494,10 @@ public class DesignerServlet extends HttpServlet {
         request.setAttribute("reviewResults", reviews);
         request.setAttribute("versionId", versionId);
 
+        request.setAttribute("contentPage", "designer/syllabus/review_result.jsp");
+        request.setAttribute("cssFile", "designer/designer.css");
         request.getRequestDispatcher(
-                "/views/designer/syllabus/review_result.jsp"
+                "/views/dashboard.jsp"
         ).forward(request, response);
     }
 

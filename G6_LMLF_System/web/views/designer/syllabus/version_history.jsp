@@ -2,16 +2,7 @@
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
 <%@taglib prefix="fmt" uri="jakarta.tags.fmt"%>
 
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
-    <title>Version History - Designer Portal</title>
 
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
@@ -355,29 +346,6 @@
             }
         }
     </style>
-</head>
-
-<body>
-
-<div class="dashboard-wrapper">
-
-    <jsp:include page="../layout_designer/sidebar_designer.jsp"/>
-
-    <main class="dashboard-main">
-
-        <header class="top-header">
-
-            <div>
-                <strong>Designer Workspace</strong>
-            </div>
-
-            <div class="text-muted small">
-                Syllabus Version Tracking
-            </div>
-
-        </header>
-
-        <section class="dashboard-content">
 
             <div class="version-page-header">
 
@@ -735,14 +703,5 @@
 
             </div>
 
-        </section>
-
-    </main>
-
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
 </script>
-
-</body>
-</html>

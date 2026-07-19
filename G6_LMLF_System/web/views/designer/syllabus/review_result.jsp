@@ -261,7 +261,7 @@
 
                 <c:when test="${empty reviewResults}">
                     <div class="empty-review">
-                        No Reviewer has submitted a result for this version yet.
+                        The review round is still in progress. Final results will be available after all assigned Reviewers submit their decisions.
                     </div>
                 </c:when>
 

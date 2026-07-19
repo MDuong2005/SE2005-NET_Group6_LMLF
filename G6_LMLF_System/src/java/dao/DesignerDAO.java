@@ -1109,6 +1109,7 @@ public class DesignerDAO extends DBContext {
             INNER JOIN users u
                 ON u.user_id = sr.reviewer_id
             WHERE sr.version_id = ?
+              AND sv.status IN ('APPROVED', 'REJECTED')
               AND (
                     sv.created_by = ?
                     OR EXISTS (

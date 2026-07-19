@@ -126,11 +126,12 @@ public class DashboardServlet extends HttpServlet {
         } else if (user.hasRole("LECTURER")) {
             contentPage = "lecturer/dashboard.jsp";
             cssFile = "lecturer/lecturer.css";
-            
             dao.SyllabusAssignmentDAO assignDAO = new dao.SyllabusAssignmentDAO();
             List<model.SyllabusAssignment> lecturerAssignments = assignDAO.getAssignmentsByUser(user.getUserId());
             request.setAttribute("lecturerAssignments", lecturerAssignments);
-            
+        } else if (user.hasRole("DESIGNER")) {
+            response.sendRedirect(request.getContextPath() + "/syllabus/create?action=list");
+            return;
         } else if (user.hasRole("ACADEMIC_OFFICE")) {
             contentPage = "academic/dashboard.jsp";
             cssFile = "academic/academic.css";

@@ -16,6 +16,7 @@ public List<Major> getAllMajors() {
     String sql = """
             SELECT *
             FROM majors
+            WHERE deleted_at IS NULL
             ORDER BY major_id DESC
             """;
 

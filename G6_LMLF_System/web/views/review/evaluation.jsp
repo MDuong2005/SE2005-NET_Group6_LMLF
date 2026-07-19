@@ -485,6 +485,143 @@
             line-height: 1.6;
         }
 
+
+        /* ============================================================
+           Reviewer CLO-PLO matrix
+           ============================================================ */
+        .clo-plo-review-list {
+            display: grid;
+            gap: 18px;
+        }
+
+        .clo-plo-curriculum-card {
+            overflow: hidden;
+            border: 1px solid #fed7aa;
+            border-radius: 16px;
+            background: #ffffff;
+        }
+
+        .clo-plo-curriculum-header {
+            padding: 16px 18px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            background: #fff7ed;
+            border-bottom: 1px solid #fed7aa;
+        }
+
+        .clo-plo-curriculum-title {
+            margin: 0;
+            color: #9a3412;
+            font-size: 16px;
+            font-weight: 900;
+            line-height: 1.45;
+        }
+
+        .clo-plo-course-line {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .clo-plo-semester-badge {
+            flex: 0 0 auto;
+            padding: 8px 12px;
+            border: 1px solid #fb923c;
+            border-radius: 999px;
+            color: #9a3412;
+            background: #ffffff;
+            font-size: 12px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .clo-plo-table-wrap {
+            padding: 14px;
+            overflow-x: auto;
+        }
+
+        .section-content .clo-plo-matrix {
+            width: 100%;
+            min-width: 680px;
+            border-collapse: collapse;
+        }
+
+        .section-content .clo-plo-matrix th,
+        .section-content .clo-plo-matrix td {
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .section-content .clo-plo-matrix th {
+            color: #ffffff;
+            background: #fb923c;
+            font-size: 12px;
+            text-transform: none;
+        }
+
+        .section-content .clo-plo-matrix .clo-column {
+            min-width: 320px;
+            text-align: left;
+        }
+
+        .clo-code {
+            color: #0f172a;
+            font-weight: 900;
+        }
+
+        .clo-description {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .plo-header-code {
+            display: block;
+            font-weight: 900;
+        }
+
+        .plo-header-description {
+            display: block;
+            max-width: 190px;
+            margin: 4px auto 0;
+            color: #fff7ed;
+            font-size: 10px;
+            font-weight: 600;
+            line-height: 1.35;
+            text-transform: none;
+        }
+
+        .mapping-check {
+            width: 26px;
+            height: 26px;
+            margin: 0 auto;
+            display: grid;
+            place-items: center;
+            border-radius: 7px;
+            color: #166534;
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            font-size: 17px;
+            font-weight: 900;
+        }
+
+        .mapping-empty {
+            color: #cbd5e1;
+            font-size: 18px;
+        }
+
+        .clo-plo-empty-group {
+            padding: 20px;
+            color: #64748b;
+            text-align: center;
+        }
+
         @media (max-width: 1050px) {
             .sidebar {
                 width: 220px;
@@ -853,34 +990,20 @@
     }
 
     function displayValue(value) {
-        if (value === null
-                || value === undefined
-                || value === "") {
+        if (value === null || value === undefined || value === "") {
             return "-";
         }
 
         if (Array.isArray(value)) {
-            if (value.length === 0) {
-                return "-";
-            }
-
-            return value.map(function (item) {
-                return displayValue(item);
-            }).join(", ");
+            return value.length === 0
+                    ? "-"
+                    : value.map(displayValue).join(", ");
         }
 
         if (typeof value === "object") {
-            var parts = [];
-
-            Object.keys(value).forEach(function (key) {
-                parts.push(
-                        humanizeKey(key)
-                        + ": "
-                        + displayValue(value[key])
-                );
-            });
-
-            return parts.join("; ");
+            return Object.keys(value).map(function (key) {
+                return humanizeKey(key) + ": " + displayValue(value[key]);
+            }).join("; ");
         }
 
         if (typeof value === "boolean") {
@@ -896,65 +1019,18 @@
         return cell;
     }
 
-    function showEmpty(target) {
-        target.innerHTML = "";
-
-        var empty = document.createElement("div");
-        empty.className = "empty-content";
-        empty.textContent =
-                "No content was submitted for this section.";
-
-        target.appendChild(empty);
-    }
-
-    function showError(target, message) {
-        target.innerHTML = "";
-
-        var error = document.createElement("div");
-        error.className = "render-error";
-        error.textContent = message;
-
-        target.appendChild(error);
-    }
-
-    function renderObject(target, data) {
-        var table = document.createElement("table");
-        table.className = "key-value-table";
-
-        var tbody = document.createElement("tbody");
-
-        Object.keys(data).forEach(function (key) {
-            var row = document.createElement("tr");
-
-            row.appendChild(
-                    createCell("th", humanizeKey(key))
-            );
-
-            row.appendChild(
-                    createCell("td", data[key])
-            );
-
-            tbody.appendChild(row);
-        });
-
-        table.appendChild(tbody);
-        target.appendChild(table);
-    }
-
-    function getColumns(rows) {
+    function collectColumns(rows) {
         var columns = [];
-        var found = {};
+        var seen = {};
 
         rows.forEach(function (row) {
-            if (row === null
-                    || typeof row !== "object"
-                    || Array.isArray(row)) {
+            if (row === null || typeof row !== "object" || Array.isArray(row)) {
                 return;
             }
 
             Object.keys(row).forEach(function (key) {
-                if (!found[key]) {
-                    found[key] = true;
+                if (!seen[key]) {
+                    seen[key] = true;
                     columns.push(key);
                 }
             });
@@ -963,40 +1039,56 @@
         return columns;
     }
 
-    function renderArray(target, data) {
-        if (data.length === 0) {
-            showEmpty(target);
+    function renderObjectTable(target, objectValue) {
+        var table = document.createElement("table");
+        table.className = "key-value-table";
+
+        var tbody = document.createElement("tbody");
+
+        Object.keys(objectValue).forEach(function (key) {
+            var row = document.createElement("tr");
+            row.appendChild(createCell("th", humanizeKey(key)));
+            row.appendChild(createCell("td", objectValue[key]));
+            tbody.appendChild(row);
+        });
+
+        table.appendChild(tbody);
+        target.appendChild(table);
+    }
+
+    function renderArrayTable(target, rows) {
+        if (rows.length === 0) {
+            renderEmpty(target);
             return;
         }
 
-        var allObjects = data.every(function (item) {
-            return item !== null
-                    && typeof item === "object"
-                    && !Array.isArray(item);
+        var objectRows = rows.every(function (row) {
+            return row !== null
+                    && typeof row === "object"
+                    && !Array.isArray(row);
         });
 
-        if (!allObjects) {
+        if (!objectRows) {
             var list = document.createElement("ol");
 
-            data.forEach(function (item) {
-                var listItem = document.createElement("li");
-                listItem.textContent = displayValue(item);
-                list.appendChild(listItem);
+            rows.forEach(function (value) {
+                var item = document.createElement("li");
+                item.textContent = displayValue(value);
+                list.appendChild(item);
             });
 
             target.appendChild(list);
             return;
         }
 
-        var columns = getColumns(data);
+        var columns = collectColumns(rows);
 
         if (columns.length === 0) {
-            showEmpty(target);
+            renderEmpty(target);
             return;
         }
 
         var table = document.createElement("table");
-
         var thead = document.createElement("thead");
         var headerRow = document.createElement("tr");
 
@@ -1011,13 +1103,11 @@
 
         var tbody = document.createElement("tbody");
 
-        data.forEach(function (item) {
+        rows.forEach(function (rowValue) {
             var row = document.createElement("tr");
 
             columns.forEach(function (column) {
-                row.appendChild(
-                        createCell("td", item[column])
-                );
+                row.appendChild(createCell("td", rowValue[column]));
             });
 
             tbody.appendChild(row);
@@ -1027,72 +1117,353 @@
         target.appendChild(table);
     }
 
-    function renderSection(card) {
-        var source = card.querySelector(".section-json-source");
-        var target = card.querySelector(".section-content");
+    function renderEmpty(target) {
+        var empty = document.createElement("div");
+        empty.className = "empty-content";
+        empty.textContent = "No content was submitted for this section.";
+        target.appendChild(empty);
+    }
 
-        if (!source || !target) {
+    function renderError(target) {
+        var error = document.createElement("div");
+        error.className = "render-error";
+        error.textContent = "The submitted section data cannot be displayed.";
+        target.appendChild(error);
+    }
+
+    function parseJsonSource(card) {
+        var source = card
+                ? card.querySelector(".section-json-source")
+                : null;
+
+        if (!source || !source.value || !source.value.trim()) {
+            return null;
+        }
+
+        try {
+            return JSON.parse(source.value);
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function loadAllClosFromPage() {
+        var cloTarget = document.querySelector(
+                '.section-content[data-section-code="COURSE_LEARNING_OUTCOMES"]'
+        );
+
+        if (!cloTarget) {
+            return [];
+        }
+
+        var card = cloTarget.closest("[data-review-card]");
+        var parsed = parseJsonSource(card);
+
+        if (!Array.isArray(parsed)) {
+            return [];
+        }
+
+        return parsed.filter(function (item) {
+            return item
+                    && typeof item === "object"
+                    && !Array.isArray(item)
+                    && item.code;
+        }).map(function (item) {
+            return {
+                code: String(item.code),
+                description: item.description
+                        ? String(item.description)
+                        : ""
+            };
+        });
+    }
+
+    function mappingMatches(mapping, clo, plo) {
+        if (!mapping || !clo || !plo) {
+            return false;
+        }
+
+        var sameClo = String(mapping.cloCode || "")
+                .toUpperCase() === String(clo.code || "").toUpperCase();
+
+        if (!sameClo) {
+            return false;
+        }
+
+        if (mapping.ploId !== null
+                && mapping.ploId !== undefined
+                && plo.ploId !== null
+                && plo.ploId !== undefined) {
+            return String(mapping.ploId) === String(plo.ploId);
+        }
+
+        return String(mapping.ploCode || "").toUpperCase()
+                === String(plo.ploCode || "").toUpperCase();
+    }
+
+    function buildFallbackClos(group) {
+        var values = [];
+        var seen = {};
+
+        (group.mappings || []).forEach(function (mapping) {
+            if (!mapping || !mapping.cloCode) {
+                return;
+            }
+
+            var key = String(mapping.cloCode).toUpperCase();
+
+            if (seen[key]) {
+                return;
+            }
+
+            seen[key] = true;
+            values.push({
+                code: String(mapping.cloCode),
+                description: mapping.cloDescription
+                        ? String(mapping.cloDescription)
+                        : ""
+            });
+        });
+
+        return values;
+    }
+
+    function renderCurriculumMatrix(group, allClos) {
+        var card = document.createElement("section");
+        card.className = "clo-plo-curriculum-card";
+
+        var header = document.createElement("div");
+        header.className = "clo-plo-curriculum-header";
+
+        var headingBlock = document.createElement("div");
+
+        var title = document.createElement("h4");
+        title.className = "clo-plo-curriculum-title";
+        title.textContent = [
+            group.curriculumCode || "Curriculum",
+            group.curriculumName || ""
+        ].filter(Boolean).join(" - ");
+
+        var courseLine = document.createElement("div");
+        courseLine.className = "clo-plo-course-line";
+        courseLine.textContent = [
+            group.courseCode || "",
+            group.courseName || ""
+        ].filter(Boolean).join(" - ");
+
+        headingBlock.appendChild(title);
+        headingBlock.appendChild(courseLine);
+        header.appendChild(headingBlock);
+
+        if (group.semester !== null
+                && group.semester !== undefined
+                && group.semester !== "") {
+            var badge = document.createElement("div");
+            badge.className = "clo-plo-semester-badge";
+            badge.textContent = "Semester " + group.semester;
+            header.appendChild(badge);
+        }
+
+        card.appendChild(header);
+
+        var plos = Array.isArray(group.allowedPlos)
+                ? group.allowedPlos
+                : [];
+
+        var mappings = Array.isArray(group.mappings)
+                ? group.mappings
+                : [];
+
+        var clos = allClos.length > 0
+                ? allClos
+                : buildFallbackClos(group);
+
+        if (plos.length === 0) {
+            var noPlo = document.createElement("div");
+            noPlo.className = "clo-plo-empty-group";
+            noPlo.textContent =
+                    "No PLO was included in this submitted Curriculum snapshot.";
+            card.appendChild(noPlo);
+            return card;
+        }
+
+        var tableWrap = document.createElement("div");
+        tableWrap.className = "clo-plo-table-wrap";
+
+        var table = document.createElement("table");
+        table.className = "clo-plo-matrix";
+
+        var thead = document.createElement("thead");
+        var headerRow = document.createElement("tr");
+
+        var cloHeader = document.createElement("th");
+        cloHeader.className = "clo-column";
+        cloHeader.textContent = "CLO";
+        headerRow.appendChild(cloHeader);
+
+        plos.forEach(function (plo) {
+            var th = document.createElement("th");
+
+            var code = document.createElement("span");
+            code.className = "plo-header-code";
+            code.textContent = plo.ploCode || "PLO";
+
+            var description = document.createElement("span");
+            description.className = "plo-header-description";
+            description.textContent = plo.ploDescription || "";
+
+            th.appendChild(code);
+            th.appendChild(description);
+            headerRow.appendChild(th);
+        });
+
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        var tbody = document.createElement("tbody");
+
+        clos.forEach(function (clo) {
+            var row = document.createElement("tr");
+
+            var cloCell = document.createElement("td");
+            cloCell.className = "clo-column";
+
+            var cloCode = document.createElement("div");
+            cloCode.className = "clo-code";
+            cloCode.textContent = clo.code || "CLO";
+
+            var cloDescription = document.createElement("div");
+            cloDescription.className = "clo-description";
+            cloDescription.textContent = clo.description || "";
+
+            cloCell.appendChild(cloCode);
+            cloCell.appendChild(cloDescription);
+            row.appendChild(cloCell);
+
+            plos.forEach(function (plo) {
+                var cell = document.createElement("td");
+
+                var selected = mappings.some(function (mapping) {
+                    return mappingMatches(mapping, clo, plo);
+                });
+
+                var marker = document.createElement("div");
+
+                if (selected) {
+                    marker.className = "mapping-check";
+                    marker.textContent = "✓";
+                    marker.setAttribute(
+                            "aria-label",
+                            (clo.code || "CLO")
+                            + " maps to "
+                            + (plo.ploCode || "PLO")
+                    );
+                } else {
+                    marker.className = "mapping-empty";
+                    marker.textContent = "—";
+                }
+
+                cell.appendChild(marker);
+                row.appendChild(cell);
+            });
+
+            tbody.appendChild(row);
+        });
+
+        table.appendChild(tbody);
+        tableWrap.appendChild(table);
+        card.appendChild(tableWrap);
+
+        return card;
+    }
+
+    function renderCloPloMapping(target, data) {
+        if (!Array.isArray(data) || data.length === 0) {
+            renderEmpty(target);
             return;
         }
+
+        var list = document.createElement("div");
+        list.className = "clo-plo-review-list";
+
+        var allClos = loadAllClosFromPage();
+
+        data.forEach(function (group) {
+            if (!group || typeof group !== "object") {
+                return;
+            }
+
+            list.appendChild(
+                    renderCurriculumMatrix(group, allClos)
+            );
+        });
+
+        if (!list.children.length) {
+            renderEmpty(target);
+            return;
+        }
+
+        target.appendChild(list);
+    }
+
+    function renderSection(target, source) {
+        target.innerHTML = "";
 
         var rawJson = source.value;
 
         if (!rawJson || !rawJson.trim()) {
-            showEmpty(target);
+            renderEmpty(target);
             return;
         }
 
         try {
             var data = JSON.parse(rawJson);
+            var sectionCode = target.getAttribute("data-section-code");
 
-            target.innerHTML = "";
+            if (data === null
+                    || data === undefined
+                    || data === ""
+                    || (Array.isArray(data) && data.length === 0)
+                    || (typeof data === "object"
+                        && !Array.isArray(data)
+                        && Object.keys(data).length === 0)) {
+                renderEmpty(target);
+                return;
+            }
 
-            if (data === null || data === undefined) {
-                showEmpty(target);
+            if (sectionCode === "CLO_PLO_MAPPING") {
+                renderCloPloMapping(target, data);
                 return;
             }
 
             if (Array.isArray(data)) {
-                renderArray(target, data);
-                return;
+                renderArrayTable(target, data);
+            } else if (typeof data === "object") {
+                renderObjectTable(target, data);
+            } else {
+                target.appendChild(createCell("div", data));
             }
-
-            if (typeof data === "object") {
-                if (Object.keys(data).length === 0) {
-                    showEmpty(target);
-                    return;
-                }
-
-                renderObject(target, data);
-                return;
-            }
-
-            target.textContent = displayValue(data);
 
         } catch (error) {
-            console.error("Invalid section JSON:", rawJson, error);
-
-            showError(
-                    target,
-                    "Cannot display this section because its JSON data is invalid."
-            );
+            console.error("Invalid section JSON:", error);
+            renderError(target);
         }
     }
 
     function updateCommentRequirement(card) {
-        var rejectedInput = card.querySelector(
+        var rejectInput = card.querySelector(
                 'input[type="radio"][value="REJECTED"]'
         );
 
         var comment = card.querySelector("[data-comment-for]");
 
-        if (!rejectedInput || !comment) {
+        if (!rejectInput || !comment) {
             return;
         }
 
-        comment.required = rejectedInput.checked;
+        comment.required = rejectInput.checked;
 
-        if (rejectedInput.checked) {
+        if (rejectInput.checked) {
             comment.placeholder =
                     "Required: explain why this section is rejected.";
         } else {
@@ -1101,80 +1472,78 @@
         }
     }
 
-    function bindDecisionEvents(card) {
-        var decisions = card.querySelectorAll(
+    function bindDecisionInputs(card) {
+        var inputs = card.querySelectorAll(
                 'input[type="radio"][name^="decision_"]'
         );
 
-        decisions.forEach(function (decision) {
-            decision.addEventListener("change", function () {
+        inputs.forEach(function (input) {
+            input.addEventListener("change", function () {
                 updateCommentRequirement(card);
             });
         });
     }
 
-    function validateForm(form) {
+    function validateReviewForm(form) {
         var cards = form.querySelectorAll("[data-review-card]");
+        var valid = true;
 
-        for (var index = 0; index < cards.length; index++) {
-            var card = cards[index];
+        cards.forEach(function (card) {
+            updateCommentRequirement(card);
 
-            var selectedDecision = card.querySelector(
+            var checked = card.querySelector(
                     'input[type="radio"][name^="decision_"]:checked'
             );
 
             var comment = card.querySelector("[data-comment-for]");
 
-            if (!selectedDecision) {
-                window.alert(
-                        "Please select Approve or Reject for every section."
-                );
-
-                card.scrollIntoView({
-                    behavior: "smooth",
-                    block: "center"
-                });
-
-                return false;
+            if (!checked) {
+                valid = false;
+                return;
             }
 
-            if (selectedDecision.value === "REJECTED"
+            if (checked.value === "REJECTED"
                     && (!comment || !comment.value.trim())) {
-                window.alert(
-                        "A comment is required for each rejected section."
-                );
+                valid = false;
 
                 if (comment) {
                     comment.focus();
                 }
-
-                return false;
             }
-        }
+        });
 
-        return true;
+        return valid;
     }
 
-    function initializeReviewerEvaluation() {
+    document.addEventListener("DOMContentLoaded", function () {
         var cards = document.querySelectorAll("[data-review-card]");
 
         cards.forEach(function (card) {
-            renderSection(card);
-            bindDecisionEvents(card);
+            var target = card.querySelector(".section-content");
+            var source = card.querySelector(".section-json-source");
+
+            if (target && source) {
+                renderSection(target, source);
+            }
+
+            bindDecisionInputs(card);
             updateCommentRequirement(card);
         });
 
         var form = document.getElementById("reviewForm");
-        var submitButton =
-                document.getElementById("submitReviewButton");
+        var submitButton = document.getElementById("submitReviewButton");
 
         if (!form) {
             return;
         }
 
         form.addEventListener("submit", function (event) {
-            if (!validateForm(form)) {
+            if (!validateReviewForm(form)) {
                 event.preventDefault();
+                window.alert(
+                        "Select a decision for every section and provide "
+                        + "a comment for each rejected section."
+                );
                 return;
             }
 
@@ -1193,9 +1562,7 @@
                 submitButton.textContent = "Submitting...";
             }
         });
-    }
-
-    initializeReviewerEvaluation();
+    });
 }());
 </script>
 </body>

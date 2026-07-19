@@ -138,10 +138,9 @@ public class ExternalUserManagementServlet extends HttpServlet {
             if (!emailSent) {
                 System.err.println("Failed to send email to " + email);
             }
-            response.sendRedirect(request.getContextPath() + "/admin/guests?success=Guest created successfully");
-        } else {
-            response.sendRedirect(request.getContextPath() + "/admin/guests?error=Email already exists or invalid data");
         }
+
+        response.sendRedirect(request.getContextPath() + "/admin/external-users");
     }
 
     private void toggleStatus(HttpServletRequest request, HttpServletResponse response, String action) throws IOException {

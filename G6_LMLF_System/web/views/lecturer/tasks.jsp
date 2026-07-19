@@ -78,7 +78,7 @@
                             <c:set var="workspaceUrl" value="#" />
                             <c:if test="${task.designerId == sessionScope.user.userId}">
                                 <c:set var="roleName" value="Designer" />
-                                <c:set var="workspaceUrl" value="${pageContext.request.contextPath}/design" />
+                                <c:set var="workspaceUrl" value="${pageContext.request.contextPath}/designer/tasks" />
                             </c:if>
                             <c:if test="${task.reviewerId == sessionScope.user.userId}">
                                 <c:set var="roleName" value="Reviewer" />

@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@WebServlet("/assigned-roles")
+@WebServlet(name = "LecturerTasksServlet", urlPatterns = {"/assigned-roles"})
 public class LecturerTasksServlet extends HttpServlet {
 
     private final SyllabusAssignmentDAO assignDAO = new SyllabusAssignmentDAO();

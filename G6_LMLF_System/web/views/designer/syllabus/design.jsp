@@ -1,11 +1,7 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Design Syllabus - LMLF Designer</title>
+
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/designer/designer.css">
 
     <style>
@@ -147,19 +143,7 @@
             color: #991b1b;
         }
     </style>
-</head>
 
-<body>
-<div class="dashboard-wrapper">
-    <%@ include file="/views/designer/layout_designer/sidebar_designer.jsp" %>
-
-    <main class="dashboard-main">
-        <div class="top-header">
-            <a href="${pageContext.request.contextPath}/designer/tasks">← Back to tasks</a>
-            <div>Designer</div>
-        </div>
-
-        <section class="dashboard-content">
             <c:if test="${not empty param.success}">
                 <div class="alert alert-success">Thành công: ${param.success}</div>
             </c:if>
@@ -321,9 +305,4 @@
                         </p>
                     </div>
                 </c:otherwise>
-            </c:choose>
-        </section>
-    </main>
-</div>
-</body>
-</html>
+            </c:choose>

@@ -52,7 +52,7 @@ public class DesignerSyllabusEditorServlet extends HttpServlet {
         User user = requireDesigner(request, response); if (user == null) return;
         String path = request.getServletPath();
         try {
-            if ("/designer/editor/import".equals(path)) importExcel(request, response, user);
+if ("/designer/editor/import".equals(path)) importExcel(request, response, user);
             else if ("/designer/editor/save".equals(path)) saveDraft(request, response, user);
             else if ("/designer/editor/submit".equals(path)) submit(request, response, user);
             else response.sendError(405);
@@ -91,7 +91,7 @@ public class DesignerSyllabusEditorServlet extends HttpServlet {
         long assignmentId=parseLong(request.getParameter("assignmentId")); long versionId=parseLong(request.getParameter("versionId"));
         SyllabusEditorData data=parseData(request.getParameter("editorJson"));
         editorDAO.saveDraft(assignmentId,versionId,user.getUserId(),data);
-        request.getSession().setAttribute("successMessage","Draft saved successfully.");
+request.getSession().setAttribute("successMessage","Draft saved successfully.");
         response.sendRedirect(request.getContextPath()+"/designer/editor?assignmentId="+assignmentId);
     }
 
