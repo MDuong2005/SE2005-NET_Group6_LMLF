@@ -114,7 +114,7 @@ public class DashboardServlet extends HttpServlet {
             
             dao.UserDAO userDAO = new dao.UserDAO();
             request.setAttribute("internalUsers", userDAO.getInternalUsersCount());
-            request.setAttribute("guestUsers", userDAO.getGuestUsersCount());
+            request.setAttribute("externalUsersCount", userDAO.getExternalUsersCount());
         } else if (user.hasRole("STUDENT")) {
             contentPage = "student/dashboard.jsp";
             cssFile = "student/student.css";
