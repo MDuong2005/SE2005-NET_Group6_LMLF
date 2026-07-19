@@ -819,16 +819,28 @@ public class CurriculumDAO extends DBContext {
 
             // 6. Insert Course-PLO Mappings
             String insertCoursePloSql = "INSERT INTO curriculum_course_plo_mappings (curriculum_id, course_id, plo_id, mapped_at) VALUES (?, ?, ?, ?)";
-            try (PreparedStatement ps = conn.prepareStatement(insertCoursePloSql)) {
+            String findCourseIdSql = "SELECT course_id FROM courses WHERE code = ?";
+            try (PreparedStatement ps = conn.prepareStatement(insertCoursePloSql);
+                 PreparedStatement coursePs = conn.prepareStatement(findCourseIdSql)) {
                 for (String[] mapping : coursePloMappings) {
-                    Course course = courseDAO.getByCode(mapping[0]);
-                    Long ploId = ploCodeToId.get(mapping[1]);
-                    if (course != null && ploId != null) {
+                    String courseCode = mapping[0] == null ? "" : mapping[0].trim();
+                    String ploCode = mapping[1] == null ? "" : mapping[1].replace("-", "").trim();
+                    Long courseId = null;
+                    coursePs.setString(1, courseCode);
+                    try (ResultSet courseRs = coursePs.executeQuery()) {
+                        if (courseRs.next()) {
+                            courseId = courseRs.getLong("course_id");
+                        }
+                    }
+                    Long ploId = ploCodeToId.get(ploCode);
+                    if (courseId != null && ploId != null) {
                         ps.setLong(1, curriculumId);
-                        ps.setLong(2, course.getCourseId());
+                        ps.setLong(2, courseId);
                         ps.setLong(3, ploId);
                         ps.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
                         ps.addBatch();
+                    } else {
+                        throw new SQLException("Invalid Course-PLO mapping: " + courseCode + " -> " + ploCode);
                     }
                 }
                 if (!coursePloMappings.isEmpty()) {

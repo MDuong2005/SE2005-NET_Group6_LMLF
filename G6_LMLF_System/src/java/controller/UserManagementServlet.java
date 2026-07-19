@@ -146,7 +146,9 @@ public class UserManagementServlet extends HttpServlet {
         List<Role> allRoles = roleDAO.getAllRoles();
         List<Role> systemRoles = new ArrayList<>();
         for (Role r : allRoles) {
-            if (!r.getRoleName().equalsIgnoreCase("DESIGNER") && !r.getRoleName().equalsIgnoreCase("REVIEWER")) {
+            if (!r.getRoleName().equalsIgnoreCase("DESIGNER") 
+             && !r.getRoleName().equalsIgnoreCase("REVIEWER")
+             && !r.getRoleName().equalsIgnoreCase("EXTERNAL_EXPERT")) {
                 systemRoles.add(r);
             }
         }
@@ -191,9 +193,10 @@ public class UserManagementServlet extends HttpServlet {
             
             String newUserJson = "{\"username\":\"" + newUser.getUsername() + "\", \"email\":\"" + newUser.getEmail() + "\"}";
             utils.AuditUtil.logAction(request, "CREATE_USER", "users", generatedId, null, newUserJson);
+            response.sendRedirect(request.getContextPath() + "/admin/users");
+        } else {
+            response.sendRedirect(request.getContextPath() + "/admin/users?action=create&error=db_error");
         }
-
-        response.sendRedirect(request.getContextPath() + "/admin/users");
     }
 
     /**

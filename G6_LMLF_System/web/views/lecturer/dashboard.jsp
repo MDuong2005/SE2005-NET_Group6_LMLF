@@ -21,13 +21,13 @@
         <h3 class="panel-title">Quick Actions</h3>
     </div>
     <div class="panel-body" style="padding: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-        <a href="${pageContext.request.contextPath}/lecturer-ui?page=curriculum" class="action-button">
+        <a href="${pageContext.request.contextPath}/lecturer/curriculum" class="action-button">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             Search Curriculum
         </a>
-        <a href="${pageContext.request.contextPath}/lecturer-ui?page=syllabus" class="action-button">
+        <a href="${pageContext.request.contextPath}/lecturer/syllabus" class="action-button">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
@@ -56,23 +56,34 @@
         <div class="panel">
             <div class="panel-header">
                 <h3 class="panel-title">Recently Viewed Curriculums</h3>
-                <a href="${pageContext.request.contextPath}/lecturer-ui?page=curriculum" class="view-all">View All</a>
+                <a href="${pageContext.request.contextPath}/lecturer/curriculum" class="view-all">View All</a>
             </div>
             <div class="panel-body">
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed;">
                     <thead>
                         <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Curriculum Name</th>
-                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Major</th>
-                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Status</th>
+                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem; width: 75%;">Curriculum Name</th>
+                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem; width: 25%;">Major</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr style="border-bottom: 1px solid #f1f5f9;">
-                            <td style="padding: 1rem; font-weight: 600; color: #1e293b;">Software Engineering 2026</td>
-                            <td style="padding: 1rem;">SE</td>
-                            <td style="padding: 1rem;"><span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background-color: #bbf7d0; color: #166534;">APPROVED</span></td>
-                        </tr>
+                        <c:choose>
+                            <c:when test="${not empty sessionScope.recentCurriculums}">
+                                <c:forEach var="c" items="${sessionScope.recentCurriculums}">
+                                    <tr style="border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background-color 0.2s;" onclick="window.location.href='${pageContext.request.contextPath}/lecturer/curriculum?action=detail&id=${c.curriculumId}'" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
+                                        <td style="padding: 1rem; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${c.curriculum_name}">${c.curriculum_name}</td>
+                                        <td style="padding: 1rem;">
+                                            <span style="display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; background-color: #f1f5f9; color: #475569;">${c.major_code}</span>
+                                        </td>
+                                    </tr>
+                                </c:forEach>
+                            </c:when>
+                            <c:otherwise>
+                                <tr>
+                                    <td colspan="2" style="padding: 1.5rem; text-align: center; color: #94a3b8; font-style: italic;">No recent curriculums viewed.</td>
+                                </tr>
+                            </c:otherwise>
+                        </c:choose>
                     </tbody>
                 </table>
             </div>
@@ -82,23 +93,34 @@
         <div class="panel">
             <div class="panel-header">
                 <h3 class="panel-title">Recently Viewed Syllabuses</h3>
-                <a href="${pageContext.request.contextPath}/lecturer-ui?page=syllabus" class="view-all">View All</a>
+                <a href="${pageContext.request.contextPath}/lecturer/syllabus" class="view-all">View All</a>
             </div>
             <div class="panel-body">
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed;">
                     <thead>
                         <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Subject Code</th>
-                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Version</th>
-                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Status</th>
+                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem; width: 75%;">Subject Code</th>
+                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem; width: 25%;">Version</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr style="border-bottom: 1px solid #f1f5f9;">
-                            <td style="padding: 1rem; font-weight: 600; color: #1e293b;">SWP391</td>
-                            <td style="padding: 1rem;">1.2</td>
-                            <td style="padding: 1rem;"><span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background-color: #bfdbfe; color: #1e40af;">PUBLISHED</span></td>
-                        </tr>
+                        <c:choose>
+                            <c:when test="${not empty sessionScope.recentSyllabuses}">
+                                <c:forEach var="s" items="${sessionScope.recentSyllabuses}">
+                                    <tr style="border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background-color 0.2s;" onclick="window.location.href='${pageContext.request.contextPath}/lecturer/syllabus?action=detail&id=${s.syllabusId}'" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
+                                        <td style="padding: 1rem; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${s.course_code}">${s.course_code}</td>
+                                        <td style="padding: 1rem;">
+                                            <span style="display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; background-color: #f1f5f9; color: #475569;">v${s.currentVersion}</span>
+                                        </td>
+                                    </tr>
+                                </c:forEach>
+                            </c:when>
+                            <c:otherwise>
+                                <tr>
+                                    <td colspan="2" style="padding: 1.5rem; text-align: center; color: #94a3b8; font-style: italic;">No recent syllabuses viewed.</td>
+                                </tr>
+                            </c:otherwise>
+                        </c:choose>
                     </tbody>
                 </table>
             </div>

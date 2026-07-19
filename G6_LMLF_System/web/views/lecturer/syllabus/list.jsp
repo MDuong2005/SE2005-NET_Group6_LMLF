@@ -1,5 +1,6 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 
 <div class="content-header">
     <div>
@@ -7,6 +8,12 @@
         <p>Search and view detailed information for all approved syllabuses.</p>
     </div>
 </div>
+
+<c:if test="${not empty param.error}">
+    <div style="background-color: #fee2e2; color: #b91c1c; padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+        Error: ${param.error}
+    </div>
+</c:if>
 
 <div class="panel">
     <div class="panel-header" style="display: flex; gap: 1rem; flex-wrap: wrap;">
@@ -21,8 +28,9 @@
                 <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
                     <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Subject Code</th>
                     <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Subject Name</th>
+                    <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Credits</th>
                     <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Version</th>
-                    <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Status</th>
+                    <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Updated At</th>
                     <th style="padding: 1rem; color: #64748b; font-size: 0.875rem; text-align: right;">Action</th>
                 </tr>
             </thead>
@@ -33,9 +41,10 @@
                             <tr style="border-bottom: 1px solid #f1f5f9; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
                                 <td style="padding: 1rem; font-weight: 600; color: #1e293b;">${s.courseCode}</td>
                                 <td style="padding: 1rem;">${s.courseName}</td>
+                                <td style="padding: 1rem;">${s.credits}</td>
                                 <td style="padding: 1rem;">${s.currentVersion}</td>
                                 <td style="padding: 1rem;">
-                                    <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background-color: #bfdbfe; color: #1e40af;">${s.status}</span>
+                                    <fmt:formatDate value="${s.updatedAt}" pattern="MM/dd/yyyy HH:mm"/>
                                 </td>
                                 <td style="padding: 1rem; text-align: right;">
                                     <a href="${pageContext.request.contextPath}/lecturer/syllabus?action=detail&id=${s.syllabusId}" class="action-button" style="padding: 6px 12px; font-size: 0.75rem; text-decoration: none; display: inline-block;">View Detail</a>
@@ -45,7 +54,7 @@
                     </c:when>
                     <c:otherwise>
                         <tr>
-                            <td colspan="5" style="padding: 2rem; text-align: center; color: #94a3b8;">No syllabuses found.</td>
+                            <td colspan="6" style="padding: 2rem; text-align: center; color: #64748b;">No published syllabuses found.</td>
                         </tr>
                     </c:otherwise>
                 </c:choose>

@@ -148,6 +148,11 @@ public class ExternalUserManagementServlet extends HttpServlet {
             long userId = Long.parseLong(request.getParameter("id"));
             String status = action.equals("ban") ? "BANNED" : "ACTIVE";
             userDAO.updateUserStatus(userId, status);
+            // When re-activating an external user, force them back to the
+            // change-password waiting room so they must re-authenticate properly.
+            if ("unban".equals(action)) {
+                userDAO.resetPassword(userId, userDAO.getUserById(userId).getPasswordHash());
+            }
         } catch (NumberFormatException e) {
             // ignore
         }

@@ -1854,7 +1854,7 @@
                         }
                         res.coursePloMappings.forEach(m => {
                             const ploId = m[1].replace('PLO', 'PLO-');
-                            const selectionKey = `${m[0]}_${ploId}`;
+                            const selectionKey = `\${m[0]}_\${ploId}`;
                             window.coursePloSelections[selectionKey] = true;
                         });
                     }
@@ -2588,7 +2588,7 @@
         }
 
         function toggleCoursePloCell(cell, courseCode, ploId) {
-            const selectionKey = `${courseCode}_${ploId}`;
+            const selectionKey = `\${courseCode}_\${ploId}`;
             if (cell.textContent === '✓') {
                 cell.textContent = '';
                 window.coursePloSelections[selectionKey] = false;
@@ -2600,15 +2600,40 @@
 
         function collectCoursePloMappings() {
             const mappings = [];
-            if (window.coursePloSelections) {
-                for (const key in window.coursePloSelections) {
-                    if (window.coursePloSelections[key]) {
-                        const parts = key.split('_');
-                        if (parts.length >= 2) {
-                            const ploId = parts[parts.length - 1];
-                            const courseCode = parts.slice(0, parts.length - 1).join('_');
+            const seen = new Set();
+
+            // Read the rendered matrix as the source of truth. This prevents a
+            // visible tick from being lost when the temporary JS selection map
+            // is recreated while moving between wizard steps.
+            const rows = document.querySelectorAll('#coursePloMatrixBody tr[data-course]');
+            rows.forEach(row => {
+                const courseCode = row.getAttribute('data-course');
+                const cells = row.querySelectorAll('td');
+                for (let i = 1; i < cells.length && i <= ploList.length; i++) {
+                    if (cells[i].textContent.trim() === '✓') {
+                        const ploId = ploList[i - 1].id;
+                        const key = `\${courseCode}::\${ploId}`;
+                        if (!seen.has(key)) {
+                            seen.add(key);
                             mappings.push({ courseCode: courseCode, ploCode: ploId });
                         }
+                    }
+                }
+            });
+
+            // Keep selections imported from another curriculum if their rows
+            // are not currently rendered in the matrix.
+            if (window.coursePloSelections) {
+                for (const key in window.coursePloSelections) {
+                    if (!window.coursePloSelections[key]) continue;
+                    const parts = key.split('_');
+                    if (parts.length < 2) continue;
+                    const ploId = parts[parts.length - 1];
+                    const courseCode = parts.slice(0, parts.length - 1).join('_');
+                    const normalizedKey = `\${courseCode}::\${ploId}`;
+                    if (!seen.has(normalizedKey)) {
+                        seen.add(normalizedKey);
+                        mappings.push({ courseCode: courseCode, ploCode: ploId });
                     }
                 }
             }
