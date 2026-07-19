@@ -438,6 +438,45 @@ loadSchedule(versionId, data);
             SyllabusEditorData data
     ) throws SQLException {
 
+        saveDraftInternal(
+                assignmentId,
+                versionId,
+                designerId,
+                data,
+                false
+        );
+    }
+
+    /**
+     * Saves the official Academic Office Excel template.
+     *
+     * Academic Information may be replaced through Excel import, but normal
+     * web Save Draft and Submit requests cannot change it.
+     */
+    public void saveImportedDraft(
+            long assignmentId,
+            long versionId,
+            long designerId,
+            SyllabusEditorData data
+    ) throws SQLException {
+
+        saveDraftInternal(
+                assignmentId,
+                versionId,
+                designerId,
+                data,
+                true
+        );
+    }
+
+    private void saveDraftInternal(
+            long assignmentId,
+            long versionId,
+            long designerId,
+            SyllabusEditorData data,
+            boolean acceptAcademicInformationFromExcel
+    ) throws SQLException {
+
         ensureConnection();
         ensureVersionBelongsToAssignment(
                 assignmentId,
@@ -454,6 +493,26 @@ loadSchedule(versionId, data);
 
         try {
             connection.setAutoCommit(false);
+
+            SyllabusEditorData.GeneralInformation
+                    academicInformation;
+
+            if (acceptAcademicInformationFromExcel) {
+                academicInformation
+                        = validateImportedAcademicInformation(
+                                versionId,
+                                data.getGeneralInformation()
+                        );
+            } else {
+                /*
+                 * Save Draft and Submit preserve the Academic Information
+                 * snapshot previously imported from the official template.
+                 */
+                academicInformation
+                        = loadAcademicInformationSnapshot(versionId);
+            }
+
+            data.setGeneralInformation(academicInformation);
 
             deleteStructuredData(versionId);
 
@@ -558,6 +617,16 @@ loadSchedule(versionId, data);
             SyllabusEditorData data,
             String description
     ) throws SQLException {
+
+        ensureConnection();
+
+        if (data == null) {
+            throw new SQLException("Editor data is required.");
+        }
+
+        data.setGeneralInformation(
+                loadAcademicInformationSnapshot(versionId)
+        );
 
         validateForSubmit(versionId, data);
         saveDraft(
@@ -1863,7 +1932,7 @@ if (outcomeId == null) {
         String[][] sections = {
             {
                 "GENERAL_INFORMATION",
-                "General Information",
+                "Academic Information (Reference Only)",
                 gson.toJson(data.getGeneralInformation()),
                 "1"
             },
@@ -1945,6 +2014,218 @@ try (PreparedStatement statement
             SyllabusEditorData data
     ) throws SQLException {
 
+        data.setGeneralInformation(
+                loadAcademicInformationSnapshot(versionId)
+        );
+    }
+
+    /**
+     * Returns the immutable Academic Information snapshot shown to Designer
+     * and Reviewer.
+     *
+     * Course code, name, credits and prerequisites always come from the
+     * Academic Office source tables. Other fields are preserved from the
+     * existing version snapshot because the current Academic schema does not
+     * store them separately.
+     */
+    /**
+     * Returns the Academic Information snapshot imported from Excel.
+     *
+     * Before the first import, course code, course name and credits are
+     * displayed from the Academic course master as a fallback.
+     */
+    private SyllabusEditorData.GeneralInformation
+            loadAcademicInformationSnapshot(
+                    long versionId
+            ) throws SQLException {
+
+        SyllabusEditorData.GeneralInformation stored
+                = loadStoredGeneralInformation(versionId);
+
+        if (stored != null) {
+            return stored;
+        }
+
+        return loadCourseAcademicFallback(versionId);
+    }
+
+    private SyllabusEditorData.GeneralInformation
+            loadCourseAcademicFallback(
+                    long versionId
+            ) throws SQLException {
+
+        String sql = """
+                SELECT
+                    course.code,
+                    course.name,
+                    course.credits
+                FROM syllabus_versions versionRow
+                INNER JOIN syllabuses syllabus
+                    ON syllabus.syllabus_id = versionRow.syllabus_id
+                INNER JOIN courses course
+                    ON course.course_id = syllabus.course_id
+                WHERE versionRow.version_id = ?
+                  AND course.deleted_at IS NULL
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(sql)) {
+
+            statement.setLong(1, versionId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new SQLException(
+                            "Academic course information was not found "
+                            + "for this syllabus version."
+                    );
+                }
+
+                SyllabusEditorData.GeneralInformation information
+                        = new SyllabusEditorData.GeneralInformation();
+
+                information.setCourseCode(
+                        trimToNull(resultSet.getString("code"))
+                );
+
+                information.setCourseName(
+                        trimToNull(resultSet.getString("name"))
+                );
+
+                Object credits = resultSet.getObject("credits");
+
+                information.setCredits(
+                        credits instanceof Number
+                                ? ((Number) credits).intValue()
+                                : null
+                );
+
+                return information;
+            }
+        }
+    }
+
+    /**
+     * Validates and normalizes Academic Information from the official Excel
+     * template before it replaces this version's stored snapshot.
+     */
+    private SyllabusEditorData.GeneralInformation
+            validateImportedAcademicInformation(
+                    long versionId,
+                    SyllabusEditorData.GeneralInformation imported
+            ) throws SQLException {
+
+        if (imported == null) {
+            throw new SQLException(
+                    "Sheet 01_ACADEMIC_INFO is missing from "
+                    + "the Excel template."
+            );
+        }
+
+        String importedCourseCode
+                = trimToNull(imported.getCourseCode());
+
+        String importedCourseName
+                = trimToNull(imported.getCourseName());
+
+        if (importedCourseCode == null
+                || importedCourseName == null) {
+            throw new SQLException(
+                    "Academic Information must contain "
+                    + "Course Code and Course Name."
+            );
+        }
+
+        String expectedCourseCode
+                = loadExpectedCourseCode(versionId);
+
+        if (!expectedCourseCode.equalsIgnoreCase(
+                importedCourseCode
+        )) {
+            throw new SQLException(
+                    "The imported template belongs to course "
+                    + importedCourseCode
+                    + ", but this assignment is for "
+                    + expectedCourseCode
+                    + "."
+            );
+        }
+
+        SyllabusEditorData.GeneralInformation snapshot
+                = new SyllabusEditorData.GeneralInformation();
+
+        snapshot.setCourseCode(importedCourseCode);
+        snapshot.setCourseName(importedCourseName);
+        snapshot.setCredits(imported.getCredits());
+        snapshot.setDegreeLevel(
+                trimToNull(imported.getDegreeLevel())
+        );
+        snapshot.setTimeAllocation(
+                trimToNull(imported.getTimeAllocation())
+        );
+        snapshot.setPrerequisiteText(
+                trimToNull(imported.getPrerequisiteText())
+        );
+        snapshot.setCourseDescription(
+                trimToNull(imported.getCourseDescription())
+        );
+
+        return snapshot;
+    }
+
+    private String loadExpectedCourseCode(
+            long versionId
+    ) throws SQLException {
+
+        String sql = """
+                SELECT course.code
+                FROM syllabus_versions versionRow
+                INNER JOIN syllabuses syllabus
+                    ON syllabus.syllabus_id = versionRow.syllabus_id
+                INNER JOIN courses course
+                    ON course.course_id = syllabus.course_id
+                WHERE versionRow.version_id = ?
+                """;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(sql)) {
+
+            statement.setLong(1, versionId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new SQLException(
+                            "The assigned course was not found."
+                    );
+                }
+
+                String courseCode
+                        = trimToNull(resultSet.getString("code"));
+
+                if (courseCode == null) {
+                    throw new SQLException(
+                            "The assigned course code is missing."
+                    );
+                }
+
+                return courseCode;
+            }
+        }
+    }
+
+    private String trimToNull(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+
+        return value.trim();
+    }
+
+    private SyllabusEditorData.GeneralInformation
+            loadStoredGeneralInformation(
+                    long versionId
+            ) throws SQLException {
+
         String sql = """
                 SELECT
                     course_code,
@@ -1965,7 +2246,7 @@ try (PreparedStatement statement
 
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (!resultSet.next()) {
-                    return;
+                    return null;
                 }
 
                 SyllabusEditorData.GeneralInformation information
@@ -1974,11 +2255,13 @@ try (PreparedStatement statement
                 information.setCourseCode(
                         resultSet.getString("course_code")
                 );
+
                 information.setCourseName(
                         resultSet.getString("course_name")
                 );
 
                 Object credits = resultSet.getObject("credits");
+
                 information.setCredits(
                         credits instanceof Number
                                 ? ((Number) credits).intValue()
@@ -1988,17 +2271,20 @@ try (PreparedStatement statement
                 information.setDegreeLevel(
                         resultSet.getString("degree_level")
                 );
+
                 information.setTimeAllocation(
                         resultSet.getString("time_allocation")
                 );
+
                 information.setPrerequisiteText(
-resultSet.getString("prerequisite_text")
+                        resultSet.getString("prerequisite_text")
                 );
+
                 information.setCourseDescription(
                         resultSet.getString("course_description")
                 );
 
-                data.setGeneralInformation(information);
+                return information;
             }
         }
     }

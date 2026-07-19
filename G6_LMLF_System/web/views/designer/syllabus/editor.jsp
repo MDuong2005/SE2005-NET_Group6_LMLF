@@ -13,6 +13,9 @@
         .editor-shell{max-width:1500px;margin:auto}.page-heading{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:22px}.page-heading h1{font-size:30px;font-weight:800;color:#172033;margin:0 0 6px}.muted{color:#64748b}.import-card,.editor-section,.sticky-actions{background:#fff;border:1px solid #e3e8ef;border-radius:14px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
         .import-card{padding:20px;margin-bottom:20px;border-left:4px solid #f26f21}.import-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end}.section-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.section-nav a{padding:8px 12px;border-radius:999px;background:#fff;border:1px solid #dbe2ea;text-decoration:none;color:#475569;font-size:13px;font-weight:700}.section-nav a:hover{border-color:#f26f21;color:#f26f21}
         .editor-section{margin-bottom:18px;overflow:hidden}.section-head{padding:16px 20px;border-bottom:1px solid #e7ebf0;display:flex;justify-content:space-between;align-items:center;background:#fbfcfe}.section-head h2{font-size:18px;margin:0;font-weight:800;color:#172033}.section-body{padding:18px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.form-grid .wide{grid-column:1/-1}.field label{display:block;font-size:12px;font-weight:800;color:#475569;margin-bottom:6px}.field input,.field textarea,.field select,.editor-table input,.editor-table textarea,.editor-table select{width:100%;border:1px solid #cfd8e3;border-radius:8px;padding:9px 10px;font-size:13px;background:#fff}.field textarea,.editor-table textarea{resize:vertical;min-height:70px}.editor-table-wrap{width:100%;overflow-x:auto}.editor-table{width:100%;border-collapse:collapse;min-width:900px}.editor-table th{background:#f6f8fb;color:#334155;font-size:12px;padding:10px;border:1px solid #e2e8f0;text-align:left}.editor-table td{padding:8px;border:1px solid #e8edf3;vertical-align:top}.btn-add{border:1px solid #f26f21;color:#f26f21;background:#fff;border-radius:8px;padding:7px 11px;font-weight:700}.btn-remove{border:0;background:#fee2e2;color:#b91c1c;border-radius:7px;padding:7px 9px}.badge-version{background:#fff0e8;color:#d95f19;padding:7px 11px;border-radius:999px;font-weight:800;font-size:12px}.mapping-table{width:100%;border-collapse:collapse;table-layout:fixed}.mapping-table th,.mapping-table td{border:1px solid #e2e8f0;padding:10px;text-align:center}.mapping-table th{background:#f59a45;color:#fff;font-size:12px}.mapping-table td:first-child,.mapping-table th:first-child{text-align:left;width:180px;font-weight:800}.mapping-table input{width:18px;height:18px;accent-color:#f26f21}.empty-hint{padding:16px;border:1px dashed #cbd5e1;border-radius:10px;color:#64748b;text-align:center}.sticky-actions{position:sticky;bottom:12px;z-index:10;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:22px}.action-right{display:flex;gap:10px}.btn-draft{background:#fff;border:1px solid #f26f21;color:#f26f21}.btn-submit{background:#f26f21;border:1px solid #f26f21;color:#fff}.btn-draft,.btn-submit{border-radius:9px;padding:10px 17px;font-weight:800}.alert{border-radius:10px}
+        .academic-reference-note{margin-bottom:14px;padding:12px 14px;border:1px solid #bfdbfe;border-radius:10px;background:#eff6ff;color:#1e3a8a;font-size:13px;line-height:1.5}
+        .academic-readonly .field input[readonly],.academic-readonly .field textarea[readonly]{background:#f1f5f9;color:#334155;border-color:#cbd5e1;cursor:not-allowed}
+        .readonly-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:#dbeafe;color:#1d4ed8;font-size:11px;font-weight:800}
         .curriculum-mapping-card{border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;margin-bottom:18px;background:#fff}.curriculum-mapping-card:last-child{margin-bottom:0}.curriculum-mapping-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:15px 17px;background:#fff7ed;border-bottom:1px solid #fed7aa}.curriculum-code{font-size:15px;font-weight:900;color:#9a3412}.curriculum-note{margin-top:4px;font-size:12px;color:#64748b}.curriculum-semester{display:inline-flex;padding:6px 10px;border-radius:999px;background:#fff;color:#c2410c;border:1px solid #fdba74;font-size:12px;font-weight:800;white-space:nowrap}.curriculum-mapping-body{padding:15px}.curriculum-mapping-table{min-width:760px;table-layout:auto}.curriculum-mapping-table th:first-child,.curriculum-mapping-table td:first-child{min-width:260px;width:34%}.curriculum-mapping-table th:not(:first-child){min-width:110px}.curriculum-mapping-table th small{display:block;margin-top:3px;font-size:10px;font-weight:600;opacity:.85}.clo-mapping-description{margin-top:4px;font-size:11px;font-weight:500;color:#64748b;line-height:1.45}.mapping-warning{border-color:#fdba74;background:#fff7ed;color:#9a3412}
         @media(max-width:900px){.form-grid{grid-template-columns:1fr}.import-row{grid-template-columns:1fr}.page-heading{flex-direction:column}.sticky-actions{position:static;align-items:stretch;flex-direction:column;gap:12px}.action-right{display:grid;grid-template-columns:1fr 1fr}.curriculum-mapping-head{flex-direction:column}.curriculum-mapping-table th:first-child,.curriculum-mapping-table td:first-child{min-width:220px}}
     </style>
@@ -34,7 +37,7 @@
 
                 <div class="import-card">
                     <h2 class="h5 fw-bold mb-1">Import Syllabus Excel</h2>
-                    <p class="muted small mb-3">Supported sheets: General Information, Course Learning Outcomes (CLO), Student Tasks, Learning Materials, Course Schedule and Course Assessment. Empty sheets remain blank for manual entry.</p>
+                    <p class="muted small mb-3">The official Academic Office template imports Academic Information and all syllabus sections. After import, Academic Information is locked against manual web editing.</p>
                     <form class="import-row" method="post" action="${pageContext.request.contextPath}/designer/editor/import" enctype="multipart/form-data">
                         <input type="hidden" name="assignmentId" value="${task.assignmentId}">
                         <input type="hidden" name="versionId" value="${versionId}">
@@ -44,7 +47,7 @@
                 </div>
 
                 <nav class="section-nav">
-                    <a href="#general">General Information</a><a href="#clos">CLOs</a><a href="#tasks">Student Tasks</a><a href="#resources">Learning Materials</a><a href="#schedule">Course Schedule</a><a href="#assessments">Assessment</a><a href="#mapping">CLO-PLO Mapping</a>
+                    <a href="#general">Academic Information</a><a href="#clos">CLOs</a><a href="#tasks">Student Tasks</a><a href="#resources">Learning Materials</a><a href="#schedule">Course Schedule</a><a href="#assessments">Assessment</a><a href="#mapping">CLO-PLO Mapping</a>
                 </nav>
 
                 <form id="editorForm" method="post">
@@ -53,12 +56,75 @@
                     <input type="hidden" id="editorJson" name="editorJson">
                     <textarea id="initialJson" hidden><c:out value="${editorJson}"/></textarea>
 
-                    <section class="editor-section" id="general"><div class="section-head"><h2>1. General Information</h2></div><div class="section-body"><div class="form-grid">
-                        <div class="field"><label>Course Code *</label><input id="courseCode"></div><div class="field"><label>Course Name *</label><input id="courseName"></div>
-                        <div class="field"><label>Credits</label><input id="credits" type="number" min="0"></div><div class="field"><label>Degree Level</label><input id="degreeLevel"></div>
-                        <div class="field wide"><label>Time Allocation</label><textarea id="timeAllocation"></textarea></div><div class="field wide"><label>Prerequisite</label><textarea id="prerequisiteText"></textarea></div>
-                        <div class="field wide"><label>Course Description</label><textarea id="courseDescription" rows="5"></textarea></div>
-                    </div></div></section>
+                    <section class="editor-section academic-readonly" id="general">
+                        <div class="section-head">
+                            <h2>1. Academic Information</h2>
+                            <span class="readonly-badge">
+                                <i class="bi bi-lock-fill"></i>
+                                Reference only
+                            </span>
+                        </div>
+                        <div class="section-body">
+                            <div class="academic-reference-note">
+                                This information was imported from the official
+                                Academic Office Excel template. Designer can use it
+                                as a reference but cannot edit it manually on the web.
+                            </div>
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label>Course Code</label>
+                                    <input id="courseCode"
+                                           readonly
+                                           aria-readonly="true"
+                                           tabindex="-1">
+                                </div>
+                                <div class="field">
+                                    <label>Course Name</label>
+                                    <input id="courseName"
+                                           readonly
+                                           aria-readonly="true"
+                                           tabindex="-1">
+                                </div>
+                                <div class="field">
+                                    <label>Credits</label>
+                                    <input id="credits"
+                                           type="number"
+                                           readonly
+                                           aria-readonly="true"
+                                           tabindex="-1">
+                                </div>
+                                <div class="field">
+                                    <label>Degree Level</label>
+                                    <input id="degreeLevel"
+                                           readonly
+                                           aria-readonly="true"
+                                           tabindex="-1">
+                                </div>
+                                <div class="field wide">
+                                    <label>Time Allocation</label>
+                                    <textarea id="timeAllocation"
+                                              readonly
+                                              aria-readonly="true"
+                                              tabindex="-1"></textarea>
+                                </div>
+                                <div class="field wide">
+                                    <label>Prerequisite</label>
+                                    <textarea id="prerequisiteText"
+                                              readonly
+                                              aria-readonly="true"
+                                              tabindex="-1"></textarea>
+                                </div>
+                                <div class="field wide">
+                                    <label>Course Description</label>
+                                    <textarea id="courseDescription"
+                                              rows="5"
+                                              readonly
+                                              aria-readonly="true"
+                                              tabindex="-1"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
 
                     <section class="editor-section" id="clos"><div class="section-head"><h2>2. Course Learning Outcomes (CLO)</h2><button type="button" class="btn-add" onclick="addClo()"><i class="bi bi-plus"></i> Add CLO</button></div><div class="section-body"><div class="editor-table-wrap"><table class="editor-table"><thead><tr><th style="width:110px">CLO Code</th><th>Description</th><th style="width:150px">Bloom Level</th><th style="width:55px"></th></tr></thead><tbody id="cloBody"></tbody></table></div></div></section>
 

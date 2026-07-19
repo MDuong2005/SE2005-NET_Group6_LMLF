@@ -259,6 +259,14 @@ public class ReviewServlet extends HttpServlet {
                 = new ArrayList<>();
 
         for (Map<String, Object> criteria : criteriaList) {
+            /*
+             * Academic Information is controlled by Academic Office and is
+             * shown to Reviewer only as reference material.
+             */
+            if (isAcademicInformationCriterion(criteria)) {
+                continue;
+            }
+
             Object criteriaIdObject = criteria.get("criteria_id");
 
             if (!(criteriaIdObject instanceof Number)) {
@@ -317,6 +325,16 @@ public class ReviewServlet extends HttpServlet {
             );
         }
 
+        if (sectionDecisions.isEmpty()) {
+            redirectEvaluation(
+                    request,
+                    response,
+                    versionId,
+                    "criteria_not_found"
+            );
+            return;
+        }
+
         String summaryComment = trimToNull(
                 request.getParameter("summaryComment")
         );
@@ -373,6 +391,34 @@ public class ReviewServlet extends HttpServlet {
                     errorCode
             );
         }
+    }
+
+    private boolean isAcademicInformationCriterion(
+            Map<String, Object> criteria
+    ) {
+
+        if (criteria == null) {
+            return false;
+        }
+
+        String code = criteria.get("criteria_code") == null
+                ? ""
+                : String.valueOf(
+                        criteria.get("criteria_code")
+                ).trim().toUpperCase();
+
+        String name = criteria.get("criteria_name") == null
+                ? ""
+                : String.valueOf(
+                        criteria.get("criteria_name")
+                ).trim().toUpperCase();
+
+        return "GENERAL_INFORMATION".equals(code)
+                || "ACADEMIC_INFORMATION".equals(code)
+                || "ACADEMIC_INFO".equals(code)
+                || "01_ACADEMIC_INFO".equals(code)
+                || name.contains("ACADEMIC INFORMATION")
+                || name.contains("GENERAL INFORMATION");
     }
 
     private Long getCurrentUserId(HttpServletRequest request) {
