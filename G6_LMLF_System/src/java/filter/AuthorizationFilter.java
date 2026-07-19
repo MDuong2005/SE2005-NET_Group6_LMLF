@@ -67,6 +67,16 @@ public class AuthorizationFilter implements Filter {
             return;
         }
 
+        // 4. Lock EXTERNAL_EXPERT users into the waiting room until assigned a business role
+        if (isExternalExpertOnly(user)
+                && !path.equals("/waiting-room")
+                && !path.equals("/logout")
+                && !path.equals("/change-password")) {
+            httpResponse.sendRedirect(httpRequest.getContextPath() + "/waiting-room");
+            return;
+        }
+
+
         // System Admin: system logs
         if (path.equals("/auditlog")
                 && !hasAnyRole(user, RoleConstants.ADMIN)) {
@@ -126,5 +136,20 @@ public class AuthorizationFilter implements Filter {
         }
 
         return false;
+    }
+
+    /**
+     * Returns true if the user only has the EXTERNAL_EXPERT placeholder role
+     * and has not yet been assigned a real business role by the Academic Office.
+     */
+    private boolean isExternalExpertOnly(User user) {
+        if (user == null || !user.isExternal()) return false;
+        String[] businessRoles = {"ADMIN", "ACADEMIC_OFFICE", "LECTURER", "DESIGNER",
+                                   "REVIEWER", "STUDENT", "ALUMNI"};
+        dao.RoleDAO roleDAO = new dao.RoleDAO();
+        for (String role : businessRoles) {
+            if (roleDAO.hasRole(user.getUserId(), role)) return false;
+        }
+        return roleDAO.hasRole(user.getUserId(), "EXTERNAL_EXPERT");
     }
 }
