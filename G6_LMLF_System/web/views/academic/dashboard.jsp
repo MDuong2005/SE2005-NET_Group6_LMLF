@@ -165,6 +165,18 @@
                 <p style="margin: 0; font-size: 0.75rem; color: #64748b;">Assign roles to teachers</p>
             </div>
         </div>
+        <!-- Action 5: Syllabus Browser -->
+        <div class="quick-action-card" onclick="window.location.href='${pageContext.request.contextPath}/academic/syllabus'" style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.01);">
+            <div class="quick-action-icon bg-blue-light" style="border-radius: 8px; padding: 0.5rem; background-color: #eff6ff; color: #3b82f6; display: flex; align-items: center;">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <div class="quick-action-content">
+                <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #1e293b;">Syllabus Browser</h4>
+                <p style="margin: 0; font-size: 0.75rem; color: #64748b;">Browse and inspect syllabuses</p>
+            </div>
+        </div>
         <!-- Action 4: Major -->
         <div class="quick-action-card" onclick="window.location.href='${pageContext.request.contextPath}/major'" style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.01);">
             <div class="quick-action-icon bg-purple-light" style="border-radius: 8px; padding: 0.5rem; background-color: #faf5ff; color: #9333ea; display: flex; align-items: center;">
