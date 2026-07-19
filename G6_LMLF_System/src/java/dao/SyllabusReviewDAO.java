@@ -101,28 +101,38 @@ public class SyllabusReviewDAO extends DBContext {
 
             String workflowStatus;
 
-            if (rejectedCount > 0) {
+            /*
+             * Every assigned Reviewer must submit an independent review.
+             * Do not close the review round when the first Reject appears.
+             */
+            if (completedCount < assignedCount) {
+                workflowStatus = WORKFLOW_WAITING;
+
+            } else if (rejectedCount > 0) {
+                /*
+                 * All Reviewers have completed and at least one Reviewer
+                 * rejected the version.
+                 */
                 updateVersionRejectedInternal(connection, versionId);
                 markSyllabusRevisionRequiredInternal(connection, versionId);
                 markAcademicAssignmentRejectedInternal(connection, versionId);
-                cancelRemainingAssignmentsInternal(
-                        connection,
-                        versionId,
-                        reviewerId
-                );
-
                 workflowStatus = WORKFLOW_REJECTED;
 
-            } else if (assignedCount >= 1
+            } else if (assignedCount > 0
                     && completedCount == assignedCount
                     && approvedCount == assignedCount) {
 
+                /*
+                 * Only the final required approval completes the workflow.
+                 */
                 updateVersionApprovedInternal(connection, versionId);
                 markAcademicAssignmentCompletedInternal(connection, versionId);
                 workflowStatus = WORKFLOW_ALL_APPROVED;
 
             } else {
-                workflowStatus = WORKFLOW_WAITING;
+                throw new SQLException(
+                        "The completed review results are inconsistent."
+                );
             }
 
             connection.commit();
@@ -681,29 +691,6 @@ public class SyllabusReviewDAO extends DBContext {
                         "Unable to complete the reviewer assignment."
                 );
             }
-        }
-    }
-
-    private void cancelRemainingAssignmentsInternal(
-            Connection transactionConnection,
-            long versionId,
-            long completedReviewerId
-    ) throws SQLException {
-        String sql = """
-                UPDATE syllabus_version_review_assignments
-                SET status = 'CANCELLED',
-                    completed_at = NULL
-                WHERE version_id = ?
-                  AND reviewer_id <> ?
-                  AND status IN ('PENDING', 'IN_PROGRESS')
-                """;
-
-        try (PreparedStatement statement
-                     = transactionConnection.prepareStatement(sql)) {
-
-            statement.setLong(1, versionId);
-            statement.setLong(2, completedReviewerId);
-            statement.executeUpdate();
         }
     }
 

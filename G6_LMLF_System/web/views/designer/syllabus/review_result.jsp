@@ -2,7 +2,14 @@
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
 <%@taglib prefix="fmt" uri="jakarta.tags.fmt"%>
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
+    <title>Review Result - LMLF</title>
 
     <link rel="stylesheet"
           href="${pageContext.request.contextPath}/assets/css/designer/designer.css">
@@ -218,7 +225,23 @@
             }
         }
     </style>
+</head>
 
+<body>
+<div class="dashboard-wrapper">
+
+    <jsp:include page="../layout_designer/sidebar_designer.jsp"/>
+
+    <main class="dashboard-main">
+
+        <header class="top-header">
+            <strong>Designer Workspace</strong>
+            <span class="text-muted small">
+                Reviewer Feedback
+            </span>
+        </header>
+
+        <section class="review-result-page">
 
             <div class="review-result-header">
                 <div>
@@ -238,7 +261,7 @@
 
                 <c:when test="${empty reviewResults}">
                     <div class="empty-review">
-                        No Reviewer has submitted a result for this version yet.
+                        The review round is still in progress. Final results will be available after all assigned Reviewers submit their decisions.
                     </div>
                 </c:when>
 
@@ -412,4 +435,10 @@
                 </c:otherwise>
 
             </c:choose>
-
+
+        </section>
+
+    </main>
+</div>
+</body>
+</html>

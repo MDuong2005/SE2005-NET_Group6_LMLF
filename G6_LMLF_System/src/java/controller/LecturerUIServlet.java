@@ -1,5 +1,6 @@
 package controller;
 
+import dao.NotificationDAO;
 import model.User;
 import utils.SessionUtil;
 
@@ -45,6 +46,24 @@ public class LecturerUIServlet extends HttpServlet {
                 jspPath = "lecturer/materials.jsp";
                 break;
             case "notifications":
+                NotificationDAO notificationDAO
+                        = new NotificationDAO();
+
+                request.setAttribute(
+                        "notifications",
+                        notificationDAO.getRecentNotifications(
+                                currentUser.getUserId(),
+                                50
+                        )
+                );
+
+                request.setAttribute(
+                        "unreadNotificationCount",
+                        notificationDAO.countUnread(
+                                currentUser.getUserId()
+                        )
+                );
+
                 jspPath = "lecturer/notifications.jsp";
                 break;
             case "profile":

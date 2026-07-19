@@ -61,20 +61,39 @@ public class DesignerTask {
         if (assignmentStatus == null) {
             return false;
         }
+
         if ("CANCELLED".equalsIgnoreCase(assignmentStatus)
-                || "COMPLETED".equalsIgnoreCase(assignmentStatus)
-                || "REJECTED".equalsIgnoreCase(assignmentStatus)) {
+                || "COMPLETED".equalsIgnoreCase(assignmentStatus)) {
             return false;
         }
+
+        /*
+         * A Reviewer rejection may also set assignment_status=REJECTED.
+         * When the assignment already has a submitted version and that
+         * version is REJECTED, the Designer must be allowed to revise it.
+         */
+        if (submittedVersionId != null
+                && "REJECTED".equalsIgnoreCase(versionStatus)) {
+            return true;
+        }
+
+        /*
+         * REJECTED without a rejected submitted version means that the
+         * Designer rejected the original assignment.
+         */
+        if ("REJECTED".equalsIgnoreCase(assignmentStatus)) {
+            return false;
+        }
+
         if ("SUBMITTED".equalsIgnoreCase(versionStatus)
                 || "APPROVED".equalsIgnoreCase(versionStatus)
                 || "ARCHIVED".equalsIgnoreCase(versionStatus)) {
             return false;
         }
+
         return submittedVersionId == null
                 || versionStatus == null
-                || "DRAFT".equalsIgnoreCase(versionStatus)
-                || "REJECTED".equalsIgnoreCase(versionStatus);
+                || "DRAFT".equalsIgnoreCase(versionStatus);
     }
 
     public Long getAssignmentId() {

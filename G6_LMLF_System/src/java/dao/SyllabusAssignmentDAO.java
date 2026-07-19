@@ -385,50 +385,114 @@ public class SyllabusAssignmentDAO extends DBContext {
      * Get assignment by id
      */
     public SyllabusAssignment getById(long id) {
-        String sql = "SELECT sa.*, "
-                + "       c.code AS course_code, "
-                + "       c.name AS course_name, "
-                + "       d.first_name + ' ' + d.last_name AS designer_name, "
-                + "       d.email AS designer_email, "
-                + "       r.first_name + ' ' + r.last_name AS reviewer_name, "
-                + "       r.email AS reviewer_email "
-                + "FROM syllabus_assignments sa "
-                + "JOIN courses c ON sa.course_id = c.course_id "
-                + "JOIN users d ON sa.designer_id = d.user_id "
-                + "JOIN users r ON sa.reviewer_id = r.user_id "
-                + "WHERE sa.assignment_id = ?";
 
-        try {
-            if (connection != null) {
-                PreparedStatement ps = connection.prepareStatement(sql);
-                ps.setLong(1, id);
-                ResultSet rs = ps.executeQuery();
-                if (rs.next()) {
-                    SyllabusAssignment sa = new SyllabusAssignment();
-                    sa.setAssignmentId(rs.getLong("assignment_id"));
-                    sa.setCourseId(rs.getLong("course_id"));
-                    sa.setDesignerId(rs.getLong("designer_id"));
-                    sa.setReviewerId(rs.getLong("reviewer_id"));
-                    sa.setSemester(rs.getString("semester"));
-                    sa.setAcademicYear(rs.getInt("academic_year"));
-                    sa.setAssignedAt(rs.getTimestamp("assigned_at"));
-                    sa.setAssignmentStatus(rs.getString("assignment_status"));
-                    sa.setDueDate(rs.getTimestamp("due_date"));
-                    
-                    // Display helpers
-                    sa.setCourseCode(rs.getString("course_code"));
-                    sa.setCourseName(rs.getString("course_name"));
-                    sa.setDesignerName(rs.getString("designer_name").trim());
-                    sa.setDesignerEmail(rs.getString("designer_email"));
-                    sa.setReviewerName(rs.getString("reviewer_name").trim());
-                    sa.setReviewerEmail(rs.getString("reviewer_email"));
-                    return sa;
+        String sql = """
+                SELECT
+                    assignmentRow.*,
+                    course.code AS course_code,
+                    course.name AS course_name,
+                    designer.first_name + ' '
+                        + designer.last_name AS designer_name,
+                    designer.email AS designer_email,
+                    reviewer.first_name + ' '
+                        + reviewer.last_name AS reviewer_name,
+                    reviewer.email AS reviewer_email
+                FROM syllabus_assignments assignmentRow
+                INNER JOIN courses course
+                    ON course.course_id = assignmentRow.course_id
+                INNER JOIN users designer
+                    ON designer.user_id = assignmentRow.designer_id
+                LEFT JOIN users reviewer
+                    ON reviewer.user_id = assignmentRow.reviewer_id
+                WHERE assignmentRow.assignment_id = ?
+                """;
+
+        SyllabusAssignment assignment = null;
+
+        try (PreparedStatement statement
+                     = connection.prepareStatement(sql)) {
+
+            statement.setLong(1, id);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    assignment = new SyllabusAssignment();
+
+                    assignment.setAssignmentId(
+                            resultSet.getLong("assignment_id")
+                    );
+
+                    assignment.setCourseId(
+                            resultSet.getLong("course_id")
+                    );
+
+                    assignment.setDesignerId(
+                            resultSet.getLong("designer_id")
+                    );
+
+                    long reviewerId
+                            = resultSet.getLong("reviewer_id");
+
+                    if (!resultSet.wasNull()) {
+                        assignment.setReviewerId(reviewerId);
+                    }
+
+                    assignment.setSemester(
+                            resultSet.getString("semester")
+                    );
+
+                    assignment.setAcademicYear(
+                            resultSet.getInt("academic_year")
+                    );
+
+                    assignment.setAssignedAt(
+                            resultSet.getTimestamp("assigned_at")
+                    );
+
+                    assignment.setAssignmentStatus(
+                            resultSet.getString("assignment_status")
+                    );
+
+                    assignment.setDueDate(
+                            resultSet.getTimestamp("due_date")
+                    );
+
+                    assignment.setCourseCode(
+                            resultSet.getString("course_code")
+                    );
+
+                    assignment.setCourseName(
+                            resultSet.getString("course_name")
+                    );
+
+                    assignment.setDesignerName(
+                            resultSet.getString("designer_name")
+                    );
+
+                    assignment.setDesignerEmail(
+                            resultSet.getString("designer_email")
+                    );
+
+                    assignment.setReviewerName(
+                            resultSet.getString("reviewer_name")
+                    );
+
+                    assignment.setReviewerEmail(
+                            resultSet.getString("reviewer_email")
+                    );
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
+
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            return null;
         }
-        return null;
+
+        if (assignment != null) {
+            enrichReviewerData(assignment);
+        }
+
+        return assignment;
     }
 
     /**
