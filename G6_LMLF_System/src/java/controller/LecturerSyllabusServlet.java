@@ -140,7 +140,7 @@ public class LecturerSyllabusServlet extends HttpServlet {
             request.setAttribute("syllabus", syllabus);
             
             // Forward directly to the standalone custom detail page
-            request.getRequestDispatcher("/views/syllabus/syllabus-detail.jsp").forward(request, response);
+            request.getRequestDispatcher("/views/lecturer/syllabus/syllabus-detail.jsp").forward(request, response);
             
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/lecturer/syllabus?error=InvalidID");

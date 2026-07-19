@@ -139,7 +139,7 @@ public class LecturerCurriculumServlet extends HttpServlet {
             request.setAttribute("subjectList", subjectList);
             
             // Forward directly to the standalone custom detail page
-            request.getRequestDispatcher("/views/curriculum/curriculum-detail.jsp").forward(request, response);
+            request.getRequestDispatcher("/views/lecturer/curriculum/curriculum-detail.jsp").forward(request, response);
             
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/lecturer/curriculum?error=InvalidID");
