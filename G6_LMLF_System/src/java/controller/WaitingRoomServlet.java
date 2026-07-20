@@ -19,7 +19,7 @@ import utils.SessionUtil;
 public class WaitingRoomServlet extends HttpServlet {
 
     private static final String[] BUSINESS_ROLES = {
-        "ADMIN", "ACADEMIC_OFFICE", "LECTURER", "DESIGNER", "REVIEWER", "STUDENT", "ALUMNI"
+        "ADMIN", "ACADEMIC_OFFICE", "LECTURER", "STUDENT", "ALUMNI"
     };
 
     @Override
@@ -48,6 +48,15 @@ public class WaitingRoomServlet extends HttpServlet {
         // If user now has a business role, let them through to the dashboard
         for (String role : BUSINESS_ROLES) {
             if (user.hasRole(role)) {
+                response.sendRedirect(request.getContextPath() + "/dashboard");
+                return;
+            }
+        }
+        
+        // If user is EXTERNAL_EXPERT, check if they have assignments
+        if (user.hasRole("EXTERNAL_EXPERT")) {
+            dao.SyllabusAssignmentDAO assignDAO = new dao.SyllabusAssignmentDAO();
+            if (assignDAO.hasAssignments(user.getUserId())) {
                 response.sendRedirect(request.getContextPath() + "/dashboard");
                 return;
             }
