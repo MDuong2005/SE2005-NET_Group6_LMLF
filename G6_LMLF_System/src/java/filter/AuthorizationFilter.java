@@ -144,12 +144,18 @@ public class AuthorizationFilter implements Filter {
      */
     private boolean isExternalExpertOnly(User user) {
         if (user == null || !user.isExternal()) return false;
-        String[] businessRoles = {"ADMIN", "ACADEMIC_OFFICE", "LECTURER", "DESIGNER",
-                                   "REVIEWER", "STUDENT", "ALUMNI"};
+        String[] businessRoles = {"ADMIN", "ACADEMIC_OFFICE", "LECTURER", "STUDENT", "ALUMNI"};
         dao.RoleDAO roleDAO = new dao.RoleDAO();
         for (String role : businessRoles) {
             if (roleDAO.hasRole(user.getUserId(), role)) return false;
         }
+        
+        // If they don't have a normal business role, check if they have assignments
+        dao.SyllabusAssignmentDAO assignDAO = new dao.SyllabusAssignmentDAO();
+        if (assignDAO.hasAssignments(user.getUserId())) {
+            return false; // They have a task, they are not "only" an expert in the waiting room
+        }
+        
         return roleDAO.hasRole(user.getUserId(), "EXTERNAL_EXPERT");
     }
 }

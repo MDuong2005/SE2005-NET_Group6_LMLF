@@ -131,8 +131,8 @@ public class DesignerServlet extends HttpServlet {
             return null;
         }
 
-        dao.RoleDAO roleDAO = new dao.RoleDAO();
-        if (!roleDAO.hasRole(user.getUserId(), RoleConstants.DESIGNER)) {
+        dao.SyllabusAssignmentDAO assignDAO = new dao.SyllabusAssignmentDAO();
+        if (!assignDAO.hasAssignments(user.getUserId())) {
             response.setStatus(
                     HttpServletResponse.SC_FORBIDDEN
             );

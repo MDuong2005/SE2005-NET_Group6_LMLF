@@ -120,8 +120,8 @@ request.getSession().setAttribute("successMessage","Draft saved successfully.");
     private User requireDesigner(HttpServletRequest request,HttpServletResponse response)throws IOException,ServletException{
         User user=SessionUtil.getCurrentUser(request);
         if(user==null){response.sendRedirect(request.getContextPath()+"/login");return null;}
-        dao.RoleDAO roleDAO = new dao.RoleDAO();
-        if(!roleDAO.hasRole(user.getUserId(), RoleConstants.DESIGNER)){response.setStatus(403);request.getRequestDispatcher("/views/error/403.jsp").forward(request,response);return null;}
+        dao.SyllabusAssignmentDAO assignDAO = new dao.SyllabusAssignmentDAO();
+        if(!assignDAO.hasAssignments(user.getUserId())){response.setStatus(403);request.getRequestDispatcher("/views/error/403.jsp").forward(request,response);return null;}
         return user;
     }
     private long parseLong(String s){try{return Long.parseLong(s);}catch(Exception e){return -1;}}

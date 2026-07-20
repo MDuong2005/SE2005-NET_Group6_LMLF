@@ -1,6 +1,6 @@
 package controller;
 
-import dao.SystemLogDAO;
+import dao.AuditLogDAO;
 import java.io.IOException;
 import java.util.List;
 import jakarta.servlet.ServletException;
@@ -26,7 +26,7 @@ public class SystemLogServlet extends HttpServlet {
             return;
         }
 
-        SystemLogDAO logDAO = new SystemLogDAO();
+        AuditLogDAO logDAO = new AuditLogDAO();
         List<SystemLog> logs = logDAO.getAllLogs();
         
         request.setAttribute("logs", logs);

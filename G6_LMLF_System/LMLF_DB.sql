@@ -489,3 +489,16 @@ CREATE TABLE shared_materials (
     CONSTRAINT fk_sm_material FOREIGN KEY (material_id) REFERENCES lecturer_materials(lecturer_material_id) ON DELETE CASCADE
 );
 GO
+
+-- =======================================================
+-- SEED DATA: TEST LECTURER ACCOUNT
+-- =======================================================
+INSERT INTO users(first_name, last_name, email, auth_provider, is_external, status)
+VALUES ('Duong', 'Mai', 'duongmaifptu2005@gmail.com', 'GOOGLE', 0, 'ACTIVE');
+
+INSERT INTO user_roles(user_id, role_id)
+VALUES (
+    (SELECT user_id FROM users WHERE email = 'duongmaifptu2005@gmail.com'),
+    (SELECT role_id FROM roles WHERE role_name = 'LECTURER')
+);
+GO
