@@ -231,6 +231,8 @@ public class AcademicSyllabusDAO extends DBContext {
         String generalJson = getSectionJson(versionId, "GENERAL_INFORMATION");
         if (generalJson != null && !generalJson.isBlank()) {
             data.setGeneralInformation(gson.fromJson(generalJson, SyllabusEditorData.GeneralInformation.class));
+        } else {
+            data.setGeneralInformation(loadLegacyGeneralInformation(versionId));
         }
 
         List<SyllabusEditorData.CloItem> clos = new ArrayList<>();
@@ -249,7 +251,12 @@ public class AcademicSyllabusDAO extends DBContext {
             }
         }
         data.setClos(clos);
-        data.setStudentTasks(parseSection(versionId, "STUDENT_TASKS", SyllabusEditorData.TextItem[].class));
+        List<SyllabusEditorData.TextItem> studentTasks = parseSection(
+                versionId, "STUDENT_TASKS", SyllabusEditorData.TextItem[].class);
+        if (studentTasks.isEmpty()) {
+            studentTasks = loadLegacyStudentTasks(versionId);
+        }
+        data.setStudentTasks(studentTasks);
         data.setLearningResources(parseSection(versionId, "LEARNING_MATERIALS", SyllabusEditorData.ResourceItem[].class));
         data.setScheduleItems(parseSection(versionId, "COURSE_SCHEDULE", SyllabusEditorData.ScheduleItem[].class));
         data.setAssessments(parseSection(versionId, "COURSE_ASSESSMENT", SyllabusEditorData.AssessmentItem[].class));
@@ -356,6 +363,53 @@ public class AcademicSyllabusDAO extends DBContext {
         }
 
         data.setCloPloMappings(mappings);
+    }
+
+    private SyllabusEditorData.GeneralInformation loadLegacyGeneralInformation(long versionId)
+            throws SQLException {
+        SyllabusEditorData.GeneralInformation information
+                = new SyllabusEditorData.GeneralInformation();
+        String sql = """
+                SELECT c.name, c.code, c.credits, sgi.degree_level,
+                       sgi.time_allocation, sgi.course_description
+                FROM syllabus_versions sv
+                JOIN syllabuses s ON s.syllabus_id = sv.syllabus_id
+                JOIN courses c ON c.course_id = s.course_id
+                LEFT JOIN syllabus_general_information sgi ON sgi.version_id = sv.version_id
+                WHERE sv.version_id = ?
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, versionId);
+            try (ResultSet result = statement.executeQuery()) {
+                if (result.next()) {
+                    information.setCourseName(result.getString("name"));
+                    information.setCourseCode(result.getString("code"));
+                    information.setCredits((Integer) result.getObject("credits"));
+                    information.setDegreeLevel(result.getString("degree_level"));
+                    information.setTimeAllocation(result.getString("time_allocation"));
+                    information.setCourseDescription(result.getString("course_description"));
+                }
+            }
+        }
+        return information;
+    }
+
+    private List<SyllabusEditorData.TextItem> loadLegacyStudentTasks(long versionId)
+            throws SQLException {
+        List<SyllabusEditorData.TextItem> tasks = new ArrayList<>();
+        String sql = """
+                SELECT task_content FROM syllabus_student_tasks
+                WHERE version_id = ? ORDER BY task_order
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, versionId);
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    tasks.add(new SyllabusEditorData.TextItem(result.getString("task_content")));
+                }
+            }
+        }
+        return tasks;
     }
 
     private String getSectionJson(long versionId, String sectionCode) throws SQLException {

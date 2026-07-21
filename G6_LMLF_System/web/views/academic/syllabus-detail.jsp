@@ -21,6 +21,8 @@
         .request-action:hover { background: linear-gradient(135deg, #ffedd5, #fed7aa); box-shadow: 0 6px 16px rgba(234,88,12,.2); }
         .publish-action { border: 1px solid #15803d; background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; box-shadow: 0 4px 12px rgba(22,163,74,.22); }
         .publish-action:hover { background: linear-gradient(135deg, #16a34a, #15803d); box-shadow: 0 7px 18px rgba(22,163,74,.28); }
+        .mapping-action { display: inline-flex; align-items: center; gap: 8px; padding: 10px 15px; border: 1px solid #2563eb; border-radius: 8px; background: #eff6ff; color: #1d4ed8; text-decoration: none; font-weight: 700; transition: .18s ease; }
+        .mapping-action:hover { background: #2563eb; color: #fff; box-shadow: 0 5px 14px rgba(37,99,235,.22); transform: translateY(-1px); }
         .archive-action { border: 1px solid #b91c1c; background: #dc2626; color: #fff; }
         .archive-action:hover { background: #b91c1c; }
         .status-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: .75rem; font-weight: 700; }
@@ -91,13 +93,13 @@
                 <tr><th>Syllabus English</th><td><c:out value="${syllabus.courseName}"/></td></tr>
                 <tr><th>Subject Code</th><td><c:out value="${syllabus.courseCode}"/></td></tr>
                 <tr><th>NoCredit</th><td><c:out value="${syllabus.credits}"/></td></tr>
-                <tr><th>Degree Level</th><td><c:out value="${empty syllabus.degreeLevel ? 'N/A' : syllabus.degreeLevel}"/></td></tr>
-                <tr><th>Time Allocation</th><td><c:out value="${empty syllabus.timeAllocation ? 'N/A' : syllabus.timeAllocation}"/></td></tr>
+                <tr><th>Degree Level</th><td><c:out value="${empty syllabusData.generalInformation.degreeLevel ? 'N/A' : syllabusData.generalInformation.degreeLevel}"/></td></tr>
+                <tr><th>Time Allocation</th><td><c:out value="${empty syllabusData.generalInformation.timeAllocation ? 'N/A' : syllabusData.generalInformation.timeAllocation}"/></td></tr>
                 <tr><th>Pre-Requisite</th><td><c:out value="${empty syllabusData.generalInformation.prerequisiteText ? 'N/A' : syllabusData.generalInformation.prerequisiteText}"/></td></tr>
-                <tr><th>Description</th><td><c:out value="${empty syllabus.description ? 'N/A' : syllabus.description}"/></td></tr>
+                <tr><th>Description</th><td><c:out value="${empty syllabusData.generalInformation.courseDescription ? 'N/A' : syllabusData.generalInformation.courseDescription}"/></td></tr>
                 <tr>
                     <th>StudentTasks</th>
-                    <td><c:forEach var="task" items="${studentTasks}" varStatus="loop">- <c:out value="${task.taskContent}"/><c:if test="${!loop.last}">&#10;</c:if></c:forEach><c:if test="${empty studentTasks}">N/A</c:if></td>
+                    <td><c:forEach var="task" items="${syllabusData.studentTasks}" varStatus="loop">- <c:out value="${task.content}"/><c:if test="${!loop.last}">&#10;</c:if></c:forEach><c:if test="${empty syllabusData.studentTasks}">N/A</c:if></td>
                 </tr>
                 <tr><th>Tools</th><td><c:out value="${empty syllabus.tools ? 'N/A' : syllabus.tools}"/></td></tr>
                 <tr><th>Version</th><td><c:out value="${empty syllabus.versionNumber ? 'N/A' : syllabus.versionNumber}"/></td></tr>
@@ -115,13 +117,13 @@
             </tbody>
         </table>
 
-        <span class="section-meta">${empty studentTasks ? 0 : studentTasks.size()} student task(s)</span>
+        <span class="section-meta">${empty syllabusData.studentTasks ? 0 : syllabusData.studentTasks.size()} student task(s)</span>
         <div class="table-responsive">
             <table class="data-table">
                 <thead><tr><th style="width:80px;text-align:center">Order</th><th>Student Tasks</th></tr></thead>
                 <tbody>
-                    <c:forEach var="task" items="${studentTasks}"><tr><td style="text-align:center"><c:out value="${task.taskOrder}"/></td><td><c:out value="${task.taskContent}"/></td></tr></c:forEach>
-                    <c:if test="${empty studentTasks}"><tr><td colspan="2" style="text-align:center;color:#64748b">No student tasks available.</td></tr></c:if>
+                    <c:forEach var="task" items="${syllabusData.studentTasks}" varStatus="loop"><tr><td style="text-align:center"><c:out value="${loop.index + 1}"/></td><td><c:out value="${task.content}"/></td></tr></c:forEach>
+                    <c:if test="${empty syllabusData.studentTasks}"><tr><td colspan="2" style="text-align:center;color:#64748b">No student tasks available.</td></tr></c:if>
                 </tbody>
             </table>
         </div>
@@ -152,8 +154,24 @@
 
         <c:if test="${not empty syllabus.syllabusId}">
             <div style="margin: 4px 0 24px;">
-                <a href="${pageContext.request.contextPath}/lecturer/syllabus?action=clo-plo-mapping&amp;id=${syllabus.syllabusId}"
-                   style="color:#2563eb;text-decoration:none;font-weight:600;">View mapping of CLOs to PLOs</a>
+                <c:choose>
+                    <c:when test="${sessionScope.user.hasRole('ACADEMIC_OFFICE')}">
+                        <c:url var="mappingUrl" value="/academic/syllabus">
+                            <c:param name="action" value="clo-plo-mapping"/>
+                            <c:param name="id" value="${syllabus.syllabusId}"/>
+                            <c:param name="versionId" value="${syllabus.versionId}"/>
+                        </c:url>
+                    </c:when>
+                    <c:otherwise>
+                        <c:url var="mappingUrl" value="/lecturer/syllabus">
+                            <c:param name="action" value="clo-plo-mapping"/>
+                            <c:param name="id" value="${syllabus.syllabusId}"/>
+                        </c:url>
+                    </c:otherwise>
+                </c:choose>
+                <a class="mapping-action" href="${mappingUrl}">
+                    <span aria-hidden="true">&#8644;</span> View mapping of CLOs to PLOs
+                </a>
             </div>
         </c:if>
 

@@ -118,6 +118,9 @@ public class AcademicSyllabusServlet extends HttpServlet {
                 case "detail":
                     viewSyllabusDetail(request, response);
                     break;
+                case "clo-plo-mapping":
+                    viewCloPloMapping(request, response);
+                    break;
                 default:
                     listSyllabuses(request, response);
                     break;
@@ -189,8 +192,6 @@ public class AcademicSyllabusServlet extends HttpServlet {
             
             if (syllabus.get("versionId") != null) {
                 long versionId = (Long) syllabus.get("versionId");
-                List<Map<String, Object>> studentTasks = syllabusDAO.getSyllabusStudentTasks(versionId);
-                request.setAttribute("studentTasks", studentTasks);
                 SyllabusEditorData syllabusData = syllabusDAO.getCompleteSyllabusData(versionId);
                 request.setAttribute("syllabusData", syllabusData);
             }
@@ -215,6 +216,49 @@ public class AcademicSyllabusServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/academic/syllabus?error=InvalidID");
         } catch (SQLException e) {
             throw new ServletException("Unable to load complete syllabus details.", e);
+        }
+    }
+
+    private void viewCloPloMapping(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String idParam = request.getParameter("id");
+        if (idParam == null || idParam.isBlank()) {
+            response.sendRedirect(request.getContextPath()
+                    + "/academic/syllabus?error=InvalidID");
+            return;
+        }
+
+        try {
+            long syllabusId = Long.parseLong(idParam);
+            String versionIdParam = request.getParameter("versionId");
+            Long requestedVersionId = versionIdParam == null || versionIdParam.isBlank()
+                    ? null : Long.parseLong(versionIdParam);
+            Map<String, Object> syllabus
+                    = syllabusDAO.getSyllabusDetail(syllabusId, requestedVersionId);
+
+            if (syllabus == null || syllabus.isEmpty()
+                    || syllabus.get("versionId") == null) {
+                response.sendRedirect(request.getContextPath()
+                        + "/academic/syllabus?error=NotFound");
+                return;
+            }
+
+            long versionId = ((Number) syllabus.get("versionId")).longValue();
+            SyllabusEditorData syllabusData
+                    = syllabusDAO.getCompleteSyllabusData(versionId);
+            request.setAttribute("syllabus", syllabus);
+            request.setAttribute("syllabusData", syllabusData);
+            request.getRequestDispatcher(
+                    "/views/academic/syllabus-clo-plo-mapping.jsp"
+            ).forward(request, response);
+        } catch (NumberFormatException exception) {
+            response.sendRedirect(request.getContextPath()
+                    + "/academic/syllabus?error=InvalidID");
+        } catch (SQLException exception) {
+            throw new ServletException(
+                    "Unable to load Academic CLO-PLO mapping details.",
+                    exception
+            );
         }
     }
 }
