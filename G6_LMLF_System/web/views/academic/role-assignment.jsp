@@ -102,6 +102,26 @@
                                                         margin: 0;
                                                     }
 
+                                                    .workspace-header-actions {
+                                                        display: flex;
+                                                        align-items: center;
+                                                        gap: 12px;
+                                                        flex-wrap: wrap;
+                                                        justify-content: flex-end;
+                                                    }
+
+                                                    .btn-primary.btn-invite-reviewer {
+                                                        background-color: #FFFFFF;
+                                                        color: var(--primary);
+                                                        border: 1px solid var(--primary);
+                                                    }
+
+                                                    .btn-primary.btn-invite-reviewer:hover {
+                                                        background-color: #FFF7ED;
+                                                        color: var(--primary-hover);
+                                                        border-color: var(--primary-hover);
+                                                    }
+
                                                     .btn-primary {
                                                         background-color: var(--primary);
                                                         color: #FFFFFF;
@@ -212,6 +232,34 @@
 
                                                     .btn-search:hover {
                                                         background-color: var(--primary-hover);
+                                                    }
+
+                                                    .btn-filter-reset {
+                                                        height: 42px;
+                                                        padding: 0 20px;
+                                                        display: inline-flex;
+                                                        align-items: center;
+                                                        justify-content: center;
+                                                        border: 1px solid var(--border-color);
+                                                        border-radius: var(--radius-md);
+                                                        color: var(--text-muted);
+                                                        background-color: #FFFFFF;
+                                                        text-decoration: none;
+                                                        font-size: 14px;
+                                                        font-weight: 700;
+                                                        transition: var(--transition);
+                                                        white-space: nowrap;
+                                                    }
+
+                                                    .btn-filter-reset:hover {
+                                                        background-color: #F8FAFC;
+                                                        color: var(--text-dark);
+                                                    }
+
+                                                    @media (max-width: 1100px) {
+                                                        .filter-row { flex-wrap: wrap; }
+                                                        .filter-row .search-group { flex: 1 1 100%; }
+                                                        .filter-row .filter-select-group { flex: 1 1 180px; }
                                                     }
 
                                                     /* Data Grid Tables */
@@ -443,7 +491,9 @@
                                                         display: none;
                                                         align-items: center;
                                                         justify-content: center;
-                                                        z-index: 1000;
+                                                        /* Keep modal/backdrop above the shared header (z-index: 10000)
+                                                           and its notification dropdown (z-index: 2147483000). */
+                                                        z-index: 2147483500;
                                                         padding: 24px;
                                                     }
 
@@ -1030,17 +1080,32 @@
                                                                 <!-- General Workspace Header -->
                                                                 <div class="workspace-header">
                                                                     <h1>Syllabus Role Assignments</h1>
-                                                                    <button type="button" class="btn-primary"
-                                                                        onclick="openCreateModal()">
-                                                                        <svg width="18" height="18" viewBox="0 0 24 24"
-                                                                            fill="none" stroke="currentColor"
-                                                                            stroke-width="2.5" stroke-linecap="round"
-                                                                            stroke-linejoin="round">
-                                                                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                                                                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                                                                        </svg>
-                                                                        Add New Assignment
-                                                                    </button>
+                                                                    <div class="workspace-header-actions">
+                                                                        <button type="button" class="btn-primary btn-invite-reviewer"
+                                                                            onclick="openInviteReviewerModal()">
+                                                                            <svg width="18" height="18" viewBox="0 0 24 24"
+                                                                                fill="none" stroke="currentColor"
+                                                                                stroke-width="2.2" stroke-linecap="round"
+                                                                                stroke-linejoin="round">
+                                                                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                                                                <circle cx="9" cy="7" r="4"></circle>
+                                                                                <line x1="19" y1="8" x2="19" y2="14"></line>
+                                                                                <line x1="16" y1="11" x2="22" y2="11"></line>
+                                                                            </svg>
+                                                                            Invite External Reviewer
+                                                                        </button>
+                                                                        <button type="button" class="btn-primary"
+                                                                            onclick="openCreateModal()">
+                                                                            <svg width="18" height="18" viewBox="0 0 24 24"
+                                                                                fill="none" stroke="currentColor"
+                                                                                stroke-width="2.5" stroke-linecap="round"
+                                                                                stroke-linejoin="round">
+                                                                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                                                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                                                            </svg>
+                                                                            Add New Assignment
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
 
                                                                 <!-- Search Filter Row Card -->
@@ -1048,6 +1113,9 @@
                                                                     <form
                                                                         action="${pageContext.request.contextPath}/role-assignment"
                                                                         method="get" class="filter-row">
+                                                                        <% String selectedCourseId = String.valueOf(request.getAttribute("filterCourseId"));
+                                                                           String selectedFilterSemester = String.valueOf(request.getAttribute("filterSemester"));
+                                                                           String selectedFilterYear = String.valueOf(request.getAttribute("filterYear")); %>
                                                                         <div class="form-group search-group">
                                                                             <label for="searchKeyword">Search
                                                                                 Assignments</label>
@@ -1063,18 +1131,24 @@
                                                                             </div>
                                                                         </div>
 
-                                                                        <div class="form-group" style="flex: 1.5;">
-                                                                            <label for="filterSemester">Filter by
-                                                                                Semester</label>
+                                                                        <div class="form-group filter-select-group">
+                                                                            <label for="filterCourseId">Course</label>
+                                                                            <select id="filterCourseId" name="filterCourseId" class="form-select">
+                                                                                <option value="">All Courses</option>
+                                                                                <% if (courses != null) { for (Course filterCourse : courses) { %>
+                                                                                    <option value="<%= filterCourse.getCourseId() %>"
+                                                                                        <%= String.valueOf(filterCourse.getCourseId()).equals(selectedCourseId) ? "selected" : "" %>>
+                                                                                        <%= filterCourse.getCode() %> - <%= filterCourse.getName() %>
+                                                                                    </option>
+                                                                                <% } } %>
+                                                                            </select>
+                                                                        </div>
+
+                                                                        <div class="form-group filter-select-group">
+                                                                            <label for="filterSemester">Semester</label>
                                                                             <select id="filterSemester"
                                                                                 name="filterSemester"
-                                                                                class="form-select"
-                                                                                onchange="this.form.submit()">
-                                                                                <% String
-                                                                                    selectedFilterSemester=(String)
-                                                                                    request.getAttribute("filterSemester");
-                                                                                    if (selectedFilterSemester==null)
-                                                                                    selectedFilterSemester="" ; %>
+                                                                                class="form-select">
                                                                                     <option value="" <%=""
                                                                                         .equals(selectedFilterSemester)
                                                                                         ? "selected" : "" %>>-- All
@@ -1094,42 +1168,32 @@
                                                                             </select>
                                                                         </div>
 
-                                                                        <div class="form-group" style="flex: 1.5;">
-                                                                            <label for="filterYear">Filter by
-                                                                                Year</label>
+                                                                        <div class="form-group filter-select-group">
+                                                                            <label for="filterYear">Academic Year</label>
                                                                             <select id="filterYear" name="filterYear"
-                                                                                class="form-select"
-                                                                                onchange="this.form.submit()">
-                                                                                <% Integer selectedFilterYear=(Integer)
-                                                                                    request.getAttribute("filterYear");
-                                                                                    %>
+                                                                                class="form-select">
                                                                                     <option value=""
-                                                                                        <%=selectedFilterYear==null
+                                                                                        <%="".equals(selectedFilterYear)
                                                                                         ? "selected" : "" %>>-- All
                                                                                         Years --</option>
                                                                                     <option value="2024"
-                                                                                        <%=selectedFilterYear !=null &&
-                                                                                        selectedFilterYear==2024
+                                                                                        <%="2024".equals(selectedFilterYear)
                                                                                         ? "selected" : "" %>>2024
                                                                                     </option>
                                                                                     <option value="2025"
-                                                                                        <%=selectedFilterYear !=null &&
-                                                                                        selectedFilterYear==2025
+                                                                                        <%="2025".equals(selectedFilterYear)
                                                                                         ? "selected" : "" %>>2025
                                                                                     </option>
                                                                                     <option value="2026"
-                                                                                        <%=selectedFilterYear !=null &&
-                                                                                        selectedFilterYear==2026
+                                                                                        <%="2026".equals(selectedFilterYear)
                                                                                         ? "selected" : "" %>>2026
                                                                                     </option>
                                                                                     <option value="2027"
-                                                                                        <%=selectedFilterYear !=null &&
-                                                                                        selectedFilterYear==2027
+                                                                                        <%="2027".equals(selectedFilterYear)
                                                                                         ? "selected" : "" %>>2027
                                                                                     </option>
                                                                                     <option value="2028"
-                                                                                        <%=selectedFilterYear !=null &&
-                                                                                        selectedFilterYear==2028
+                                                                                        <%="2028".equals(selectedFilterYear)
                                                                                         ? "selected" : "" %>>2028
                                                                                     </option>
                                                                             </select>
@@ -1137,6 +1201,8 @@
 
                                                                         <button type="submit"
                                                                             class="btn-search">Search</button>
+                                                                        <a href="${pageContext.request.contextPath}/role-assignment"
+                                                                            class="btn-filter-reset">Reset</a>
                                                                     </form>
                                                                 </div>
 
@@ -1341,6 +1407,61 @@
                                                             </div>
                                                         </div>
                                                     </main>
+                                                </div>
+
+                                                <!-- ================= INVITE EXTERNAL REVIEWER MODAL ================= -->
+                                                <div class="modal-overlay" id="inviteReviewerModal">
+                                                    <div class="modal-container" style="max-width: 520px;">
+                                                        <div class="modal-header" style="padding: 16px 24px;">
+                                                            <h3 style="font-size: 20px; font-weight: 800; color: #0F172A; letter-spacing: -0.5px;">
+                                                                Invite External Reviewer
+                                                            </h3>
+                                                            <button type="button" class="modal-close" onclick="closeModal('inviteReviewerModal')">
+                                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                        <div class="modal-body" style="padding: 24px;">
+                                                            <p style="margin: 0 0 20px; color: var(--text-muted); font-size: 14px; line-height: 1.5;">
+                                                                Send a request to Admin to create an account for an external syllabus reviewer.
+                                                            </p>
+                                                            <div class="form-group" style="margin-bottom: 16px;">
+                                                                <label for="extEmail">Email *</label>
+                                                                <input type="email" id="extEmail" class="form-input"
+                                                                    placeholder="e.g. expert_cuong@gmail.com" oninput="checkExtEmailStatus()"
+                                                                    style="width: 100%; box-sizing: border-box;" />
+                                                            </div>
+                                                            <div class="form-group" style="margin-bottom: 16px;">
+                                                                <label for="extFirstName">First Name *</label>
+                                                                <input type="text" id="extFirstName" class="form-input"
+                                                                    placeholder="First name" style="width: 100%; box-sizing: border-box;" />
+                                                            </div>
+                                                            <div class="form-group" style="margin-bottom: 20px;">
+                                                                <label for="extLastName">Last Name *</label>
+                                                                <input type="text" id="extLastName" class="form-input"
+                                                                    placeholder="Last name" style="width: 100%; box-sizing: border-box;" />
+                                                            </div>
+                                                            <div id="extStatusContainer" style="display: none; background-color: #FFFDF0; border: 1px solid #FCD34D; color: #78350F; padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 500;">
+                                                                <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                                                    <svg style="width: 16px; height: 16px; color: #D97706; margin-top: 2px; flex-shrink: 0;"
+                                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-4-4" />
+                                                                    </svg>
+                                                                    <div id="extStatusText">
+                                                                        Request has been sent to Admin.<br>
+                                                                        Status: <span style="font-weight: 700;">PENDING</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer" style="padding: 16px 24px;">
+                                                            <button type="button" class="btn-secondary" onclick="closeModal('inviteReviewerModal')">Cancel</button>
+                                                            <button type="button" class="btn-primary" id="btnSendExtRequest" onclick="sendExtRequest()">Send Request</button>
+                                                        </div>
+                                                    </div>
                                                 </div>
 
                                                 <!-- ================= ADD MAPPING MODAL ================= -->
@@ -1556,7 +1677,7 @@
 
                                                                         <!-- External Reviewer Wrapper -->
                                                                         <div id="externalReviewerSection" style="display: none;">
-                                                                            <div class="external-reviewer-grid">
+                                                                            <div>
                                                                                 <!-- Left Column: Select Existing External Reviewer -->
                                                                                 <div style="border: 1px solid var(--border-color); padding: 16px; border-radius: var(--radius-md); background-color: #F8FAFC;">
                                                                                     <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 700; color: var(--text-dark);">Select External Reviewer</h4>
@@ -1609,42 +1730,6 @@
                                                                                     </div>
                                                                                 </div>
 
-                                                                                <!-- Right Column: Invite New External Reviewer -->
-                                                                                <div style="border: 1px solid var(--border-color); padding: 16px; border-radius: var(--radius-md); background-color: #F8FAFC;">
-                                                                                    <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 700; color: var(--text-dark);">Invite External Reviewer</h4>
-                                                                                    
-                                                                                    <div class="form-group" style="margin-bottom: 12px;">
-                                                                                        <label for="extEmail" style="font-size: 12px; font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 4px;">Email *</label>
-                                                                                        <input type="email" id="extEmail" class="form-input" placeholder="e.g. expert_cuong@gmail.com" oninput="checkExtEmailStatus()" style="width: 100%; box-sizing: border-box;" />
-                                                                                    </div>
-                                                                                    
-                                                                                    <div class="form-group" style="margin-bottom: 12px;">
-                                                                                        <label for="extFirstName" style="font-size: 12px; font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 4px;">First Name *</label>
-                                                                                        <input type="text" id="extFirstName" class="form-input" placeholder="First name" style="width: 100%; box-sizing: border-box;" />
-                                                                                    </div>
-                                                                                    
-                                                                                    <div class="form-group" style="margin-bottom: 16px;">
-                                                                                        <label for="extLastName" style="font-size: 12px; font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 4px;">Last Name *</label>
-                                                                                        <input type="text" id="extLastName" class="form-input" placeholder="Last name" style="width: 100%; box-sizing: border-box;" />
-                                                                                    </div>
-                                                                                    
-                                                                                    <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
-                                                                                        <button type="button" class="btn-primary" id="btnSendExtRequest" onclick="sendExtRequest()" style="height: 38px;">Send Request</button>
-                                                                                    </div>
-                                                                                    
-                                                                                    <!-- Status container box -->
-                                                                                    <div id="extStatusContainer" style="display: none; background-color: #FFFDF0; border: 1px solid #FCD34D; color: #78350F; padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 500;">
-                                                                                        <div style="display: flex; align-items: flex-start; gap: 8px;">
-                                                                                            <svg style="width: 16px; height: 16px; color: #D97706; margin-top: 2px; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-4-4" />
-                                                                                            </svg>
-                                                                                            <div id="extStatusText">
-                                                                                                Request has been sent to Admin.<br>
-                                                                                                Status: <span style="font-weight: 700;">PENDING</span>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -2091,7 +2176,7 @@
                                                                         statusContainer.style.backgroundColor = '#EFF6FF';
                                                                         statusContainer.style.borderColor = '#BFDBFE';
                                                                         statusContainer.style.color = '#1E40AF';
-                                                                        statusText.innerHTML = 'Account already exists. You can select them from the Internal Reviewer list.';
+                                                                        statusText.innerHTML = 'Account already exists. You can select them from the External Reviewer list.';
                                                                         btnSend.disabled = true;
                                                                         btnSend.style.opacity = '0.5';
                                                                         btnSend.style.cursor = 'not-allowed';
@@ -2567,6 +2652,31 @@
                                                         return true;
                                                     }
 
+                                                    function resetInviteReviewerForm() {
+                                                        clearTimeout(checkExtEmailTimeout);
+                                                        document.getElementById('extEmail').value = '';
+                                                        document.getElementById('extEmail').disabled = false;
+                                                        document.getElementById('extFirstName').value = '';
+                                                        document.getElementById('extFirstName').disabled = false;
+                                                        document.getElementById('extLastName').value = '';
+                                                        document.getElementById('extLastName').disabled = false;
+
+                                                        const btnSend = document.getElementById('btnSendExtRequest');
+                                                        btnSend.disabled = false;
+                                                        btnSend.style.opacity = '1';
+                                                        btnSend.style.cursor = 'pointer';
+                                                        btnSend.innerText = 'Send Request';
+
+                                                        const statusContainer = document.getElementById('extStatusContainer');
+                                                        statusContainer.style.display = 'none';
+                                                    }
+
+                                                    function openInviteReviewerModal() {
+                                                        resetInviteReviewerForm();
+                                                        document.getElementById('inviteReviewerModal').classList.add('open');
+                                                        setTimeout(() => document.getElementById('extEmail').focus(), 0);
+                                                    }
+
                                                     function openCreateModal() {
                                                          clearAllReviewers();
                                                          clearAllExtReviewers();
@@ -2578,24 +2688,6 @@
                                                          document.getElementById('dropZone').className = 'dropzone-container';
                                                          handleDesignerChange('');
                                                          
-                                                         // Reset external reviewer form
-                                                         document.getElementById('extEmail').value = '';
-                                                         document.getElementById('extEmail').disabled = false;
-                                                         document.getElementById('extFirstName').value = '';
-                                                         document.getElementById('extFirstName').disabled = false;
-                                                         document.getElementById('extLastName').value = '';
-                                                         document.getElementById('extLastName').disabled = false;
-                                                         const btnSend = document.getElementById('btnSendExtRequest');
-                                                         if (btnSend) {
-                                                             btnSend.disabled = false;
-                                                             btnSend.style.opacity = '1';
-                                                             btnSend.style.cursor = 'pointer';
-                                                             btnSend.innerText = 'Send Request';
-                                                         }
-                                                         const statusCont = document.getElementById('extStatusContainer');
-                                                         if (statusCont) {
-                                                             statusCont.style.display = 'none';
-                                                         }
                                                          selectReviewerType('internal');
                                                          
                                                          document.getElementById('createModal').classList.add('open');

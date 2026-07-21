@@ -61,9 +61,6 @@ public class CurriculumServlet extends HttpServlet {
                 case "detail":
                     viewCurriculumDetail(request, response);
                     break;
-                case "delete":
-                    deleteCurriculum(request, response);
-                    break;
                 case "restore":
                     restoreCurriculum(request, response);
                     break;
@@ -124,6 +121,8 @@ public class CurriculumServlet extends HttpServlet {
                 toggleCoursePloMapping(request, response);
             } else if ("updateActive".equals(action)) {
                 updateActive(request, response);
+            } else if ("delete".equals(action)) {
+                deleteCurriculum(request, response);
             } else {
                 listCurriculums(request, response);
             }
@@ -137,11 +136,35 @@ public class CurriculumServlet extends HttpServlet {
     // ==================== LIST CURRICULUMS ====================
     private void listCurriculums(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        List<Curriculum> curriculums = curriculumDAO.getAll();
+        String keyword = request.getParameter("keyword");
+        String majorParam = request.getParameter("majorId");
+        String status = request.getParameter("status");
+        Long majorId = null;
+        Boolean isActive = null;
+
+        try {
+            if (majorParam != null && !majorParam.trim().isEmpty()) {
+                majorId = Long.parseLong(majorParam);
+            }
+        } catch (NumberFormatException ignored) {
+            majorParam = "";
+        }
+        if ("active".equalsIgnoreCase(status)) {
+            isActive = true;
+        } else if ("unactive".equalsIgnoreCase(status)) {
+            isActive = false;
+        }
+
+        List<Curriculum> allCurriculums = curriculumDAO.getAll();
+        List<Curriculum> curriculums = curriculumDAO.filter(keyword, majorId, isActive);
         List<Major> majors = majorDAO.getAllMajors();
         request.setAttribute("curriculums", curriculums);
+        request.setAttribute("statsCurriculums", allCurriculums);
         request.setAttribute("majors", majors);
-        request.setAttribute("totalCurriculums", curriculums.size());
+        request.setAttribute("totalCurriculums", allCurriculums.size());
+        request.setAttribute("keyword", keyword == null ? "" : keyword);
+        request.setAttribute("selectedMajorId", majorParam == null ? "" : majorParam);
+        request.setAttribute("selectedStatus", status == null ? "" : status);
         request.getRequestDispatcher("/views/academic/curriculum/curriculum.jsp").forward(request, response);
     }
 
@@ -246,6 +269,11 @@ public class CurriculumServlet extends HttpServlet {
             
             if (curriculum == null) {
                 response.sendRedirect("curriculum?action=list&error=Curriculum not found");
+                return;
+            }
+
+            if (curriculum.getIsActive()) {
+                response.sendRedirect("curriculum?action=list&error=Active curriculums cannot be deleted. Please set the curriculum to UnActive first.");
                 return;
             }
             

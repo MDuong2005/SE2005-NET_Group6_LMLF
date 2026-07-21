@@ -152,14 +152,53 @@ public class CourseDAO extends DBContext {
     
     // Delete course
     public boolean delete(Long id) {
-        String sql = "DELETE FROM courses WHERE course_id = ?";
+        String sql = """
+            DELETE FROM courses
+            WHERE course_id = ?
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM curriculum_courses cc
+                  JOIN curriculums cur ON cur.curriculum_id = cc.curriculum_id
+                  WHERE cc.course_id = ?
+                    AND cur.is_active = 1
+                    AND cur.deleted_at IS NULL
+              )
+        """;
         
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, id);
+            ps.setLong(2, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    /**
+     * Returns true when the course belongs to at least one curriculum whose
+     * status is Active. Courses may be deleted only when every containing
+     * curriculum is UnActive.
+     */
+    public boolean isUsedInActiveCurriculum(Long courseId) {
+        String sql = """
+            SELECT TOP 1 1
+            FROM curriculum_courses cc
+            JOIN curriculums cur ON cur.curriculum_id = cc.curriculum_id
+            WHERE cc.course_id = ?
+              AND cur.is_active = 1
+              AND cur.deleted_at IS NULL
+        """;
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, courseId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            // Fail closed so a database error cannot bypass the delete rule.
+            return true;
         }
     }
     

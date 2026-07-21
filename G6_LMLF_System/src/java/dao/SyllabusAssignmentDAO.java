@@ -425,6 +425,85 @@ public class SyllabusAssignmentDAO extends DBContext {
         return assignments;
     }
 
+    public List<SyllabusAssignment> filter(
+            String keyword,
+            Long courseId,
+            String semester,
+            Integer academicYear
+    ) {
+        List<SyllabusAssignment> assignments = new ArrayList<>();
+        String normalizedKeyword = keyword == null ? "" : keyword.trim();
+        String normalizedSemester = semester == null ? "" : semester.trim();
+
+        StringBuilder sql = new StringBuilder("""
+                SELECT
+                    assignmentRow.*,
+                    course.code AS course_code,
+                    course.name AS course_name,
+                    designer.first_name + ' ' + designer.last_name AS designer_name,
+                    designer.email AS designer_email,
+                    legacyReviewer.first_name + ' ' + legacyReviewer.last_name AS reviewer_name,
+                    legacyReviewer.email AS reviewer_email
+                FROM syllabus_assignments assignmentRow
+                INNER JOIN courses course ON course.course_id = assignmentRow.course_id
+                INNER JOIN users designer ON designer.user_id = assignmentRow.designer_id
+                LEFT JOIN users legacyReviewer ON legacyReviewer.user_id = assignmentRow.reviewer_id
+                WHERE 1 = 1
+                """);
+        List<Object> params = new ArrayList<>();
+
+        if (!normalizedKeyword.isEmpty()) {
+            sql.append("""
+                    AND (
+                        course.code LIKE ? OR course.name LIKE ?
+                        OR designer.first_name LIKE ? OR designer.last_name LIKE ?
+                        OR designer.email LIKE ?
+                        OR EXISTS (
+                            SELECT 1
+                            FROM syllabus_assignment_reviewers assignmentReviewer
+                            INNER JOIN users reviewer ON reviewer.user_id = assignmentReviewer.reviewer_id
+                            WHERE assignmentReviewer.assignment_id = assignmentRow.assignment_id
+                              AND (reviewer.first_name LIKE ? OR reviewer.last_name LIKE ? OR reviewer.email LIKE ?)
+                        )
+                    )
+                    """);
+            String pattern = "%" + normalizedKeyword + "%";
+            for (int i = 0; i < 8; i++) params.add(pattern);
+        }
+        if (courseId != null) {
+            sql.append(" AND assignmentRow.course_id = ?");
+            params.add(courseId);
+        }
+        if (!normalizedSemester.isEmpty()) {
+            sql.append(" AND assignmentRow.semester = ?");
+            params.add(normalizedSemester);
+        }
+        if (academicYear != null) {
+            sql.append(" AND assignmentRow.academic_year = ?");
+            params.add(academicYear);
+        }
+        sql.append(" ORDER BY assignmentRow.assigned_at DESC");
+
+        if (connection == null) return assignments;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                Object value = params.get(i);
+                if (value instanceof Long) statement.setLong(i + 1, (Long) value);
+                else if (value instanceof Integer) statement.setInt(i + 1, (Integer) value);
+                else statement.setString(i + 1, String.valueOf(value));
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) assignments.add(mapAssignmentSummary(resultSet));
+            }
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+        }
+
+        enrichReviewerData(assignments);
+        return assignments;
+    }
+
     private SyllabusAssignment mapAssignmentSummary(
             ResultSet resultSet
     ) throws SQLException {
@@ -879,7 +958,6 @@ public class SyllabusAssignmentDAO extends DBContext {
 
             assignment.setAssignmentId(assignmentId);
             assignment.setReviewerId(firstReviewerId);
-            assignment.setReviewerIds(normalizedReviewerIds);
 
             return assignmentId;
 
@@ -1105,7 +1183,6 @@ public class SyllabusAssignmentDAO extends DBContext {
             connection.commit();
 
             assignment.setReviewerId(firstReviewerId);
-            assignment.setReviewerIds(normalizedReviewerIds);
 
             return true;
 
@@ -1199,7 +1276,6 @@ public class SyllabusAssignmentDAO extends DBContext {
         }
 
         if (!reviewerIds.isEmpty()) {
-            assignment.setReviewerIds(reviewerIds);
             assignment.setReviewerId(reviewerIds.get(0));
             assignment.setReviewerName(reviewerNames.toString());
             assignment.setReviewerEmail(reviewerEmails.toString());
@@ -1551,15 +1627,8 @@ public class SyllabusAssignmentDAO extends DBContext {
                     sa.setAcademicYear(rs.getInt("academic_year"));
                     sa.setAssignedAt(rs.getTimestamp("assigned_at"));
                     sa.setAssignmentStatus(rs.getString("assignment_status"));
-                    
-                    // New DB fields
-                    sa.setAssignedBy(rs.getLong("assigned_by"));
-                    sa.setSyllabusId(rs.getLong("syllabus_id"));
                     sa.setDueDate(rs.getTimestamp("due_date"));
-                    sa.setAcceptedAt(rs.getTimestamp("accepted_at"));
-                    sa.setSubmittedAt(rs.getTimestamp("submitted_at"));
-                    sa.setCompletedAt(rs.getTimestamp("completed_at"));
-                    
+
                     // Display helpers
                     sa.setCourseCode(rs.getString("course_code"));
                     sa.setCourseName(rs.getString("course_name"));
@@ -1567,10 +1636,6 @@ public class SyllabusAssignmentDAO extends DBContext {
                     sa.setDesignerEmail(rs.getString("designer_email"));
                     sa.setReviewerName(rs.getString("reviewer_name").trim());
                     sa.setReviewerEmail(rs.getString("reviewer_email"));
-                    
-                    String assigner = rs.getString("assigned_by_name");
-                    sa.setAssignedByName(assigner != null ? assigner.trim() : "System Admin");
-                    
                     list.add(sa);
                 }
             }

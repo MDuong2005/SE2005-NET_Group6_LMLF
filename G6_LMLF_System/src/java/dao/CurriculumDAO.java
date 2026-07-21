@@ -90,6 +90,54 @@ public class CurriculumDAO extends DBContext {
         return curriculums;
     }
 
+    public List<Curriculum> filter(String keyword, Long majorId, Boolean isActive) {
+        List<Curriculum> curriculums = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(
+                "SELECT * FROM curriculums WHERE deleted_at IS NULL");
+        List<Object> params = new ArrayList<>();
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            sql.append(" AND (curriculum_code LIKE ? OR name LIKE ?)");
+            String pattern = "%" + keyword.trim() + "%";
+            params.add(pattern);
+            params.add(pattern);
+        }
+        if (majorId != null) {
+            sql.append(" AND major_id = ?");
+            params.add(majorId);
+        }
+        if (isActive != null) {
+            sql.append(" AND is_active = ?");
+            params.add(isActive);
+        }
+        sql.append(" ORDER BY created_at DESC");
+
+        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                Object value = params.get(i);
+                if (value instanceof Long) {
+                    ps.setLong(i + 1, (Long) value);
+                } else if (value instanceof Boolean) {
+                    ps.setBoolean(i + 1, (Boolean) value);
+                } else {
+                    ps.setString(i + 1, String.valueOf(value));
+                }
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Curriculum curriculum = mapResultSetToCurriculum(rs);
+                    curriculum.setMajor(majorDAO.getMajorById(curriculum.getMajorId()));
+                    curriculum.setCourses(getCurriculumCourses(curriculum.getCurriculumId()));
+                    curriculums.add(curriculum);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return curriculums;
+    }
+
     // Lấy curriculum theo ID
     public Curriculum getById(Long curriculumId) {
         String sql = "SELECT * FROM curriculums WHERE curriculum_id = ? AND deleted_at IS NULL";
@@ -219,7 +267,8 @@ public class CurriculumDAO extends DBContext {
 
     // Xóa mềm curriculum
     public boolean softDelete(Long curriculumId) {
-        String sql = "UPDATE curriculums SET deleted_at = ?, is_active = ? WHERE curriculum_id = ?";
+        String sql = "UPDATE curriculums SET deleted_at = ?, is_active = ? "
+                + "WHERE curriculum_id = ? AND deleted_at IS NULL AND is_active = 0";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
             ps.setBoolean(2, false);

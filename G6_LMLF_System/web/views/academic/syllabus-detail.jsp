@@ -8,11 +8,48 @@
             <h2>Syllabus Details</h2>
             <p>Viewing details of syllabus for subject <strong>${syllabus.courseCode}</strong>.</p>
         </div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
         <a href="${pageContext.request.contextPath}/academic/syllabus" class="btn btn-outlined" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid #CBD5E1; border-radius: 6px; color: #475569; background-color: white; text-decoration: none; font-weight: 600;">
             ← Back to List
         </a>
+            <form method="POST" action="${pageContext.request.contextPath}/academic/syllabus" style="margin: 0;"
+                  onsubmit="return confirm('Are you sure you want to publish this syllabus?');">
+                <input type="hidden" name="action" value="publish">
+                <input type="hidden" name="id" value="${syllabus.syllabusId}">
+                <button type="submit" style="display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border: none; border-radius: 6px; color: white; background-color: #16A34A; font-weight: 700; cursor: pointer; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);"
+                        onmouseover="this.style.backgroundColor='#15803D'" onmouseout="this.style.backgroundColor='#16A34A'">
+                    Publish Syllabus
+                </button>
+            </form>
+        </div>
     </div>
 </div>
+
+<style>
+    .toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background-color: #2D3748;
+        color: white;
+        padding: 16px 24px;
+        border-radius: 10px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        z-index: 3000;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transform: translateY(100px);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast-success { border-left: 4px solid #48BB78; }
+    .toast-error { border-left: 4px solid #F56565; }
+    .toast-icon { font-weight: bold; font-size: 18px; }
+    .toast-success .toast-icon { color: #48BB78; }
+    .toast-error .toast-icon { color: #F56565; }
+</style>
 
 <div class="panel" style="margin-top: 20px;">
     <div class="panel-header">
@@ -35,6 +72,9 @@
                         </c:when>
                         <c:when test="${syllabus.status == 'DRAFT'}">
                             <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background-color: #fef08a; color: #713f12;">${syllabus.status}</span>
+                        </c:when>
+                        <c:when test="${syllabus.status == 'APPROVED'}">
+                            <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background-color: #DBEAFE; color: #1D4ED8;">${syllabus.status}</span>
                         </c:when>
                         <c:otherwise>
                             <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background-color: #e2e8f0; color: #475569;">${syllabus.status}</span>
@@ -107,3 +147,25 @@
         </div>
     </div>
 </c:if>
+
+<span id="syllabusSuccessMessage" hidden><c:out value="${syllabusSuccess}" /></span>
+<span id="syllabusErrorMessage" hidden><c:out value="${syllabusError}" /></span>
+<div id="toast" class="toast" role="status" aria-live="polite">
+    <span id="toastIcon" class="toast-icon">✓</span>
+    <span id="toastMessage"></span>
+</div>
+<script>
+    (function () {
+        const successMessage = document.getElementById('syllabusSuccessMessage').textContent.trim();
+        const errorMessage = document.getElementById('syllabusErrorMessage').textContent.trim();
+        const message = errorMessage || successMessage;
+        if (!message) return;
+
+        const isSuccess = !errorMessage;
+        const toast = document.getElementById('toast');
+        document.getElementById('toastMessage').textContent = message;
+        document.getElementById('toastIcon').textContent = isSuccess ? '✓' : '✕';
+        toast.className = 'toast show ' + (isSuccess ? 'toast-success' : 'toast-error');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    })();
+</script>

@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.*, model.*" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -151,6 +152,85 @@
             padding: 24px;
             box-shadow: var(--shadow-sm);
         }
+
+        .filter-row {
+            display: flex;
+            gap: 20px;
+            align-items: flex-end;
+        }
+        .filter-row .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+        .filter-row .form-group label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+        .filter-row .form-group input,
+        .filter-row .form-group select {
+            height: 42px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 0 16px;
+            font-family: inherit;
+            font-size: 14px;
+            color: var(--text-dark);
+            background-color: #FFFFFF;
+            outline: none;
+            transition: var(--transition);
+        }
+        .filter-row .form-group input:focus,
+        .filter-row .form-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(242, 111, 33, 0.15);
+        }
+        .filter-row .search-group { flex: 3; }
+        .filter-row .filter-select-group { flex: 1.5; }
+        .search-input-wrapper { position: relative; width: 100%; }
+        .filter-row .search-input-wrapper input { width: 100%; padding-left: 44px; }
+        .search-input-wrapper svg {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            fill: var(--text-muted);
+            pointer-events: none;
+        }
+        .btn-search {
+            height: 42px;
+            padding: 0 24px;
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .btn-search:hover { background-color: var(--primary-hover); }
+        .btn-filter-reset {
+            height: 42px;
+            padding: 0 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-muted);
+            background-color: #FFFFFF;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 700;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .btn-filter-reset:hover { background-color: #F8FAFC; color: var(--text-dark); }
 
         .table-card {
             padding: 0;
@@ -618,6 +698,9 @@
             .stats-grid {
                 grid-template-columns: 1fr 1fr;
             }
+            .filter-row { flex-direction: column; align-items: stretch; }
+            .filter-row .search-group,
+            .filter-row .filter-select-group { flex: 1 1 auto; }
         }
         /* Custom alert styling */
         .toast {
@@ -715,7 +798,7 @@
                         <p style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin: 0;">Active</p>
                         <div class="stat-value" style="margin-top: 0.25rem; font-size: 1.75rem; font-weight: 800; color: #0f172a;">
                             <%
-                                List<Curriculum> stats = (List<Curriculum>) request.getAttribute("curriculums");
+                                List<Curriculum> stats = (List<Curriculum>) request.getAttribute("statsCurriculums");
                                 int active = 0;
                                 int unactive = 0;
                                 if (stats != null) {
@@ -748,6 +831,55 @@
         </div>
 
         <!-- ===== ALERTS ===== -->
+
+        <!-- ===== FILTERS ===== -->
+        <div class="card">
+            <form method="GET" action="${pageContext.request.contextPath}/curriculum" class="filter-row">
+                <input type="hidden" name="action" value="list">
+                <div class="form-group search-group" style="margin: 0;">
+                    <label for="curriculumKeyword">Search by Name or Code</label>
+                    <div class="search-input-wrapper">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                        </svg>
+                        <input type="text" id="curriculumKeyword" name="keyword"
+                               value="<c:out value='${keyword}' />"
+                               placeholder="Enter curriculum name or code...">
+                    </div>
+                </div>
+                <div class="form-group filter-select-group" style="margin: 0;">
+                    <label for="curriculumMajor">Major</label>
+                    <select id="curriculumMajor" name="majorId">
+                        <option value="">All Majors</option>
+                        <%
+                            List<Major> filterMajors = (List<Major>) request.getAttribute("majors");
+                            String selectedMajorId = String.valueOf(request.getAttribute("selectedMajorId"));
+                            if (filterMajors != null) {
+                                for (Major filterMajor : filterMajors) {
+                        %>
+                            <option value="<%= filterMajor.getMajorId() %>"
+                                <%= String.valueOf(filterMajor.getMajorId()).equals(selectedMajorId) ? "selected" : "" %>>
+                                <%= filterMajor.getCode() %> - <%= filterMajor.getName() %>
+                            </option>
+                        <%      }
+                            }
+                        %>
+                    </select>
+                </div>
+                <div class="form-group filter-select-group" style="margin: 0;">
+                    <label for="curriculumStatus">Status</label>
+                    <select id="curriculumStatus" name="status">
+                        <option value="">All Statuses</option>
+                        <option value="active" ${selectedStatus == 'active' ? 'selected' : ''}>Active</option>
+                        <option value="unactive" ${selectedStatus == 'unactive' ? 'selected' : ''}>UnActive</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-search">Search</button>
+                <a href="${pageContext.request.contextPath}/curriculum?action=list" class="btn-filter-reset">
+                    Reset
+                </a>
+            </form>
+        </div>
 
         <!-- ===== TABLE ===== -->
         <div class="card table-card">
@@ -797,16 +929,21 @@
                                                 <circle cx="12" cy="12" r="3"></circle>
                                             </svg>
                                         </a>
-                                        <a href="${pageContext.request.contextPath}/curriculum?action=delete&id=<%= curriculum.getCurriculumId() %>" 
-                                           class="btn-action btn-action-delete" title="Delete Curriculum"
-                                           onclick="return confirm('Are you sure you want to delete this curriculum?')">
+                                        <form method="POST" action="${pageContext.request.contextPath}/curriculum"
+                                              style="margin: 0; display: inline-flex;"
+                                              onsubmit="return confirm('Are you sure you want to delete this curriculum?')">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="id" value="<%= curriculum.getCurriculumId() %>">
+                                        <button type="submit" class="btn-action btn-action-delete" title="Delete Curriculum"
+                                                style="border: none;">
                                             <svg viewBox="0 0 24 24">
                                                 <polyline points="3 6 5 6 21 6"></polyline>
                                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                                                 <line x1="10" y1="11" x2="10" y2="17"></line>
                                                 <line x1="14" y1="11" x2="14" y2="17"></line>
                                             </svg>
-                                        </a>
+                                        </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>

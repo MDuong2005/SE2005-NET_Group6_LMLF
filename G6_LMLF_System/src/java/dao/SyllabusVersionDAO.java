@@ -205,62 +205,92 @@ public class SyllabusVersionDAO extends DBContext {
 
     public boolean publishVersion(long versionId, long publisherId) {
         String getVersionSql = """
-        SELECT syllabus_id, version_number
-        FROM syllabus_versions
-        WHERE version_id = ?
-          AND status = 'APPROVED'
-    """;
+                SELECT syllabus_id, version_number
+                FROM syllabus_versions
+                WHERE version_id = ?
+                  AND status = 'APPROVED'
+                """;
+
+        String archivePublishedSql = """
+                UPDATE syllabus_versions
+                SET status = 'ARCHIVED',
+                    archived_at = SYSDATETIME(),
+                    updated_by = ?
+                WHERE syllabus_id = ?
+                  AND version_id <> ?
+                  AND status = 'PUBLISHED'
+                """;
 
         String updateVersionSql = """
-        UPDATE syllabus_versions
-        SET status = 'PUBLISHED',
-            published_at = GETDATE(),
-            updated_by = ?
-        WHERE version_id = ?
-    """;
+                UPDATE syllabus_versions
+                SET status = 'PUBLISHED',
+                    published_at = SYSDATETIME(),
+                    published_by = ?,
+                    updated_by = ?,
+                    archived_at = NULL
+                WHERE version_id = ?
+                  AND status = 'APPROVED'
+                """;
 
         String updateSyllabusSql = """
-        UPDATE syllabuses
-        SET status = 'PUBLISHED',
-            current_version = ?,
-            updated_at = GETDATE(),
-            updated_by = ?
-        WHERE syllabus_id = ?
-    """;
+                UPDATE syllabuses
+                SET status = 'PUBLISHED',
+                    current_version = ?,
+                    updated_at = SYSDATETIME(),
+                    updated_by = ?
+                WHERE syllabus_id = ?
+                  AND deleted_at IS NULL
+                """;
 
+        if (connection == null || versionId <= 0 || publisherId <= 0) {
+            return false;
+        }
+
+        boolean originalAutoCommit = true;
         try {
+            originalAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
 
-            PreparedStatement getPs = connection.prepareStatement(getVersionSql);
-            getPs.setLong(1, versionId);
-
-            ResultSet rs = getPs.executeQuery();
-
-            if (!rs.next()) {
-                connection.rollback();
-                return false;
+            long syllabusId;
+            String versionNumber;
+            try (PreparedStatement getPs = connection.prepareStatement(getVersionSql)) {
+                getPs.setLong(1, versionId);
+                try (ResultSet rs = getPs.executeQuery()) {
+                    if (!rs.next()) {
+                        connection.rollback();
+                        return false;
+                    }
+                    syllabusId = rs.getLong("syllabus_id");
+                    versionNumber = rs.getString("version_number");
+                }
             }
 
-            long syllabusId = rs.getLong("syllabus_id");
-            String versionNumber = rs.getString("version_number");
-
-            boolean archived = archiveCurrentPublishedVersion(syllabusId);
-
-            if (!archived) {
-                connection.rollback();
-                return false;
+            try (PreparedStatement archivePs = connection.prepareStatement(archivePublishedSql)) {
+                archivePs.setLong(1, publisherId);
+                archivePs.setLong(2, syllabusId);
+                archivePs.setLong(3, versionId);
+                archivePs.executeUpdate();
             }
 
-            PreparedStatement updateVersionPs = connection.prepareStatement(updateVersionSql);
-            updateVersionPs.setLong(1, publisherId);
-            updateVersionPs.setLong(2, versionId);
-            updateVersionPs.executeUpdate();
+            try (PreparedStatement updateVersionPs = connection.prepareStatement(updateVersionSql)) {
+                updateVersionPs.setLong(1, publisherId);
+                updateVersionPs.setLong(2, publisherId);
+                updateVersionPs.setLong(3, versionId);
+                if (updateVersionPs.executeUpdate() != 1) {
+                    connection.rollback();
+                    return false;
+                }
+            }
 
-            PreparedStatement updateSyllabusPs = connection.prepareStatement(updateSyllabusSql);
-            updateSyllabusPs.setString(1, versionNumber);
-            updateSyllabusPs.setLong(2, publisherId);
-            updateSyllabusPs.setLong(3, syllabusId);
-            updateSyllabusPs.executeUpdate();
+            try (PreparedStatement updateSyllabusPs = connection.prepareStatement(updateSyllabusSql)) {
+                updateSyllabusPs.setString(1, versionNumber);
+                updateSyllabusPs.setLong(2, publisherId);
+                updateSyllabusPs.setLong(3, syllabusId);
+                if (updateSyllabusPs.executeUpdate() != 1) {
+                    connection.rollback();
+                    return false;
+                }
+            }
 
             connection.commit();
             return true;
@@ -277,7 +307,7 @@ public class SyllabusVersionDAO extends DBContext {
 
         } finally {
             try {
-                connection.setAutoCommit(true);
+                connection.setAutoCommit(originalAutoCommit);
             } catch (Exception e) {
                 e.printStackTrace();
             }

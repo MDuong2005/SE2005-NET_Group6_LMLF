@@ -4,6 +4,10 @@
 <%
     List<Course> courseList = (List<Course>) request.getAttribute("courseList");
     String errorMessage = (String) request.getAttribute("errorMessage");
+    String successMessage = (String) session.getAttribute("successMessage");
+    if (successMessage != null) {
+        session.removeAttribute("successMessage");
+    }
     String action = (String) request.getAttribute("action");
     if (action == null) {
         action = "";
@@ -51,6 +55,31 @@
                 --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
                 --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             }
+
+            .toast {
+                position: fixed;
+                bottom: 24px;
+                right: 24px;
+                background-color: #2D3748;
+                color: white;
+                padding: 16px 24px;
+                border-radius: 10px;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                z-index: 3000;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                transform: translateY(100px);
+                opacity: 0;
+                transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            }
+
+            .toast.show { transform: translateY(0); opacity: 1; }
+            .toast-success { border-left: 4px solid #48BB78; }
+            .toast-error { border-left: 4px solid #F56565; }
+            .toast-icon { font-weight: bold; font-size: 18px; }
+            .toast-success .toast-icon { color: #48BB78; }
+            .toast-error .toast-icon { color: #F56565; }
 
             /* Scoped styles for the core workspace area */
             .workspace-container {
@@ -546,35 +575,6 @@
                 <!-- ================= DYNAMIC WORKSPACE ================= -->
                 <div class="dashboard-content">
                     <div class="workspace-container">
-                        <!-- Success Message -->
-                        <%
-                            String successMessage = (String) session.getAttribute("successMessage");
-                            if (successMessage != null && !successMessage.isEmpty()) {
-                        %>
-                        <div class="alert-success" style="
-                             background-color: #DCFCE7;
-                             border: 1px solid #86EFAC;
-                             color: #166534;
-                             padding: 12px 16px;
-                             border-radius: var(--radius-md);
-                             font-size: 14px;
-                             font-weight: 500;
-                             display: flex;
-                             align-items: center;
-                             gap: 8px;
-                             margin-bottom: 16px;
-                             ">
-                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                            </svg>
-                            <%= successMessage %>
-                            <button onclick="this.parentElement.style.display = 'none'" style="margin-left: auto; background: none; border: none; color: #166534; cursor: pointer; font-size: 18px;">&times;</button>
-                        </div>
-                        <%
-                                session.removeAttribute("successMessage");
-                            }
-                        %>
-                        
                         <div class="workspace-header">
                             <h1>Course Management</h1>
                             <button type="button" class="btn-primary" onclick="openCreateModal()">
@@ -582,14 +582,6 @@
                                 Add New Course
                             </button>
                         </div>
-
-                <!-- Error Notification Alert -->
-                <% if(errorMessage != null && action.isEmpty()){ %>
-                <div class="alert-error">
-                    <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
-                    <%= errorMessage %>
-                </div>
-                <% } %>
 
                 <!-- Filter Card -->
                 <div class="card">
@@ -660,16 +652,21 @@
                                                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                                             </svg>
                                         </a>
-                                        <a href="${pageContext.request.contextPath}/course?action=delete&id=<%= courseItem.getCourseId() %>" 
-                                           class="btn-action btn-action-delete" title="Remove"
-                                           onclick="return confirm('Delete this course?')">
+                                        <form method="POST" action="${pageContext.request.contextPath}/course"
+                                              style="margin: 0; display: inline-flex;"
+                                              onsubmit="return confirm('Delete this course?')">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="id" value="<%= courseItem.getCourseId() %>">
+                                        <button type="submit" class="btn-action btn-action-delete" title="Remove"
+                                                style="border: none;">
                                             <svg viewBox="0 0 24 24">
                                                 <polyline points="3 6 5 6 21 6"></polyline>
                                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                                                 <line x1="10" y1="11" x2="10" y2="17"></line>
                                                 <line x1="14" y1="11" x2="14" y2="17"></line>
                                             </svg>
-                                        </a>
+                                        </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
@@ -814,6 +811,15 @@
 
         <!-- JavaScript controls -->
         <script>
+            function showToast(message, isSuccess) {
+                if (!message || !message.trim()) return;
+                const toast = document.getElementById('toast');
+                document.getElementById('toastMessage').textContent = message;
+                document.getElementById('toastIcon').textContent = isSuccess ? '✓' : '✕';
+                toast.className = 'toast show ' + (isSuccess ? 'toast-success' : 'toast-error');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            }
+
             function openCreateModal() {
                 document.getElementById('createModal').classList.add('open');
                 document.getElementById('createCode').focus();
@@ -828,6 +834,11 @@
 
             // Client-side pagination implementation
             document.addEventListener('DOMContentLoaded', function () {
+                showToast(document.getElementById('courseSuccessMessage').textContent, true);
+                <% if (action.isEmpty()) { %>
+                showToast(document.getElementById('courseErrorMessage').textContent, false);
+                <% } %>
+
                 const table = document.getElementById('coursesTable');
                 if (!table)
                     return;
@@ -878,5 +889,11 @@
                 showPage(1);
             });
         </script>
+        <span id="courseSuccessMessage" hidden><%= successMessage == null ? "" : successMessage %></span>
+        <span id="courseErrorMessage" hidden><%= errorMessage == null ? "" : errorMessage %></span>
+        <div id="toast" class="toast" role="status" aria-live="polite">
+            <span id="toastIcon" class="toast-icon">✓</span>
+            <span id="toastMessage"></span>
+        </div>
     </body>
 </html>

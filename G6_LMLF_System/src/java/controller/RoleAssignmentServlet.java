@@ -102,42 +102,29 @@ public class RoleAssignmentServlet extends HttpServlet {
             }
         }
 
-        // Fetch assignments list
-        List<SyllabusAssignment> assignmentList;
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            assignmentList = assignmentDAO.search(keyword.trim());
-            req.setAttribute("keyword", keyword);
-        } else {
-            assignmentList = assignmentDAO.listAll();
-        }
-
-        // Apply filterCourseId if selected
+        Long filterCourseId = null;
+        Integer filterYear = null;
         if (filterCourseIdStr != null && !filterCourseIdStr.trim().isEmpty()) {
             try {
-                Long filterCourseId = Long.parseLong(filterCourseIdStr.trim());
-                req.setAttribute("filterCourseId", filterCourseId);
-                assignmentList.removeIf(item -> item.getCourseId() != filterCourseId.longValue());
+                filterCourseId = Long.parseLong(filterCourseIdStr.trim());
             } catch (NumberFormatException e) {
-                // ignore invalid param
+                filterCourseIdStr = "";
             }
         }
-
-        // Apply filterSemester if selected
-        if (filterSemester != null && !filterSemester.trim().isEmpty()) {
-            req.setAttribute("filterSemester", filterSemester);
-            assignmentList.removeIf(item -> !filterSemester.equalsIgnoreCase(item.getSemester()));
-        }
-
-        // Apply filterYear if selected
         if (filterYearStr != null && !filterYearStr.trim().isEmpty()) {
             try {
-                int filterYear = Integer.parseInt(filterYearStr.trim());
-                req.setAttribute("filterYear", filterYear);
-                assignmentList.removeIf(item -> item.getAcademicYear() != filterYear);
+                filterYear = Integer.parseInt(filterYearStr.trim());
             } catch (NumberFormatException e) {
-                // ignore invalid param
+                filterYearStr = "";
             }
         }
+
+        List<SyllabusAssignment> assignmentList = assignmentDAO.filter(
+                keyword, filterCourseId, filterSemester, filterYear);
+        req.setAttribute("keyword", keyword == null ? "" : keyword);
+        req.setAttribute("filterCourseId", filterCourseIdStr == null ? "" : filterCourseIdStr);
+        req.setAttribute("filterSemester", filterSemester == null ? "" : filterSemester);
+        req.setAttribute("filterYear", filterYearStr == null ? "" : filterYearStr);
 
         // Fetch courses and lecturers for selectors
         List<Course> courses = courseDAO.listAll();

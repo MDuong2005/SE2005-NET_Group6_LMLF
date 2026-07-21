@@ -161,7 +161,7 @@ public class CourseServlet extends HttpServlet {
             
             if (result) {
                 // Thành công -> quay về danh sách với thông báo thành công
-                req.getSession().setAttribute("successMessage", "Thêm môn học '" + code.trim() + "' thành công!");
+                req.getSession().setAttribute("successMessage", "Course '" + code.trim().toUpperCase() + "' created successfully!");
                 resp.sendRedirect(req.getContextPath() + "/course");
             } else {
                 req.setAttribute("errorMessage", "Lỗi khi thêm môn học. Vui lòng thử lại!");
@@ -271,6 +271,15 @@ public class CourseServlet extends HttpServlet {
             
             if (existing == null) {
                 req.setAttribute("errorMessage", "Không tìm thấy môn học");
+                forwardToCourseList(req, resp);
+                return;
+            }
+
+            if (courseDAO.isUsedInActiveCurriculum(id)) {
+                req.setAttribute("errorMessage",
+                        "Course '" + existing.getCode()
+                        + "' cannot be deleted because it belongs to an Active curriculum. "
+                        + "Please set all related curriculums to UnActive first.");
                 forwardToCourseList(req, resp);
                 return;
             }

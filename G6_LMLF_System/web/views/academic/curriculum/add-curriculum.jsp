@@ -1731,6 +1731,29 @@
             }
         }
 
+        function appendImportedOutcomes(existingItems, importedItems, prefix) {
+            const mergedItems = existingItems.map(item => ({ ...item }));
+            const existingDescriptions = new Set(
+                mergedItems.map(item => (item.text || '').trim().toLocaleLowerCase())
+            );
+
+            importedItems.forEach(item => {
+                const description = (item.description || '').trim();
+                const descriptionKey = description.toLocaleLowerCase();
+                if (!description || existingDescriptions.has(descriptionKey)) {
+                    return;
+                }
+
+                mergedItems.push({
+                    id: `\${prefix}-\${mergedItems.length + 1}`,
+                    text: description
+                });
+                existingDescriptions.add(descriptionKey);
+            });
+
+            return mergedItems;
+        }
+
         function executePoImport() {
             const select = document.getElementById('importPoCurriculumSelect');
             const val = select.value;
@@ -1744,7 +1767,7 @@
             .then(res => res.json())
             .then(res => {
                 if (res.success && res.pos) {
-                    poList = res.pos.map(po => ({ id: po.code.replace('PO', 'PO-'), text: po.description }));
+                    poList = appendImportedOutcomes(poList, res.pos, 'PO');
                     renderPOs();
                     document.getElementById('importPoFormContainer').style.display = 'none';
                     showToast(`Successfully imported Program Objectives (PO) from curriculum: "${selectedText}"!`, true);
@@ -1771,7 +1794,7 @@
             .then(res => res.json())
             .then(res => {
                 if (res.success && res.plos) {
-                    ploList = res.plos.map(plo => ({ id: plo.code.replace('PLO', 'PLO-'), text: plo.description }));
+                    ploList = appendImportedOutcomes(ploList, res.plos, 'PLO');
                     renderPLOs();
                     document.getElementById('importPloFormContainer').style.display = 'none';
                     showToast(`Successfully imported Program Learning Outcomes (PLO) from curriculum: "${selectedText}"!`, true);

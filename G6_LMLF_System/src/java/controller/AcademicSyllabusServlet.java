@@ -1,6 +1,7 @@
 package controller;
 
 import dao.AcademicSyllabusDAO;
+import dao.SyllabusVersionDAO;
 import utils.SessionUtil;
 
 import jakarta.servlet.ServletException;
@@ -8,6 +9,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -16,10 +18,63 @@ import java.util.Map;
 public class AcademicSyllabusServlet extends HttpServlet {
 
     private AcademicSyllabusDAO syllabusDAO;
+    private SyllabusVersionDAO syllabusVersionDAO;
 
     @Override
     public void init() throws ServletException {
         syllabusDAO = new AcademicSyllabusDAO();
+        syllabusVersionDAO = new SyllabusVersionDAO();
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        if (!SessionUtil.isLoggedIn(request)
+                || !SessionUtil.getCurrentUser(request).hasRole("ACADEMIC_OFFICE")) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        String idParam = request.getParameter("id");
+        HttpSession session = request.getSession();
+
+        if (!"publish".equals(action)) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unsupported action");
+            return;
+        }
+
+        try {
+            long syllabusId = Long.parseLong(idParam);
+            Map<String, Object> syllabus = syllabusDAO.getSyllabusDetail(syllabusId);
+
+            if (syllabus == null || syllabus.isEmpty()) {
+                session.setAttribute("syllabusError", "Syllabus not found.");
+            } else if (!"APPROVED".equalsIgnoreCase(String.valueOf(syllabus.get("status")))) {
+                session.setAttribute("syllabusError",
+                        "Only a syllabus with APPROVED status can be published. Current status: "
+                        + syllabus.get("status") + ".");
+            } else if (syllabus.get("versionId") == null) {
+                session.setAttribute("syllabusError", "The syllabus has no approved version to publish.");
+            } else {
+                long versionId = ((Number) syllabus.get("versionId")).longValue();
+                long publisherId = SessionUtil.getCurrentUser(request).getUserId();
+
+                if (syllabusVersionDAO.publishVersion(versionId, publisherId)) {
+                    session.setAttribute("syllabusSuccess", "Syllabus published successfully.");
+                } else {
+                    session.setAttribute("syllabusError",
+                            "Unable to publish this syllabus. Its status may no longer be APPROVED.");
+                }
+            }
+
+            response.sendRedirect(request.getContextPath()
+                    + "/academic/syllabus?action=detail&id=" + syllabusId);
+        } catch (NumberFormatException e) {
+            session.setAttribute("syllabusError", "Invalid syllabus ID.");
+            response.sendRedirect(request.getContextPath() + "/academic/syllabus");
+        }
     }
 
     @Override
@@ -115,6 +170,14 @@ public class AcademicSyllabusServlet extends HttpServlet {
             }
             
             request.setAttribute("syllabus", syllabus);
+
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                request.setAttribute("syllabusSuccess", session.getAttribute("syllabusSuccess"));
+                request.setAttribute("syllabusError", session.getAttribute("syllabusError"));
+                session.removeAttribute("syllabusSuccess");
+                session.removeAttribute("syllabusError");
+            }
             
             request.setAttribute("contentPage", "academic/syllabus-detail.jsp");
             request.setAttribute("cssFile", "academic/academic.css");

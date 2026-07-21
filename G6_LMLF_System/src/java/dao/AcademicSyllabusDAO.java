@@ -47,11 +47,14 @@ public class AcademicSyllabusDAO extends DBContext {
                 c.code AS course_code,
                 c.name AS course_name,
                 c.credits,
-                s.status,
+                COALESCE(sv.status, s.status) AS status,
                 s.current_version,
                 s.updated_at
             FROM syllabuses s
             JOIN courses c ON s.course_id = c.course_id
+            LEFT JOIN syllabus_versions sv
+                ON sv.syllabus_id = s.syllabus_id
+                AND sv.version_number = s.current_version
             WHERE s.deleted_at IS NULL
         """;
         
@@ -99,7 +102,7 @@ public class AcademicSyllabusDAO extends DBContext {
                 c.code AS course_code,
                 c.name AS course_name,
                 c.credits,
-                s.status,
+                COALESCE(sv.status, s.status) AS status,
                 s.current_version,
                 s.updated_at,
                 sv.version_id,
@@ -126,7 +129,8 @@ public class AcademicSyllabusDAO extends DBContext {
                     detail.put("status", rs.getString("status"));
                     detail.put("currentVersion", rs.getString("current_version"));
                     detail.put("updatedAt", rs.getTimestamp("updated_at"));
-                    detail.put("versionId", rs.getLong("version_id"));
+                    long versionId = rs.getLong("version_id");
+                    detail.put("versionId", rs.wasNull() ? null : versionId);
                     detail.put("degreeLevel", rs.getString("degree_level"));
                     detail.put("timeAllocation", rs.getString("time_allocation"));
                     detail.put("description", rs.getString("course_description"));

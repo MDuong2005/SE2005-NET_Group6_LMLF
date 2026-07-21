@@ -1012,7 +1012,7 @@
                     detailPloList.forEach(plo => {
                         const isSelected = (presetCoursePloMappings[course.code] && presetCoursePloMappings[course.code].includes(plo.id));
                         const cellVal = isSelected ? '✓' : '';
-                        cellsHtml += `<td onclick="toggleCoursePloCellDetail(this, '\${course.code}', '\${plo.id}')" style="text-align: center; font-weight: 800; font-size: 16px; color: #1E293B; cursor: pointer; user-select: none;">\${cellVal}</td>`;
+                        cellsHtml += `<td style="text-align: center; font-weight: 800; font-size: 16px; color: #1E293B; cursor: default; user-select: none;">\${cellVal}</td>`;
                     });
                     
                     tbody.innerHTML += `
