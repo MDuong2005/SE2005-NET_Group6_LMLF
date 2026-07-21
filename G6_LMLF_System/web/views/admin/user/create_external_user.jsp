@@ -9,7 +9,33 @@
         <form action="${pageContext.request.contextPath}/admin/external-users" method="POST">
             <input type="hidden" name="action" value="create">
 
-            <div style="display: flex; gap: 15px;">
+            <c:if test="${not empty param.error}">
+                <div style="background-color: #fee2e2; color: #991b1b; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #f87171;">
+                    <c:choose>
+                        <c:when test="${param.error == 'invalid_data'}">
+                            <strong>Validation Error:</strong> Email, First Name, and Last Name are required and must be valid.
+                        </c:when>
+                        <c:when test="${param.error == 'email_exists'}">
+                            <strong>Error:</strong> This email address is already registered in the system.
+                        </c:when>
+                        <c:when test="${param.error == 'role_missing'}">
+                            <strong>Error:</strong> The EXTERNAL_EXPERT role is missing from the database.
+                        </c:when>
+                        <c:when test="${param.error == 'email_failed_rollback'}">
+                            <strong>Error:</strong> Failed to send the credentials email. The account creation was safely rolled back to prevent inaccessible ghost accounts.
+                        </c:when>
+                        <c:when test="${param.error == 'email_failed_critical'}">
+                            <strong>CRITICAL ERROR:</strong> Failed to send email AND failed to rollback. Ghost account exists in DB!
+                        </c:when>
+                        <c:when test="${param.error == 'db_error'}">
+                            <strong>Database Error:</strong> Failed to create user. The email might already exist.
+                        </c:when>
+                        <c:otherwise>
+                            <strong>Error:</strong> An unexpected error occurred.
+                        </c:otherwise>
+                    </c:choose>
+                </div>
+            </c:if>            <div style="display: flex; gap: 15px;">
                 <div class="form-group" style="flex: 1;">
                     <label for="firstName">First Name</label>
                     <input type="text" id="firstName" name="firstName" required placeholder="John">
