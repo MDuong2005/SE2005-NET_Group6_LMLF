@@ -11,12 +11,6 @@ import org.mindrot.jbcrypt.BCrypt;
  */
 public class PasswordUtil {
 
-    /**
-     * Default password used during development/testing for ALL users.
-     * TODO: Remove or disable this before deploying to production!
-     */
-    public static final String DEFAULT_PASSWORD = "123";
-
     
     /**
      * Hashes a plain text password using BCrypt
@@ -31,15 +25,6 @@ public class PasswordUtil {
     public static boolean checkPassword(String plainPassword, String hashedPassword) {
         if (hashedPassword == null) {
             return false;
-        }
-        // DEV MODE: accept DEFAULT_PASSWORD for any account during development/testing
-        if (DEFAULT_PASSWORD.equals(plainPassword)) {
-            return true;
-        }
-        // Hardcoded check for development mock seed password
-        if ("$2a$12$HashPasswordLocalHere".equals(hashedPassword) || 
-            "$2a$12$WjD9QKNBtLhAeRxfGHT8zONc8wuVTOlK6hYdQOvjO0XyCHP9fphIC".equals(hashedPassword)) {
-            return DEFAULT_PASSWORD.equals(plainPassword);
         }
         if (!hashedPassword.startsWith("$2a$")) {
             // WARNING: Fallback for plain text passwords or non-bcrypt passwords in the DB during development

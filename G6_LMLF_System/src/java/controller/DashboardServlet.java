@@ -29,80 +29,9 @@ public class DashboardServlet extends HttpServlet {
             return;
         }
 
-        // Thống kê số lượng chung
-        request.setAttribute("activeAuthors", 124);
-        request.setAttribute("totalSyllabuses", 482);
-        request.setAttribute("avgCompletion", "84%");
-        request.setAttribute("validatedItems", 312);
-        
         // Cấu hình Ngày
-        request.setAttribute("currentLocalDate", "Oct 24, 2023"); // Ideally should be dynamic using java.time
+        request.setAttribute("currentLocalDate", java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy")));
 
-        // Danh sách Hoạt động gần đây (Recent Activities)
-        List<Map<String, String>> activities = new ArrayList<>();
-        
-        Map<String, String> act1 = new HashMap<>();
-        act1.put("item", "Advanced Web Systems");
-        act1.put("action", "Syllabus Updated");
-        act1.put("status", "Under Review");
-        act1.put("modified", "2h ago");
-        activities.add(act1);
-        
-        Map<String, String> act2 = new HashMap<>();
-        act2.put("item", "AI Fundamentals");
-        act2.put("action", "Content Approved");
-        act2.put("status", "Published");
-        act2.put("modified", "5h ago");
-        activities.add(act2);
-        
-        Map<String, String> act3 = new HashMap<>();
-        act3.put("item", "Big Data Eng");
-        act3.put("action", "Stakeholder Comment");
-        act3.put("status", "Revision Needed");
-        act3.put("modified", "Yesterday");
-        activities.add(act3);
-        
-        Map<String, String> act4 = new HashMap<>();
-        act4.put("item", "Cybersecurity Ethics");
-        act4.put("action", "Draft Created");
-        act4.put("status", "Draft");
-        act4.put("modified", "Oct 22");
-        activities.add(act4);
-        
-        request.setAttribute("activities", activities);
-
-        // Danh sách thông báo (Alerts)
-        List<Map<String, String>> alerts = new ArrayList<>();
-        
-        Map<String, String> al1 = new HashMap<>();
-        al1.put("title", "System Maintenance scheduled");
-        al1.put("desc", "Portal will be offline tonight at 23:00 for updates.");
-        al1.put("badge", "IMPORTANT");
-        al1.put("time", "");
-        alerts.add(al1);
-        
-        Map<String, String> al2 = new HashMap<>();
-        al2.put("title", "New Faculty assigned");
-        al2.put("desc", "Dr. Sarah Chen has joined the AI syllabus committee.");
-        al2.put("badge", "");
-        al2.put("time", "10M AGO");
-        alerts.add(al2);
-        
-        Map<String, String> al3 = new HashMap<>();
-        al3.put("title", "Feedback received");
-        al3.put("desc", "Internal Reviewer left comments on 'Web Systems'.");
-        al3.put("badge", "");
-        al3.put("time", "1H AGO");
-        alerts.add(al3);
-        
-        Map<String, String> al4 = new HashMap<>();
-        al4.put("title", "Syllabus Export Ready");
-        al4.put("desc", "The PDF export for Semester 2 is now available.");
-        al4.put("badge", "");
-        al4.put("time", "YESTERDAY");
-        alerts.add(al4);
-        
-        request.setAttribute("alerts", alerts);
 
         // 2. Route to correct fragment based on role
         String contentPage = "student/dashboard.jsp"; // Default fallback
