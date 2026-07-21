@@ -50,6 +50,9 @@ public class LecturerSyllabusServlet extends HttpServlet {
                 case "detail":
                     viewSyllabusDetail(request, response);
                     break;
+                case "clo-plo-mapping":
+                    viewCloPloMapping(request, response);
+                    break;
                 default:
                     listSyllabuses(request, response);
                     break;
@@ -149,10 +152,52 @@ public class LecturerSyllabusServlet extends HttpServlet {
             session.setAttribute("recentSyllabuses", recentSyllabuses);
             
             request.setAttribute("syllabus", syllabus);
-            
+
             // Forward directly to the standalone custom detail page
             request.getRequestDispatcher("/views/academic/syllabus-detail.jsp").forward(request, response);
-            
+
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/lecturer/syllabus?error=InvalidID");
+        }
+    }
+
+    /**
+     * Standalone read-only "Mapping of CLOs to PLOs" page. The matrix repeats
+     * once per curriculum that contains the course, using the Designer-captured
+     * snapshot data (curriculum PLO groups + CLO-PLO mappings). All values come
+     * straight from the DB; nothing is hard-coded.
+     */
+    private void viewCloPloMapping(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        String idParam = request.getParameter("id");
+        if (idParam == null || idParam.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/lecturer/syllabus?error=InvalidID");
+            return;
+        }
+
+        try {
+            Long syllabusId = Long.parseLong(idParam);
+            Map<String, Object> syllabus = syllabusDAO.getSyllabusDetail(syllabusId);
+
+            if (syllabus == null || syllabus.isEmpty()) {
+                response.sendRedirect(request.getContextPath() + "/lecturer/syllabus?error=NotFound");
+                return;
+            }
+
+            if (syllabus.get("versionId") != null) {
+                long versionId = (Long) syllabus.get("versionId");
+                try {
+                    SyllabusEditorData syllabusData = academicSyllabusDAO.getCompleteSyllabusData(versionId);
+                    request.setAttribute("syllabusData", syllabusData);
+                } catch (SQLException e) {
+                    throw new ServletException("Unable to load CLO-PLO mapping details.", e);
+                }
+            }
+
+            request.setAttribute("syllabus", syllabus);
+            request.getRequestDispatcher("/views/lecturer/syllabus/syllabus-clo-plo-mapping.jsp").forward(request, response);
+
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/lecturer/syllabus?error=InvalidID");
         }

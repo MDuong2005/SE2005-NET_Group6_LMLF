@@ -45,7 +45,8 @@
 <body>
     <header class="syl-header">
         <div class="syl-header-left">
-            <a href="javascript:history.back()" class="btn-home">
+            <c:set var="syllabusListUrl" value="${sessionScope.user.hasRole('ACADEMIC_OFFICE') ? '/academic/syllabus' : '/lecturer/syllabus'}"/>
+            <a href="${pageContext.request.contextPath}${syllabusListUrl}" class="btn-home">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
@@ -148,6 +149,13 @@
                 </tbody>
             </table>
         </div>
+
+        <c:if test="${not empty syllabus.syllabusId}">
+            <div style="margin: 4px 0 24px;">
+                <a href="${pageContext.request.contextPath}/lecturer/syllabus?action=clo-plo-mapping&amp;id=${syllabus.syllabusId}"
+                   style="color:#2563eb;text-decoration:none;font-weight:600;">View mapping of CLOs to PLOs</a>
+            </div>
+        </c:if>
 
         <span class="section-meta">${syllabusData.scheduleItems.size()} schedule item(s)</span>
         <div class="table-responsive">

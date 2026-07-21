@@ -253,7 +253,109 @@ public class AcademicSyllabusDAO extends DBContext {
         data.setLearningResources(parseSection(versionId, "LEARNING_MATERIALS", SyllabusEditorData.ResourceItem[].class));
         data.setScheduleItems(parseSection(versionId, "COURSE_SCHEDULE", SyllabusEditorData.ScheduleItem[].class));
         data.setAssessments(parseSection(versionId, "COURSE_ASSESSMENT", SyllabusEditorData.AssessmentItem[].class));
+        loadPlos(versionId, data);
+        loadMappings(versionId, data);
         return data;
+    }
+
+    /**
+     * Load the Designer-captured PLO options, grouped by curriculum, from the
+     * snapshot table {@code syllabus_version_plo_options}. These are the exact
+     * PLOs published by Academic Office at the time the syllabus version was
+     * built (read-only snapshots), so the CLO-PLO matrix repeats once per
+     * curriculum that contains the course. Nothing is hard-coded.
+     */
+    private void loadPlos(long versionId, SyllabusEditorData data) throws SQLException {
+        java.util.LinkedHashMap<Long, SyllabusEditorData.CurriculumPloGroup> groups = new java.util.LinkedHashMap<>();
+        List<SyllabusEditorData.PloItem> flattened = new ArrayList<>();
+
+        String sql = """
+                SELECT
+                    academic_curriculum_id AS curriculum_id,
+                    curriculum_code_snapshot,
+                    curriculum_name_snapshot,
+                    semester_snapshot,
+                    plo_option_id,
+                    academic_plo_id,
+                    plo_code_snapshot,
+                    plo_description_snapshot
+                FROM syllabus_version_plo_options
+                WHERE version_id = ?
+                ORDER BY
+                    curriculum_display_order,
+                    curriculum_code_snapshot,
+                    plo_display_order,
+                    plo_code_snapshot,
+                    plo_option_id
+                """;
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, versionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    long curriculumId = rs.getLong("curriculum_id");
+                    SyllabusEditorData.CurriculumPloGroup group = groups.get(curriculumId);
+                    if (group == null) {
+                        group = new SyllabusEditorData.CurriculumPloGroup();
+                        group.setCurriculumId(curriculumId);
+                        group.setCurriculumCode(rs.getString("curriculum_code_snapshot"));
+                        group.setCurriculumName(rs.getString("curriculum_name_snapshot"));
+                        int semester = rs.getInt("semester_snapshot");
+                        if (!rs.wasNull()) {
+                            group.setSemester(semester);
+                        }
+                        groups.put(curriculumId, group);
+                    }
+
+                    SyllabusEditorData.PloItem item = new SyllabusEditorData.PloItem();
+                    item.setPloId(rs.getLong("plo_option_id"));
+                    item.setAcademicPloId(rs.getLong("academic_plo_id"));
+                    item.setCurriculumId(curriculumId);
+                    item.setCode(rs.getString("plo_code_snapshot"));
+                    item.setDescription(rs.getString("plo_description_snapshot"));
+                    item.setName(rs.getString("plo_description_snapshot"));
+
+                    group.getPlos().add(item);
+                    flattened.add(item);
+                }
+            }
+        }
+
+        data.setCurriculumPloGroups(new ArrayList<>(groups.values()));
+        data.setPlos(flattened);
+    }
+
+    /**
+     * Load the CLO -> PLO links from {@code syllabus_clo_plo_mappings}.
+     * Key = CLO code, value = list of {@code plo_option_id} the CLO maps to.
+     * A cell in the matrix is ticked when the CLO's list contains a group's
+     * {@code plo_option_id}.
+     */
+    private void loadMappings(long versionId, SyllabusEditorData data) throws SQLException {
+        Map<String, List<Long>> mappings = new java.util.LinkedHashMap<>();
+
+        String sql = """
+                SELECT outcome.code, mapping.plo_option_id
+                FROM syllabus_clo_plo_mappings mapping
+                INNER JOIN learning_outcomes outcome
+                    ON outcome.outcome_id = mapping.outcome_id
+                WHERE mapping.version_id = ?
+                  AND outcome.version_id = ?
+                ORDER BY outcome.code, mapping.plo_option_id
+                """;
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, versionId);
+            ps.setLong(2, versionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    mappings.computeIfAbsent(rs.getString("code"), key -> new ArrayList<>())
+                            .add(rs.getLong("plo_option_id"));
+                }
+            }
+        }
+
+        data.setCloPloMappings(mappings);
     }
 
     private String getSectionJson(long versionId, String sectionCode) throws SQLException {
