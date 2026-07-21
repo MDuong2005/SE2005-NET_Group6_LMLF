@@ -738,26 +738,27 @@ public class SyllabusAssignmentDAO extends DBContext {
             String duplicateSql = """
                     SELECT assignment_id
                     FROM syllabus_assignments WITH (UPDLOCK, HOLDLOCK)
-                    WHERE course_id = ?
-                      AND semester = ?
-                      AND academic_year = ?
+                    WHERE ((? IS NULL AND syllabus_id IS NULL
+                            AND course_id = ? AND semester = ? AND academic_year = ?)
+                        OR (? IS NOT NULL AND syllabus_id = ?
+                            AND assignment_status NOT IN ('COMPLETED','CANCELLED','REJECTED')))
                     """;
 
             try (PreparedStatement duplicateStatement
                          = connection.prepareStatement(duplicateSql)) {
 
-                duplicateStatement.setLong(
-                        1,
-                        assignment.getCourseId()
-                );
-                duplicateStatement.setString(
-                        2,
-                        assignment.getSemester()
-                );
-                duplicateStatement.setInt(
-                        3,
-                        assignment.getAcademicYear()
-                );
+                if (assignment.getSyllabusId() == null) duplicateStatement.setNull(1, java.sql.Types.BIGINT);
+                else duplicateStatement.setLong(1, assignment.getSyllabusId());
+                duplicateStatement.setLong(2, assignment.getCourseId());
+                duplicateStatement.setString(3, assignment.getSemester());
+                duplicateStatement.setInt(4, assignment.getAcademicYear());
+                if (assignment.getSyllabusId() == null) {
+                    duplicateStatement.setNull(5, java.sql.Types.BIGINT);
+                    duplicateStatement.setNull(6, java.sql.Types.BIGINT);
+                } else {
+                    duplicateStatement.setLong(5, assignment.getSyllabusId());
+                    duplicateStatement.setLong(6, assignment.getSyllabusId());
+                }
 
                 try (ResultSet duplicateResult
                              = duplicateStatement.executeQuery()) {
@@ -779,6 +780,7 @@ public class SyllabusAssignmentDAO extends DBContext {
             String insertAssignmentSql = """
                     INSERT INTO syllabus_assignments (
                         course_id,
+                        syllabus_id,
                         designer_id,
                         reviewer_id,
                         assigned_by,
@@ -791,7 +793,7 @@ public class SyllabusAssignmentDAO extends DBContext {
                         due_date
                     )
                     VALUES (
-                        ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         SYSDATETIME(), ?
                     )
                     """;
@@ -808,66 +810,71 @@ public class SyllabusAssignmentDAO extends DBContext {
                         1,
                         assignment.getCourseId()
                 );
+                if (assignment.getSyllabusId() == null) {
+                    insertAssignmentStatement.setNull(2, java.sql.Types.BIGINT);
+                } else {
+                    insertAssignmentStatement.setLong(2, assignment.getSyllabusId());
+                }
                 insertAssignmentStatement.setLong(
-                        2,
+                        3,
                         assignment.getDesignerId()
                 );
                 insertAssignmentStatement.setLong(
-                        3,
+                        4,
                         firstReviewerId
                 );
 
                 if (assignedBy > 0) {
-                    insertAssignmentStatement.setLong(4, assignedBy);
+                    insertAssignmentStatement.setLong(5, assignedBy);
                 } else {
                     insertAssignmentStatement.setNull(
-                            4,
+                            5,
                             java.sql.Types.BIGINT
                     );
                 }
 
                 insertAssignmentStatement.setString(
-                        5,
+                        6,
                         assignment.getSemester()
                 );
                 insertAssignmentStatement.setInt(
-                        6,
+                        7,
                         assignment.getAcademicYear()
                 );
-                insertAssignmentStatement.setString(7, status);
+                insertAssignmentStatement.setString(8, status);
 
                 if (assignment.getTemplateFileId() != null) {
                     insertAssignmentStatement.setLong(
-                            8,
+                            9,
                             assignment.getTemplateFileId()
                     );
                 } else {
                     insertAssignmentStatement.setNull(
-                            8,
+                            9,
                             java.sql.Types.BIGINT
                     );
                 }
 
                 if (assignment.getSubmittedVersionId() != null) {
                     insertAssignmentStatement.setLong(
-                            9,
+                            10,
                             assignment.getSubmittedVersionId()
                     );
                 } else {
                     insertAssignmentStatement.setNull(
-                            9,
+                            10,
                             java.sql.Types.BIGINT
                     );
                 }
 
                 if (assignment.getDueDate() != null) {
                     insertAssignmentStatement.setTimestamp(
-                            10,
+                            11,
                             assignment.getDueDate()
                     );
                 } else {
                     insertAssignmentStatement.setNull(
-                            10,
+                            11,
                             java.sql.Types.TIMESTAMP
                     );
                 }
@@ -977,6 +984,22 @@ public class SyllabusAssignmentDAO extends DBContext {
             } catch (SQLException exception) {
                 exception.printStackTrace();
             }
+        }
+    }
+
+    public boolean cancelAssignment(long assignmentId) {
+        String sql = """
+                UPDATE syllabus_assignments
+                SET assignment_status = 'CANCELLED', completed_at = SYSDATETIME()
+                WHERE assignment_id = ?
+                  AND assignment_status NOT IN ('COMPLETED','CANCELLED')
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, assignmentId);
+            return statement.executeUpdate() == 1;
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            return false;
         }
     }
 

@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,23 +16,31 @@ public class AcademicSyllabusDAO extends DBContext {
 
     private final Gson gson = new Gson();
 
-    public int getTotalSyllabuses(String search) {
+    public int getTotalSyllabuses(String search, String status) {
         String sql = """
             SELECT COUNT(*)
             FROM syllabuses s
             JOIN courses c ON s.course_id = c.course_id
+            LEFT JOIN syllabus_versions sv ON sv.syllabus_id = s.syllabus_id
             WHERE s.deleted_at IS NULL
         """;
         
         if (search != null && !search.trim().isEmpty()) {
             sql += " AND (c.name LIKE ? OR c.code LIKE ?) ";
         }
+        if (status != null && !status.trim().isEmpty()) {
+            sql += " AND sv.status = ? ";
+        }
         
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            int parameterIndex = 1;
             if (search != null && !search.trim().isEmpty()) {
                 String likeSearch = "%" + search.trim() + "%";
-                ps.setString(1, likeSearch);
-                ps.setString(2, likeSearch);
+                ps.setString(parameterIndex++, likeSearch);
+                ps.setString(parameterIndex++, likeSearch);
+            }
+            if (status != null && !status.trim().isEmpty()) {
+                ps.setString(parameterIndex, status.trim().toUpperCase());
             }
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
@@ -42,7 +51,8 @@ public class AcademicSyllabusDAO extends DBContext {
         return 0;
     }
 
-    public List<Map<String, Object>> getSyllabuses(String search, int page, int pageSize) {
+    public List<Map<String, Object>> getSyllabuses(
+            String search, String status, int page, int pageSize) {
         List<Map<String, Object>> list = new ArrayList<>();
         String sql = """
             SELECT 
@@ -52,21 +62,27 @@ public class AcademicSyllabusDAO extends DBContext {
                 c.name AS course_name,
                 c.credits,
                 COALESCE(sv.status, s.status) AS status,
+                sv.version_id,
+                sv.version_number,
                 s.current_version,
                 s.updated_at
             FROM syllabuses s
             JOIN courses c ON s.course_id = c.course_id
-            LEFT JOIN syllabus_versions sv
-                ON sv.syllabus_id = s.syllabus_id
-                AND sv.version_number = s.current_version
+            LEFT JOIN syllabus_versions sv ON sv.syllabus_id = s.syllabus_id
             WHERE s.deleted_at IS NULL
         """;
         
         if (search != null && !search.trim().isEmpty()) {
             sql += " AND (c.name LIKE ? OR c.code LIKE ?) ";
         }
+        if (status != null && !status.trim().isEmpty()) {
+            sql += " AND sv.status = ? ";
+        }
         
-        sql += " ORDER BY s.updated_at DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY ";
+        sql += " ORDER BY s.updated_at DESC, "
+                + "TRY_CONVERT(INT, PARSENAME(sv.version_number, 2)) DESC, "
+                + "TRY_CONVERT(INT, PARSENAME(sv.version_number, 1)) DESC "
+                + "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY ";
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             int paramIndex = 1;
@@ -74,6 +90,9 @@ public class AcademicSyllabusDAO extends DBContext {
                 String likeSearch = "%" + search.trim() + "%";
                 ps.setString(paramIndex++, likeSearch);
                 ps.setString(paramIndex++, likeSearch);
+            }
+            if (status != null && !status.trim().isEmpty()) {
+                ps.setString(paramIndex++, status.trim().toUpperCase());
             }
             ps.setInt(paramIndex++, (page - 1) * pageSize);
             ps.setInt(paramIndex++, pageSize);
@@ -87,6 +106,9 @@ public class AcademicSyllabusDAO extends DBContext {
                     map.put("courseName", rs.getString("course_name"));
                     map.put("credits", rs.getInt("credits"));
                     map.put("status", rs.getString("status"));
+                    long versionId = rs.getLong("version_id");
+                    map.put("versionId", rs.wasNull() ? null : versionId);
+                    map.put("versionNumber", rs.getString("version_number"));
                     map.put("currentVersion", rs.getString("current_version"));
                     map.put("updatedAt", rs.getTimestamp("updated_at"));
                     list.add(map);
@@ -99,10 +121,15 @@ public class AcademicSyllabusDAO extends DBContext {
     }
 
     public Map<String, Object> getSyllabusDetail(long syllabusId) {
+        return getSyllabusDetail(syllabusId, null);
+    }
+
+    public Map<String, Object> getSyllabusDetail(long syllabusId, Long requestedVersionId) {
         Map<String, Object> detail = new HashMap<>();
         String sql = """
             SELECT 
                 s.syllabus_id,
+                s.course_id,
                 c.code AS course_code,
                 c.name AS course_name,
                 c.credits,
@@ -110,6 +137,7 @@ public class AcademicSyllabusDAO extends DBContext {
                 s.current_version,
                 s.updated_at,
                 sv.version_id,
+                sv.version_number,
                 sgi.degree_level,
                 sgi.time_allocation,
                 sgi.course_description,
@@ -117,21 +145,34 @@ public class AcademicSyllabusDAO extends DBContext {
                 sgi.note
             FROM syllabuses s
             JOIN courses c ON s.course_id = c.course_id
-            LEFT JOIN syllabus_versions sv ON sv.syllabus_id = s.syllabus_id AND sv.version_number = s.current_version
+            LEFT JOIN syllabus_versions sv ON sv.syllabus_id = s.syllabus_id
+                AND ((? IS NULL AND sv.version_number = s.current_version) OR sv.version_id = ?)
             LEFT JOIN syllabus_general_information sgi ON sgi.version_id = sv.version_id
             WHERE s.syllabus_id = ? AND s.deleted_at IS NULL
+              AND (? IS NULL OR sv.version_id IS NOT NULL)
         """;
         
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setLong(1, syllabusId);
+            if (requestedVersionId == null) {
+                ps.setNull(1, java.sql.Types.BIGINT);
+                ps.setNull(2, java.sql.Types.BIGINT);
+            } else {
+                ps.setLong(1, requestedVersionId);
+                ps.setLong(2, requestedVersionId);
+            }
+            ps.setLong(3, syllabusId);
+            if (requestedVersionId == null) ps.setNull(4, java.sql.Types.BIGINT);
+            else ps.setLong(4, requestedVersionId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     detail.put("syllabusId", rs.getLong("syllabus_id"));
+                    detail.put("courseId", rs.getLong("course_id"));
                     detail.put("courseCode", rs.getString("course_code"));
                     detail.put("courseName", rs.getString("course_name"));
                     detail.put("credits", rs.getInt("credits"));
                     detail.put("status", rs.getString("status"));
                     detail.put("currentVersion", rs.getString("current_version"));
+                    detail.put("versionNumber", rs.getString("version_number"));
                     detail.put("updatedAt", rs.getTimestamp("updated_at"));
                     long versionId = rs.getLong("version_id");
                     detail.put("versionId", rs.wasNull() ? null : versionId);
@@ -236,6 +277,176 @@ public class AcademicSyllabusDAO extends DBContext {
             return items;
         } catch (RuntimeException exception) {
             throw new SQLException("Invalid syllabus section: " + sectionCode, exception);
+        }
+    }
+
+    /** Creates and fully initializes the draft owned by an Academic update assignment. */
+    public long initializeUpdateDraft(
+            long assignmentId,
+            long syllabusId,
+            long designerId,
+            long academicUserId
+    ) throws SQLException {
+        boolean originalAutoCommit = connection.getAutoCommit();
+        try {
+            connection.setAutoCommit(false);
+
+            long sourceVersionId;
+            String currentVersion;
+            String sourceSql = """
+                    SELECT versionRow.version_id, syllabus.current_version
+                    FROM syllabuses syllabus WITH (UPDLOCK, HOLDLOCK)
+                    INNER JOIN syllabus_versions versionRow
+                        ON versionRow.syllabus_id = syllabus.syllabus_id
+                       AND versionRow.version_number = syllabus.current_version
+                    WHERE syllabus.syllabus_id = ? AND syllabus.deleted_at IS NULL
+                    """;
+            try (PreparedStatement statement = connection.prepareStatement(sourceSql)) {
+                statement.setLong(1, syllabusId);
+                try (ResultSet result = statement.executeQuery()) {
+                    if (!result.next()) throw new SQLException("Published syllabus version not found.");
+                    sourceVersionId = result.getLong("version_id");
+                    currentVersion = result.getString("current_version");
+                }
+            }
+
+            String[] parts = currentVersion == null ? new String[0] : currentVersion.split("\\.");
+            if (parts.length != 2) throw new SQLException("Current version must use major.minor format.");
+            try {
+                Integer.parseInt(parts[0]);
+                Integer.parseInt(parts[1]);
+            } catch (NumberFormatException exception) {
+                throw new SQLException("Current version must use major.minor format.", exception);
+            }
+
+            int highestMajor = 0;
+            String highestVersionSql = """
+                    SELECT MAX(TRY_CONVERT(INT, PARSENAME(version_number, 2))) AS highest_major
+                    FROM syllabus_versions
+                    WHERE syllabus_id = ?
+                      AND version_number LIKE '[0-9]%.[0-9]%'
+                    """;
+            try (PreparedStatement statement = connection.prepareStatement(highestVersionSql)) {
+                statement.setLong(1, syllabusId);
+                try (ResultSet result = statement.executeQuery()) {
+                    if (result.next()) highestMajor = result.getInt("highest_major");
+                }
+            }
+            String nextVersion = (highestMajor + 1) + ".0";
+
+            String validateAssignmentSql = """
+                    SELECT 1 FROM syllabus_assignments WITH (UPDLOCK, HOLDLOCK)
+                    WHERE assignment_id = ? AND syllabus_id = ? AND designer_id = ?
+                      AND assignment_status NOT IN ('COMPLETED','CANCELLED','REJECTED')
+                    """;
+            try (PreparedStatement statement = connection.prepareStatement(validateAssignmentSql)) {
+                statement.setLong(1, assignmentId);
+                statement.setLong(2, syllabusId);
+                statement.setLong(3, designerId);
+                try (ResultSet result = statement.executeQuery()) {
+                    if (!result.next()) throw new SQLException("Update assignment is invalid.");
+                }
+            }
+
+            long targetVersionId;
+            String insertVersionSql = """
+                    INSERT INTO syllabus_versions
+                        (syllabus_id, version_number, change_type, description_of_changes,
+                         status, created_by, updated_by)
+                    VALUES (?, ?, 'MINOR', 'Academic Office update request', 'DRAFT', ?, ?)
+                    """;
+            try (PreparedStatement statement = connection.prepareStatement(
+                    insertVersionSql, Statement.RETURN_GENERATED_KEYS)) {
+                statement.setLong(1, syllabusId);
+                statement.setString(2, nextVersion);
+                statement.setLong(3, designerId);
+                statement.setLong(4, academicUserId);
+                statement.executeUpdate();
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (!keys.next()) throw new SQLException("Cannot create update version.");
+                    targetVersionId = keys.getLong(1);
+                }
+            }
+
+            executeVersionCopy("""
+                    INSERT INTO syllabus_version_sections
+                        (version_id, section_code, section_name, content_text,
+                         content_format, schema_version, display_order, imported_at, updated_at)
+                    SELECT ?, section_code, section_name, content_text,
+                           content_format, schema_version, display_order, SYSDATETIME(), SYSDATETIME()
+                    FROM syllabus_version_sections WHERE version_id = ?
+                    """, targetVersionId, sourceVersionId);
+
+            executeVersionCopy("""
+                    INSERT INTO learning_outcomes
+                        (version_id, code, description, bloom_level, display_order)
+                    SELECT ?, code, description, bloom_level, display_order
+                    FROM learning_outcomes WHERE version_id = ?
+                    """, targetVersionId, sourceVersionId);
+
+            executeVersionCopy("""
+                    INSERT INTO syllabus_version_plo_options
+                        (version_id, academic_curriculum_id, course_id, academic_plo_id,
+                         curriculum_code_snapshot, curriculum_name_snapshot,
+                         curriculum_version_snapshot, major_code_snapshot, major_name_snapshot,
+                         course_code_snapshot, course_name_snapshot, semester_snapshot,
+                         plo_code_snapshot, plo_description_snapshot,
+                         curriculum_display_order, plo_display_order, captured_at)
+                    SELECT ?, academic_curriculum_id, course_id, academic_plo_id,
+                           curriculum_code_snapshot, curriculum_name_snapshot,
+                           curriculum_version_snapshot, major_code_snapshot, major_name_snapshot,
+                           course_code_snapshot, course_name_snapshot, semester_snapshot,
+                           plo_code_snapshot, plo_description_snapshot,
+                           curriculum_display_order, plo_display_order, SYSDATETIME()
+                    FROM syllabus_version_plo_options WHERE version_id = ?
+                    """, targetVersionId, sourceVersionId);
+
+            String copyMappingsSql = """
+                    INSERT INTO syllabus_clo_plo_mappings
+                        (version_id, outcome_id, plo_option_id, contribution_level,
+                         created_by, created_at, updated_by, updated_at)
+                    SELECT ?, targetOutcome.outcome_id, targetOption.plo_option_id,
+                           sourceMap.contribution_level, ?, SYSDATETIME(), ?, SYSDATETIME()
+                    FROM syllabus_clo_plo_mappings sourceMap
+                    INNER JOIN learning_outcomes sourceOutcome
+                        ON sourceOutcome.outcome_id = sourceMap.outcome_id
+                    INNER JOIN learning_outcomes targetOutcome
+                        ON targetOutcome.version_id = ? AND targetOutcome.code = sourceOutcome.code
+                    INNER JOIN syllabus_version_plo_options sourceOption
+                        ON sourceOption.plo_option_id = sourceMap.plo_option_id
+                    INNER JOIN syllabus_version_plo_options targetOption
+                        ON targetOption.version_id = ?
+                       AND targetOption.academic_curriculum_id = sourceOption.academic_curriculum_id
+                       AND targetOption.course_id = sourceOption.course_id
+                       AND targetOption.academic_plo_id = sourceOption.academic_plo_id
+                    WHERE sourceMap.version_id = ?
+                    """;
+            try (PreparedStatement statement = connection.prepareStatement(copyMappingsSql)) {
+                statement.setLong(1, targetVersionId);
+                statement.setLong(2, academicUserId);
+                statement.setLong(3, academicUserId);
+                statement.setLong(4, targetVersionId);
+                statement.setLong(5, targetVersionId);
+                statement.setLong(6, sourceVersionId);
+                statement.executeUpdate();
+            }
+
+            connection.commit();
+            return targetVersionId;
+        } catch (SQLException exception) {
+            connection.rollback();
+            throw exception;
+        } finally {
+            connection.setAutoCommit(originalAutoCommit);
+        }
+    }
+
+    private void executeVersionCopy(String sql, long targetVersionId, long sourceVersionId)
+            throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, targetVersionId);
+            statement.setLong(2, sourceVersionId);
+            statement.executeUpdate();
         }
     }
 }

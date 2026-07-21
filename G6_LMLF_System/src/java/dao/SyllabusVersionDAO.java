@@ -243,6 +243,19 @@ public class SyllabusVersionDAO extends DBContext {
                 FROM syllabus_versions
                 WHERE version_id = ?
                   AND status IN ('APPROVED', 'ARCHIVED')
+                  AND (
+                      status <> 'ARCHIVED'
+                      OR NOT EXISTS (
+                          SELECT 1 FROM syllabus_versions newer
+                          WHERE newer.syllabus_id = syllabus_versions.syllabus_id
+                            AND newer.published_at IS NOT NULL
+                            AND (
+                                TRY_CONVERT(INT, PARSENAME(newer.version_number, 2)) > TRY_CONVERT(INT, PARSENAME(syllabus_versions.version_number, 2))
+                                OR (TRY_CONVERT(INT, PARSENAME(newer.version_number, 2)) = TRY_CONVERT(INT, PARSENAME(syllabus_versions.version_number, 2))
+                                    AND TRY_CONVERT(INT, PARSENAME(newer.version_number, 1)) > TRY_CONVERT(INT, PARSENAME(syllabus_versions.version_number, 1)))
+                            )
+                      )
+                  )
                 """;
 
         String archivePublishedSql = """
@@ -353,6 +366,9 @@ public class SyllabusVersionDAO extends DBContext {
             String changeType,
             String description,
             long createdBy) {
+        if (!isValidVersionNumber(versionNumber)) {
+            return false;
+        }
         String sql = """
         INSERT INTO syllabus_versions
         (
@@ -481,6 +497,9 @@ public class SyllabusVersionDAO extends DBContext {
     }
 
     public boolean create(SyllabusVersion version) {
+        if (version == null || !isValidVersionNumber(version.getVersionNumber())) {
+            return false;
+        }
         String sql = "INSERT INTO syllabus_versions (syllabus_id, version_number, change_type, description_of_changes, status, created_by, submitted_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setLong(1, version.getSyllabusId());
@@ -509,6 +528,9 @@ public class SyllabusVersionDAO extends DBContext {
     }
 
     public boolean update(SyllabusVersion version) {
+        if (version == null || !isValidVersionNumber(version.getVersionNumber())) {
+            return false;
+        }
         String sql = "UPDATE syllabus_versions SET version_number = ?, change_type = ?, description_of_changes = ?, status = ?, updated_by = ?, submitted_at = ? WHERE version_id = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, version.getVersionNumber());
@@ -527,6 +549,11 @@ public class SyllabusVersionDAO extends DBContext {
             e.printStackTrace();
         }
         return false;
+    }
+
+    private boolean isValidVersionNumber(String versionNumber) {
+        return versionNumber != null
+                && versionNumber.matches("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$");
     }
 
     public boolean submit(long versionId) {

@@ -16,6 +16,7 @@ import dao.UserDAO;
 import dao.SyllabusAssignmentDAO;
 import dao.AccountRequestDAO;
 import dao.NotificationDAO;
+import dao.AcademicSyllabusDAO;
 import model.AccountRequest;
 
 import java.io.IOException;
@@ -39,6 +40,7 @@ public class RoleAssignmentServlet extends HttpServlet {
     private UserDAO userDAO;
     private SyllabusAssignmentDAO assignmentDAO;
     private NotificationDAO notificationDAO;
+    private AcademicSyllabusDAO academicSyllabusDAO;
 
     @Override
     public void init() throws ServletException {
@@ -46,6 +48,7 @@ public class RoleAssignmentServlet extends HttpServlet {
         userDAO = new UserDAO();
         assignmentDAO = new SyllabusAssignmentDAO();
         notificationDAO = new NotificationDAO();
+        academicSyllabusDAO = new AcademicSyllabusDAO();
     }
 
     @Override
@@ -60,6 +63,11 @@ public class RoleAssignmentServlet extends HttpServlet {
         if ("checkExternalReviewer".equals(action)) {
             checkExternalReviewer(req, resp);
             return;
+        }
+        if ("create".equals(action)) {
+            req.setAttribute("action", "create");
+            req.setAttribute("tempCourseId", req.getParameter("courseId"));
+            req.setAttribute("tempSyllabusId", req.getParameter("syllabusId"));
         }
         String keyword = req.getParameter("keyword");
         String filterCourseIdStr = req.getParameter("filterCourseId");
@@ -169,6 +177,7 @@ public class RoleAssignmentServlet extends HttpServlet {
     ) throws ServletException, IOException {
 
         String courseIdStr = req.getParameter("courseId");
+        String syllabusIdStr = req.getParameter("syllabusId");
         String designerIdStr = req.getParameter("designerId");
         String[] reviewerIdValues
                 = req.getParameterValues("reviewerId");
@@ -179,6 +188,7 @@ public class RoleAssignmentServlet extends HttpServlet {
 
         req.setAttribute("action", "create");
         req.setAttribute("tempCourseId", courseIdStr);
+        req.setAttribute("tempSyllabusId", syllabusIdStr);
         req.setAttribute("tempDesignerId", designerIdStr);
         req.setAttribute("tempSemester", semester);
         req.setAttribute("tempYear", yearStr);
@@ -246,6 +256,9 @@ public class RoleAssignmentServlet extends HttpServlet {
                     = new SyllabusAssignment();
 
             assignment.setCourseId(courseId);
+            if (!isBlank(syllabusIdStr)) {
+                assignment.setSyllabusId(Long.parseLong(syllabusIdStr.trim()));
+            }
             assignment.setDesignerId(designerId);
             assignment.setSemester(semester.trim());
             assignment.setAcademicYear(academicYear);
@@ -271,6 +284,24 @@ public class RoleAssignmentServlet extends HttpServlet {
                 );
                 forwardToList(req, resp);
                 return;
+            }
+
+            if (assignment.getSyllabusId() != null) {
+                try {
+                    academicSyllabusDAO.initializeUpdateDraft(
+                            assignmentId,
+                            assignment.getSyllabusId(),
+                            designerId,
+                            loggedInUser.getUserId()
+                    );
+                } catch (SQLException exception) {
+                    assignmentDAO.cancelAssignment(assignmentId);
+                    req.setAttribute("errorMessage",
+                            "The update assignment was cancelled because its draft version could not be initialized: "
+                            + exception.getMessage());
+                    forwardToList(req, resp);
+                    return;
+                }
             }
 
             dao.RoleDAO roleDAO = new dao.RoleDAO();

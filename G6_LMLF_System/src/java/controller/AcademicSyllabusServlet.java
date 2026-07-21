@@ -40,6 +40,7 @@ public class AcademicSyllabusServlet extends HttpServlet {
 
         String action = request.getParameter("action");
         String idParam = request.getParameter("id");
+        String versionIdParam = request.getParameter("versionId");
         HttpSession session = request.getSession();
 
         if (!"publish".equals(action) && !"archive".equals(action)) {
@@ -49,7 +50,9 @@ public class AcademicSyllabusServlet extends HttpServlet {
 
         try {
             long syllabusId = Long.parseLong(idParam);
-            Map<String, Object> syllabus = syllabusDAO.getSyllabusDetail(syllabusId);
+            Long requestedVersionId = versionIdParam == null || versionIdParam.isBlank()
+                    ? null : Long.parseLong(versionIdParam);
+            Map<String, Object> syllabus = syllabusDAO.getSyllabusDetail(syllabusId, requestedVersionId);
 
             if (syllabus == null || syllabus.isEmpty()) {
                 session.setAttribute("syllabusError", "Syllabus not found.");
@@ -84,7 +87,8 @@ public class AcademicSyllabusServlet extends HttpServlet {
             }
 
             response.sendRedirect(request.getContextPath()
-                    + "/academic/syllabus?action=detail&id=" + syllabusId);
+                    + "/academic/syllabus?action=detail&id=" + syllabusId
+                    + (requestedVersionId == null ? "" : "&versionId=" + requestedVersionId));
         } catch (NumberFormatException e) {
             session.setAttribute("syllabusError", "Invalid syllabus ID.");
             response.sendRedirect(request.getContextPath() + "/academic/syllabus");
@@ -129,6 +133,8 @@ public class AcademicSyllabusServlet extends HttpServlet {
             
         String search = request.getParameter("search");
         if (search == null) search = "";
+        String status = request.getParameter("status");
+        if (status == null) status = "";
         
         int page = 1;
         int pageSize = 10;
@@ -143,16 +149,17 @@ public class AcademicSyllabusServlet extends HttpServlet {
             }
         }
         
-        int totalRecords = syllabusDAO.getTotalSyllabuses(search);
+        int totalRecords = syllabusDAO.getTotalSyllabuses(search, status);
         int totalPages = (int) Math.ceil((double) totalRecords / pageSize);
         if (page > totalPages && totalPages > 0) page = totalPages;
         
-        List<Map<String, Object>> syllabuses = syllabusDAO.getSyllabuses(search, page, pageSize);
+        List<Map<String, Object>> syllabuses = syllabusDAO.getSyllabuses(search, status, page, pageSize);
         
         request.setAttribute("syllabuses", syllabuses);
         request.setAttribute("currentPage", page);
         request.setAttribute("totalPages", totalPages);
         request.setAttribute("search", search);
+        request.setAttribute("statusFilter", status);
         
         request.setAttribute("contentPage", "academic/syllabus.jsp");
         request.setAttribute("cssFile", "academic/academic.css");
@@ -170,7 +177,10 @@ public class AcademicSyllabusServlet extends HttpServlet {
         
         try {
             Long syllabusId = Long.parseLong(idParam);
-            Map<String, Object> syllabus = syllabusDAO.getSyllabusDetail(syllabusId);
+            String versionIdParam = request.getParameter("versionId");
+            Long requestedVersionId = versionIdParam == null || versionIdParam.isBlank()
+                    ? null : Long.parseLong(versionIdParam);
+            Map<String, Object> syllabus = syllabusDAO.getSyllabusDetail(syllabusId, requestedVersionId);
             
             if (syllabus == null || syllabus.isEmpty()) {
                 response.sendRedirect(request.getContextPath() + "/academic/syllabus?error=NotFound");
