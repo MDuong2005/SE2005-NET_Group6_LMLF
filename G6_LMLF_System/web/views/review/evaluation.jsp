@@ -188,14 +188,99 @@
             border: 1px solid #fed7aa;
         }
 
-        .sidebar-footer {
-            padding: 22px;
-            border-top: 1px solid var(--border);
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
         }
 
-        .logout-link {
+        .lecturer-return-link {
+            min-height: 42px;
+            padding: 0 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid #fed7aa;
+            border-radius: 10px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            font-size: 14px;
+            font-weight: 800;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .lecturer-return-link:hover {
+            background: #ffedd5;
+            border-color: #fdba74;
+        }
+
+        .lecturer-return-link svg {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 auto;
+        }
+
+        .user-dropdown {
+            position: relative;
+        }
+
+        .profile-button {
+            padding: 5px 8px;
+            border: 0;
+            border-radius: 10px;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+            font: inherit;
+            text-align: left;
+        }
+
+        .profile-button:hover,
+        .profile-button:focus-visible {
+            background: #f8fafc;
+            outline: none;
+        }
+
+        .user-dropdown-menu {
+            width: 190px;
+            padding-top: 9px;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            display: none;
+            z-index: 1000;
+        }
+
+        .user-dropdown:hover .user-dropdown-menu,
+        .user-dropdown:focus-within .user-dropdown-menu {
+            display: block;
+        }
+
+        .user-dropdown-content {
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+        }
+
+        .header-logout-link {
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
             color: var(--danger);
-            font-weight: 700;
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .header-logout-link:hover {
+            background: var(--danger-soft);
+        }
+
+        .header-logout-link svg {
+            width: 18px;
+            height: 18px;
         }
 
         .main {
@@ -673,6 +758,25 @@
         }
 
         @media (max-width: 760px) {
+
+
+            .topbar {
+                padding: 0 22px;
+            }
+
+            .lecturer-return-link span {
+                display: none;
+            }
+
+            .lecturer-return-link {
+                width: 42px;
+                padding: 0;
+                justify-content: center;
+            }
+
+            .profile-email {
+                max-width: 150px;
+            }
             .layout {
                 display: block;
             }
@@ -729,22 +833,50 @@
                 Review History
             </a>
         </nav>
-
-        <div class="sidebar-footer">
-            <a class="logout-link"
-               href="${pageContext.request.contextPath}/logout">
-                Logout
-            </a>
-        </div>
     </aside>
 
     <div class="main">
         <header class="topbar">
-            <div class="profile">
-                <div class="avatar"><%= h(userInitials) %></div>
-                <div>
-                    <div class="profile-email"><%= h(userEmail) %></div>
-                    <div class="profile-role">Reviewer</div>
+            <div class="topbar-actions">
+                <% if (currentUser != null && currentUser.hasRole("LECTURER")) { %>
+                    <a class="lecturer-return-link"
+                       href="${pageContext.request.contextPath}/lecturer-ui?page=dashboard"
+                       title="Return to Lecturer Portal">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                             aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        <span>Back to Lecturer Portal</span>
+                    </a>
+                <% } %>
+
+                <div class="user-dropdown">
+                    <button type="button" class="profile profile-button"
+                            aria-label="Open reviewer account menu">
+                        <div class="avatar"><%= h(userInitials) %></div>
+                        <div>
+                            <div class="profile-email"><%= h(userEmail) %></div>
+                            <div class="profile-role">Reviewer</div>
+                        </div>
+                    </button>
+
+                    <div class="user-dropdown-menu">
+                        <div class="user-dropdown-content">
+                            <a class="header-logout-link"
+                               href="${pageContext.request.contextPath}/logout">
+                                <svg fill="none" stroke="currentColor"
+                                     viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          stroke-width="2"
+                                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                                Logout
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
