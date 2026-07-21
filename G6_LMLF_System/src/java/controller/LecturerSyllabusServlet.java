@@ -1,8 +1,11 @@
 package controller;
 
 import dao.LecturerSyllabusDAO;
+import dao.AcademicSyllabusDAO;
+import model.SyllabusEditorData;
 import utils.SessionUtil;
 
+import java.sql.SQLException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -16,10 +19,12 @@ import java.util.Map;
 public class LecturerSyllabusServlet extends HttpServlet {
 
     private LecturerSyllabusDAO syllabusDAO;
+    private AcademicSyllabusDAO academicSyllabusDAO;
 
     @Override
     public void init() throws ServletException {
         syllabusDAO = new LecturerSyllabusDAO();
+        academicSyllabusDAO = new AcademicSyllabusDAO();
     }
 
     @Override
@@ -113,6 +118,12 @@ public class LecturerSyllabusServlet extends HttpServlet {
                 long versionId = (Long) syllabus.get("versionId");
                 List<Map<String, Object>> studentTasks = syllabusDAO.getSyllabusStudentTasks(versionId);
                 request.setAttribute("studentTasks", studentTasks);
+                try {
+                    SyllabusEditorData syllabusData = academicSyllabusDAO.getCompleteSyllabusData(versionId);
+                    request.setAttribute("syllabusData", syllabusData);
+                } catch (SQLException e) {
+                    throw new ServletException("Unable to load complete syllabus details.", e);
+                }
             }
             
             // Add to recently viewed in session
@@ -140,7 +151,7 @@ public class LecturerSyllabusServlet extends HttpServlet {
             request.setAttribute("syllabus", syllabus);
             
             // Forward directly to the standalone custom detail page
-            request.getRequestDispatcher("/views/lecturer/syllabus/syllabus-detail.jsp").forward(request, response);
+            request.getRequestDispatcher("/views/academic/syllabus-detail.jsp").forward(request, response);
             
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/lecturer/syllabus?error=InvalidID");

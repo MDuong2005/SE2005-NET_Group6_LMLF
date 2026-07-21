@@ -45,7 +45,7 @@
 <body>
     <header class="syl-header">
         <div class="syl-header-left">
-            <a href="${pageContext.request.contextPath}/academic/syllabus" class="btn-home">
+            <a href="javascript:history.back()" class="btn-home">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
@@ -60,24 +60,26 @@
         <div class="detail-title-row">
             <h2 class="page-title">Syllabus Details</h2>
             <div class="detail-actions">
+            <c:if test="${sessionScope.user.hasRole('ACADEMIC_OFFICE')}">
                 <a class="header-action request-action" href="${pageContext.request.contextPath}/role-assignment?action=create&amp;courseId=${syllabus.courseId}&amp;syllabusId=${syllabus.syllabusId}">
                     <span aria-hidden="true">+</span> Request New Version
                 </a>
-            <c:if test="${syllabus.status == 'APPROVED' || syllabus.status == 'ARCHIVED'}">
-                <form method="post" action="${pageContext.request.contextPath}/academic/syllabus" onsubmit="return confirm('Are you sure you want to publish this syllabus?');">
-                    <input type="hidden" name="action" value="publish">
-                    <input type="hidden" name="id" value="${syllabus.syllabusId}">
-                    <input type="hidden" name="versionId" value="${syllabus.versionId}">
-                    <button type="submit" class="header-action publish-action">Publish Syllabus</button>
-                </form>
-            </c:if>
-            <c:if test="${syllabus.status == 'PUBLISHED'}">
-                <form method="post" action="${pageContext.request.contextPath}/academic/syllabus" onsubmit="return confirm('Are you sure you want to archive this syllabus?');">
-                    <input type="hidden" name="action" value="archive">
-                    <input type="hidden" name="id" value="${syllabus.syllabusId}">
-                    <input type="hidden" name="versionId" value="${syllabus.versionId}">
-                    <button type="submit" class="header-action archive-action">ARCHIVED Syllabus</button>
-                </form>
+                <c:if test="${syllabus.status == 'APPROVED' || syllabus.status == 'ARCHIVED'}">
+                    <form method="post" action="${pageContext.request.contextPath}/academic/syllabus" onsubmit="return confirm('Are you sure you want to publish this syllabus?');">
+                        <input type="hidden" name="action" value="publish">
+                        <input type="hidden" name="id" value="${syllabus.syllabusId}">
+                        <input type="hidden" name="versionId" value="${syllabus.versionId}">
+                        <button type="submit" class="header-action publish-action">Publish Syllabus</button>
+                    </form>
+                </c:if>
+                <c:if test="${syllabus.status == 'PUBLISHED'}">
+                    <form method="post" action="${pageContext.request.contextPath}/academic/syllabus" onsubmit="return confirm('Are you sure you want to archive this syllabus?');">
+                        <input type="hidden" name="action" value="archive">
+                        <input type="hidden" name="id" value="${syllabus.syllabusId}">
+                        <input type="hidden" name="versionId" value="${syllabus.versionId}">
+                        <button type="submit" class="header-action archive-action">ARCHIVED Syllabus</button>
+                    </form>
+                </c:if>
             </c:if>
             </div>
         </div>
