@@ -1,5 +1,6 @@
 package dao;
 
+import com.google.gson.Gson;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,8 +9,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import context.DBContext;
+import model.SyllabusEditorData;
 
 public class AcademicSyllabusDAO extends DBContext {
+
+    private final Gson gson = new Gson();
 
     public int getTotalSyllabuses(String search) {
         String sql = """
@@ -166,5 +170,72 @@ public class AcademicSyllabusDAO extends DBContext {
             e.printStackTrace();
         }
         return list;
+    }
+
+    /** Reads every detail section needed by the Academic syllabus viewer. */
+    public SyllabusEditorData getCompleteSyllabusData(long versionId) throws SQLException {
+        SyllabusEditorData data = new SyllabusEditorData();
+        data.setVersionId(versionId);
+
+        String versionSql = "SELECT version_number, status FROM syllabus_versions WHERE version_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(versionSql)) {
+            ps.setLong(1, versionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) throw new SQLException("Syllabus version not found.");
+                data.setVersionNumber(rs.getString("version_number"));
+                data.setStatus(rs.getString("status"));
+            }
+        }
+
+        String generalJson = getSectionJson(versionId, "GENERAL_INFORMATION");
+        if (generalJson != null && !generalJson.isBlank()) {
+            data.setGeneralInformation(gson.fromJson(generalJson, SyllabusEditorData.GeneralInformation.class));
+        }
+
+        List<SyllabusEditorData.CloItem> clos = new ArrayList<>();
+        String cloSql = "SELECT outcome_id, code, description, bloom_level FROM learning_outcomes WHERE version_id = ? ORDER BY outcome_id";
+        try (PreparedStatement ps = connection.prepareStatement(cloSql)) {
+            ps.setLong(1, versionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    SyllabusEditorData.CloItem item = new SyllabusEditorData.CloItem();
+                    item.setOutcomeId(rs.getLong("outcome_id"));
+                    item.setCode(rs.getString("code"));
+                    item.setDescription(rs.getString("description"));
+                    item.setBloomLevel(rs.getString("bloom_level"));
+                    clos.add(item);
+                }
+            }
+        }
+        data.setClos(clos);
+        data.setStudentTasks(parseSection(versionId, "STUDENT_TASKS", SyllabusEditorData.TextItem[].class));
+        data.setLearningResources(parseSection(versionId, "LEARNING_MATERIALS", SyllabusEditorData.ResourceItem[].class));
+        data.setScheduleItems(parseSection(versionId, "COURSE_SCHEDULE", SyllabusEditorData.ScheduleItem[].class));
+        data.setAssessments(parseSection(versionId, "COURSE_ASSESSMENT", SyllabusEditorData.AssessmentItem[].class));
+        return data;
+    }
+
+    private String getSectionJson(long versionId, String sectionCode) throws SQLException {
+        String sql = "SELECT content_text FROM syllabus_version_sections WHERE version_id = ? AND section_code = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, versionId);
+            ps.setString(2, sectionCode);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getString("content_text") : null;
+            }
+        }
+    }
+
+    private <T> List<T> parseSection(long versionId, String sectionCode, Class<T[]> itemType) throws SQLException {
+        String json = getSectionJson(versionId, sectionCode);
+        List<T> items = new ArrayList<>();
+        if (json == null || json.isBlank()) return items;
+        try {
+            T[] values = gson.fromJson(json, itemType);
+            if (values != null) java.util.Collections.addAll(items, values);
+            return items;
+        } catch (RuntimeException exception) {
+            throw new SQLException("Invalid syllabus section: " + sectionCode, exception);
+        }
     }
 }

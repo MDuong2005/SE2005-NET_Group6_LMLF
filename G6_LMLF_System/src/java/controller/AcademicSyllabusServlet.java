@@ -1,7 +1,6 @@
 package controller;
 
 import dao.AcademicSyllabusDAO;
-import dao.DesignerSyllabusEditorDAO;
 import dao.SyllabusVersionDAO;
 import model.SyllabusEditorData;
 import utils.SessionUtil;
@@ -22,13 +21,11 @@ public class AcademicSyllabusServlet extends HttpServlet {
 
     private AcademicSyllabusDAO syllabusDAO;
     private SyllabusVersionDAO syllabusVersionDAO;
-    private DesignerSyllabusEditorDAO syllabusDetailDAO;
 
     @Override
     public void init() throws ServletException {
         syllabusDAO = new AcademicSyllabusDAO();
         syllabusVersionDAO = new SyllabusVersionDAO();
-        syllabusDetailDAO = new DesignerSyllabusEditorDAO();
     }
 
     @Override
@@ -184,7 +181,7 @@ public class AcademicSyllabusServlet extends HttpServlet {
                 long versionId = (Long) syllabus.get("versionId");
                 List<Map<String, Object>> studentTasks = syllabusDAO.getSyllabusStudentTasks(versionId);
                 request.setAttribute("studentTasks", studentTasks);
-                SyllabusEditorData syllabusData = syllabusDetailDAO.loadForView(versionId);
+                SyllabusEditorData syllabusData = syllabusDAO.getCompleteSyllabusData(versionId);
                 request.setAttribute("syllabusData", syllabusData);
             }
             
