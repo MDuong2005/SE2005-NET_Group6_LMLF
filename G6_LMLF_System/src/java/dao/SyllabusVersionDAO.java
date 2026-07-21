@@ -182,7 +182,7 @@ public class SyllabusVersionDAO extends DBContext {
     }
 
     public boolean archiveCurrentPublishedVersion(long syllabusId) {
-        String sql = """
+        String archiveVersionSql = """
         UPDATE syllabus_versions
         SET status = 'ARCHIVED',
             archived_at = GETDATE()
@@ -190,16 +190,50 @@ public class SyllabusVersionDAO extends DBContext {
           AND status = 'PUBLISHED'
     """;
 
-        try {
-            PreparedStatement ps = connection.prepareStatement(sql);
-            ps.setLong(1, syllabusId);
+        String archiveSyllabusSql = """
+        UPDATE syllabuses
+        SET status = 'ARCHIVED',
+            updated_at = SYSDATETIME()
+        WHERE syllabus_id = ?
+          AND status = 'PUBLISHED'
+          AND deleted_at IS NULL
+    """;
 
-            ps.executeUpdate();
+        if (connection == null || syllabusId <= 0) {
+            return false;
+        }
+
+        boolean originalAutoCommit = true;
+        try {
+            originalAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+
+            int versionRows;
+            try (PreparedStatement ps = connection.prepareStatement(archiveVersionSql)) {
+                ps.setLong(1, syllabusId);
+                versionRows = ps.executeUpdate();
+            }
+
+            int syllabusRows;
+            try (PreparedStatement ps = connection.prepareStatement(archiveSyllabusSql)) {
+                ps.setLong(1, syllabusId);
+                syllabusRows = ps.executeUpdate();
+            }
+
+            if (versionRows < 1 || syllabusRows != 1) {
+                connection.rollback();
+                return false;
+            }
+
+            connection.commit();
             return true;
 
         } catch (Exception e) {
             e.printStackTrace();
+            try { connection.rollback(); } catch (Exception ignored) { }
             return false;
+        } finally {
+            try { connection.setAutoCommit(originalAutoCommit); } catch (Exception ignored) { }
         }
     }
 
@@ -208,7 +242,7 @@ public class SyllabusVersionDAO extends DBContext {
                 SELECT syllabus_id, version_number
                 FROM syllabus_versions
                 WHERE version_id = ?
-                  AND status = 'APPROVED'
+                  AND status IN ('APPROVED', 'ARCHIVED')
                 """;
 
         String archivePublishedSql = """
@@ -229,7 +263,7 @@ public class SyllabusVersionDAO extends DBContext {
                     updated_by = ?,
                     archived_at = NULL
                 WHERE version_id = ?
-                  AND status = 'APPROVED'
+                  AND status IN ('APPROVED', 'ARCHIVED')
                 """;
 
         String updateSyllabusSql = """

@@ -1,7 +1,9 @@
 package controller;
 
 import dao.AcademicSyllabusDAO;
+import dao.DesignerSyllabusEditorDAO;
 import dao.SyllabusVersionDAO;
+import model.SyllabusEditorData;
 import utils.SessionUtil;
 
 import jakarta.servlet.ServletException;
@@ -11,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -19,11 +22,13 @@ public class AcademicSyllabusServlet extends HttpServlet {
 
     private AcademicSyllabusDAO syllabusDAO;
     private SyllabusVersionDAO syllabusVersionDAO;
+    private DesignerSyllabusEditorDAO syllabusDetailDAO;
 
     @Override
     public void init() throws ServletException {
         syllabusDAO = new AcademicSyllabusDAO();
         syllabusVersionDAO = new SyllabusVersionDAO();
+        syllabusDetailDAO = new DesignerSyllabusEditorDAO();
     }
 
     @Override
@@ -40,7 +45,7 @@ public class AcademicSyllabusServlet extends HttpServlet {
         String idParam = request.getParameter("id");
         HttpSession session = request.getSession();
 
-        if (!"publish".equals(action)) {
+        if (!"publish".equals(action) && !"archive".equals(action)) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unsupported action");
             return;
         }
@@ -51,9 +56,21 @@ public class AcademicSyllabusServlet extends HttpServlet {
 
             if (syllabus == null || syllabus.isEmpty()) {
                 session.setAttribute("syllabusError", "Syllabus not found.");
-            } else if (!"APPROVED".equalsIgnoreCase(String.valueOf(syllabus.get("status")))) {
+            } else if ("archive".equals(action)) {
+                if (!"PUBLISHED".equalsIgnoreCase(String.valueOf(syllabus.get("status")))) {
+                    session.setAttribute("syllabusError",
+                            "Only a PUBLISHED syllabus can be archived. Current status: "
+                            + syllabus.get("status") + ".");
+                } else if (syllabusVersionDAO.archiveCurrentPublishedVersion(syllabusId)) {
+                    session.setAttribute("syllabusSuccess", "Syllabus archived successfully.");
+                } else {
+                    session.setAttribute("syllabusError",
+                            "Unable to archive this syllabus. Its status may no longer be PUBLISHED.");
+                }
+            } else if (!"APPROVED".equalsIgnoreCase(String.valueOf(syllabus.get("status")))
+                    && !"ARCHIVED".equalsIgnoreCase(String.valueOf(syllabus.get("status")))) {
                 session.setAttribute("syllabusError",
-                        "Only a syllabus with APPROVED status can be published. Current status: "
+                        "Only a syllabus with APPROVED or ARCHIVED status can be published. Current status: "
                         + syllabus.get("status") + ".");
             } else if (syllabus.get("versionId") == null) {
                 session.setAttribute("syllabusError", "The syllabus has no approved version to publish.");
@@ -167,6 +184,8 @@ public class AcademicSyllabusServlet extends HttpServlet {
                 long versionId = (Long) syllabus.get("versionId");
                 List<Map<String, Object>> studentTasks = syllabusDAO.getSyllabusStudentTasks(versionId);
                 request.setAttribute("studentTasks", studentTasks);
+                SyllabusEditorData syllabusData = syllabusDetailDAO.loadForView(versionId);
+                request.setAttribute("syllabusData", syllabusData);
             }
             
             request.setAttribute("syllabus", syllabus);
@@ -179,12 +198,16 @@ public class AcademicSyllabusServlet extends HttpServlet {
                 session.removeAttribute("syllabusError");
             }
             
-            request.setAttribute("contentPage", "academic/syllabus-detail.jsp");
-            request.setAttribute("cssFile", "academic/academic.css");
-            request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
+            // The lecturer detail screen is a standalone page. Forward the
+            // academic detail directly as well so both screens share the same
+            // header, page width and table layout instead of nesting this one
+            // inside the dashboard shell.
+            request.getRequestDispatcher("/views/academic/syllabus-detail.jsp").forward(request, response);
             
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/academic/syllabus?error=InvalidID");
+        } catch (SQLException e) {
+            throw new ServletException("Unable to load complete syllabus details.", e);
         }
     }
 }
