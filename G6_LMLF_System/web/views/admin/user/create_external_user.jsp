@@ -21,6 +21,15 @@
                         <c:when test="${param.error == 'role_missing'}">
                             <strong>Error:</strong> The EXTERNAL_EXPERT role is missing from the database.
                         </c:when>
+                        <c:when test="${param.error == 'email_failed_rollback'}">
+                            <strong>Error:</strong> Failed to send the credentials email. The account creation was safely rolled back to prevent inaccessible ghost accounts.
+                        </c:when>
+                        <c:when test="${param.error == 'email_failed_critical'}">
+                            <strong>CRITICAL ERROR:</strong> Failed to send email AND failed to rollback. Ghost account exists in DB!
+                        </c:when>
+                        <c:when test="${param.error == 'db_error'}">
+                            <strong>Database Error:</strong> Failed to create user. The email might already exist.
+                        </c:when>
                         <c:otherwise>
                             <strong>Error:</strong> An unexpected error occurred.
                         </c:otherwise>
