@@ -234,12 +234,7 @@
 
     <main class="dashboard-main">
 
-        <header class="top-header">
-            <strong>Designer Workspace</strong>
-            <span class="text-muted small">
-                Reviewer Feedback
-            </span>
-        </header>
+        <jsp:include page="../layout_designer/header_designer.jsp"><jsp:param name="headerSubtitle" value="Reviewer Feedback"/></jsp:include>
 
         <section class="review-result-page">
 

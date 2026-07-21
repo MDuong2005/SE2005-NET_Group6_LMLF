@@ -24,7 +24,7 @@
 <div class="dashboard-wrapper">
     <jsp:include page="../layout_designer/sidebar_designer.jsp"/>
     <main class="dashboard-main">
-        <header class="top-header"><strong>Designer Workspace</strong><span class="text-muted small">Structured Syllabus Editor</span></header>
+        <jsp:include page="../layout_designer/header_designer.jsp"><jsp:param name="headerSubtitle" value="Structured Syllabus Editor"/></jsp:include>
         <section class="dashboard-content">
             <div class="editor-shell">
                 <div class="page-heading">

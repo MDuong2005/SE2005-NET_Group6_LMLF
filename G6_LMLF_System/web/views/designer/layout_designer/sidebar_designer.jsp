@@ -49,16 +49,4 @@
 
     </nav>
 
-    <div class="sidebar-footer">
-
-        <a href="${pageContext.request.contextPath}/logout"
-           class="logout-btn">
-
-            <i class="bi bi-box-arrow-right"></i>
-
-            <span>Logout</span>
-        </a>
-
-    </div>
-
 </aside>

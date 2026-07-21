@@ -94,10 +94,7 @@
     <%@ include file="/views/designer/layout_designer/sidebar_designer.jsp" %>
 
     <main class="dashboard-main">
-        <div class="top-header">
-            <strong>Designer Workspace</strong>
-            <div>Submitted</div>
-        </div>
+        <jsp:include page="../layout_designer/header_designer.jsp"><jsp:param name="headerSubtitle" value="Submitted Syllabuses"/></jsp:include>
 
         <section class="dashboard-content">
             <div class="panel">
