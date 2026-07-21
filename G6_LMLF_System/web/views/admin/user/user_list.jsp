@@ -12,10 +12,13 @@
         </div>
     </div>
 
-    <%-- ===== Error messages for import validation ===== --%>
+    <%-- ===== Error messages (import validation + blocked actions) ===== --%>
     <c:if test="${not empty param.error}">
         <div class="import-banner has-errors" style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
             <c:choose>
+                <c:when test="${param.error == 'self_edit'}">
+                    <strong>Error:</strong> You cannot edit or ban your own account.
+                </c:when>
                 <c:when test="${param.error == 'no_file'}">
                     <strong>Error:</strong> Please select a file to upload.
                 </c:when>

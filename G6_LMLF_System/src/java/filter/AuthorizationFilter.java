@@ -84,8 +84,8 @@ public class AuthorizationFilter implements Filter {
             return;
         }
 
-        // System Admin: user management
-        if (path.startsWith("/admin/users")
+        // System Admin: user management and configurations
+        if (path.startsWith("/admin/")
                 && !hasAnyRole(user, RoleConstants.ADMIN)) {
             sendAccessDenied(httpRequest, httpResponse);
             return;

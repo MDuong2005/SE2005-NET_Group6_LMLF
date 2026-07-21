@@ -121,6 +121,13 @@ public class UserManagementServlet extends HttpServlet {
         String idParam = request.getParameter("id");
         try {
             long userId = Long.parseLong(idParam);
+            
+            User currentUser = SessionUtil.getCurrentUser(request);
+            if (currentUser != null && userId == currentUser.getUserId()) {
+                response.sendRedirect(request.getContextPath() + "/admin/users?error=self_edit");
+                return;
+            }
+            
             User user = userDAO.getUserById(userId);
             if (user == null) {
                 response.sendRedirect(request.getContextPath() + "/admin/users");
@@ -361,6 +368,13 @@ public class UserManagementServlet extends HttpServlet {
         long roleId;
         try {
             userId = Long.parseLong(request.getParameter("userId"));
+            
+            User currentUser = SessionUtil.getCurrentUser(request);
+            if (currentUser != null && userId == currentUser.getUserId()) {
+                response.sendRedirect(request.getContextPath() + "/admin/users?error=self_edit");
+                return;
+            }
+            
             roleId = Long.parseLong(request.getParameter("roleId"));
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/admin/users");
@@ -399,6 +413,13 @@ public class UserManagementServlet extends HttpServlet {
     private void toggleStatus(HttpServletRequest request, HttpServletResponse response, String action) throws IOException {
         try {
             long userId = Long.parseLong(request.getParameter("id"));
+            
+            User currentUser = SessionUtil.getCurrentUser(request);
+            if (currentUser != null && userId == currentUser.getUserId()) {
+                response.sendRedirect(request.getContextPath() + "/admin/users?error=self_edit");
+                return;
+            }
+            
             String status = action.equals("ban") ? "BANNED" : "ACTIVE";
             String logActionName = action.equals("ban") ? "BAN_USER" : "UNBAN_USER";
             
