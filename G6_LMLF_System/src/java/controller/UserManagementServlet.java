@@ -168,6 +168,16 @@ public class UserManagementServlet extends HttpServlet {
             return;
         }
 
+        if (userDAO.getUserByEmail(email) != null) {
+            response.sendRedirect(request.getContextPath() + "/admin/users?action=create&error=email_exists");
+            return;
+        }
+        
+        if (userDAO.getUserByEmail(username) != null) {
+            response.sendRedirect(request.getContextPath() + "/admin/users?action=create&error=username_exists");
+            return;
+        }
+
         long roleId = 0;
         try {
             roleId = Long.parseLong(request.getParameter("roleId"));

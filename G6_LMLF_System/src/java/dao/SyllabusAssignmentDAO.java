@@ -1480,7 +1480,7 @@ public class SyllabusAssignmentDAO extends DBContext {
         String sql = """
                 SELECT TOP (1) 1
                 FROM syllabus_assignments assignmentRow
-                WHERE assignmentRow.designer_id = ?
+                WHERE (assignmentRow.designer_id = ?
                    OR assignmentRow.reviewer_id = ?
                    OR EXISTS (
                         SELECT 1
@@ -1488,7 +1488,7 @@ public class SyllabusAssignmentDAO extends DBContext {
                         WHERE assignmentReviewer.assignment_id
                                 = assignmentRow.assignment_id
                           AND assignmentReviewer.reviewer_id = ?
-                   )
+                   ))
                 """;
 
         try {
@@ -1529,8 +1529,8 @@ public class SyllabusAssignmentDAO extends DBContext {
                 + "       ab.first_name + ' ' + ab.last_name AS assigned_by_name "
                 + "FROM syllabus_assignments sa "
                 + "JOIN courses c ON sa.course_id = c.course_id "
-                + "JOIN users d ON sa.designer_id = d.user_id "
-                + "JOIN users r ON sa.reviewer_id = r.user_id "
+                + "LEFT JOIN users d ON sa.designer_id = d.user_id "
+                + "LEFT JOIN users r ON sa.reviewer_id = r.user_id "
                 + "LEFT JOIN users ab ON sa.assigned_by = ab.user_id "
                 + "WHERE sa.designer_id = ? OR sa.reviewer_id = ? "
                 + "ORDER BY sa.assigned_at DESC";

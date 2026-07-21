@@ -1,5 +1,6 @@
 package dao;
 
+
 import context.DBContext;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,6 +18,8 @@ public class NotificationDAO extends DBContext {
     public static final String TYPE_EXTERNAL_ACCOUNT_APPROVED
             = "EXTERNAL_ACCOUNT_APPROVED";
 
+    public static final String TYPE_EXTERNAL_ACCOUNT_REJECTED
+            = "EXTERNAL_ACCOUNT_REJECTED";
     public static final String TYPE_DESIGN_TASK_ASSIGNED
             = "LECTURER_DESIGN_TASK_ASSIGNED";
 
@@ -362,6 +365,35 @@ public class NotificationDAO extends DBContext {
         );
     }
 
+    public boolean notifyAcademicExternalAccountRejected(
+            long academicId,
+            long adminId,
+            long requestId,
+            String externalEmail,
+            String rejectReason
+    ) {
+
+        if (!recipientHasRole(academicId, "ACADEMIC_OFFICE")) {
+            return false;
+        }
+
+        String safeEmail = trimToNull(externalEmail);
+        String identity = (safeEmail != null) ? safeEmail : "The requested external reviewer";
+        String reasonStr = (rejectReason != null && !rejectReason.trim().isEmpty()) ? rejectReason.trim() : "No reason provided.";
+
+        String body = identity
+                + " has been REJECTED by Admin. Reason: " + reasonStr;
+
+        return insertIfMissing(
+                academicId,
+                adminId,
+                TYPE_EXTERNAL_ACCOUNT_REJECTED,
+                "ACCOUNT_REQUEST",
+                requestId,
+                "External reviewer account rejected",
+                body
+        );
+    }
     public boolean notifyLecturerTaskAssignments(
             long assignmentId,
             long academicId,
@@ -556,6 +588,7 @@ public class NotificationDAO extends DBContext {
 
         switch (notification.getNotificationType()) {
             case TYPE_EXTERNAL_ACCOUNT_APPROVED:
+            case TYPE_EXTERNAL_ACCOUNT_REJECTED:
             case TYPE_ALL_REVIEWERS_APPROVED:
                 return "/role-assignment";
 

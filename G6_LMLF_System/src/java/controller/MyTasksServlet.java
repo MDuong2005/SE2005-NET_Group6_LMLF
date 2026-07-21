@@ -104,6 +104,7 @@ public class MyTasksServlet extends HttpServlet {
                             boolean emailSent = EmailUtil.sendExternalUserCredentials(accReq.getEmail(), plainPassword, extRole.getRoleName());
                             
                             if (emailSent) {
+
                                 String externalName = (
                                         (accReq.getFirstName() == null
                                                 ? ""
@@ -128,6 +129,7 @@ public class MyTasksServlet extends HttpServlet {
                                         "successMessage",
                                         "Account approved and email sent successfully."
                                 );
+                                utils.AuditUtil.logAction(request, "APPROVE_EXTERNAL_REQUEST", "users", newUserId, null, "{\"email\":\"" + accReq.getEmail() + "\"}");
                             } else {
                                 // 7. Compensating Transaction (Rollback)
                                 boolean undone = userDAO.undoApproveExpertRequestTx(newUserId, requestId);
@@ -144,7 +146,17 @@ public class MyTasksServlet extends HttpServlet {
                         String rejectReason = request.getParameter("rejectReason");
                         if (rejectReason == null) rejectReason = "";
                         requestDAO.updateStatus(requestId, "REJECTED", currentUser.getUserId(), rejectReason);
+                        
+                        notificationDAO.notifyAcademicExternalAccountRejected(
+                                accReq.getRequestedBy(),
+                                currentUser.getUserId(),
+                                requestId,
+                                accReq.getEmail(),
+                                rejectReason
+                        );
+                        
                         request.getSession().setAttribute("successMessage", "Account request rejected.");
+                        utils.AuditUtil.logAction(request, "REJECT_EXTERNAL_REQUEST", "account_requests", requestId, null, "{\"reason\":\"" + rejectReason + "\"}");
                     }
                 }
             } catch (NumberFormatException e) {

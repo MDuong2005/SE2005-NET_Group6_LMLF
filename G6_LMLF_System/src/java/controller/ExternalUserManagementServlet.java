@@ -133,6 +133,7 @@ public class ExternalUserManagementServlet extends HttpServlet {
         // Create user + role in one transaction (same result as the approval flow)
         long generatedId = userDAO.createExpertTx(newExternalUser, extRole.getRoleId());
         if (generatedId > 0) {
+            utils.AuditUtil.logAction(request, "CREATE_EXTERNAL_USER", "users", generatedId, null, "{\"email\":\"" + email + "\"}");
             // Send credentials email
             boolean emailSent = EmailUtil.sendExternalUserCredentials(email, plainPassword, extRole.getRoleName());
             if (!emailSent) {
@@ -148,6 +149,8 @@ public class ExternalUserManagementServlet extends HttpServlet {
             long userId = Long.parseLong(request.getParameter("id"));
             String status = action.equals("ban") ? "BANNED" : "ACTIVE";
             userDAO.updateUserStatus(userId, status);
+            String logAction = action.equals("ban") ? "BAN_EXTERNAL_USER" : "UNBAN_EXTERNAL_USER";
+            utils.AuditUtil.logAction(request, logAction, "users", userId, null, "{\"status\":\"" + status + "\"}");
             // When re-activating an external user, force them back to the
             // change-password waiting room so they must re-authenticate properly.
             if ("unban".equals(action)) {
