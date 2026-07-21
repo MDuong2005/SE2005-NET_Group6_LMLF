@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LMLF System - Curriculum Portal</title>
     <!-- Dynamic CSS for Dashboard Layout based on role -->
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/${cssFile}">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/${cssFile}?v=1.1.1">
     <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
