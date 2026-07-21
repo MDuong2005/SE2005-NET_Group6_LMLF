@@ -217,6 +217,11 @@
             color: #b91c1c;
         }
 
+        .status-published {
+            background: #d1fae5;
+            color: #047857;
+        }
+
         .status-archived {
             background: #e2e8f0;
             color: #475569;
@@ -541,6 +546,14 @@
 
                                                         <span class="status-badge status-submitted">
                                                             Submitted
+                                                        </span>
+
+                                                    </c:when>
+
+                                                    <c:when test="${version.status == 'PUBLISHED'}">
+
+                                                        <span class="status-badge status-published">
+                                                            Published
                                                         </span>
 
                                                     </c:when>
