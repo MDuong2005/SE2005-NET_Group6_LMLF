@@ -91,7 +91,7 @@ public class SyllabusVersionDAO extends DBContext {
             
             c.course_id,
             c.code AS course_code,
-            c.name AS course_name,
+c.name AS course_name,
             c.credits
         FROM syllabus_versions sv
         JOIN syllabuses s 
@@ -177,7 +177,7 @@ public class SyllabusVersionDAO extends DBContext {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+return false;
         }
     }
 
@@ -257,8 +257,7 @@ public class SyllabusVersionDAO extends DBContext {
                       )
                   )
                 """;
-
-        String archivePublishedSql = """
+String archivePublishedSql = """
                 UPDATE syllabus_versions
                 SET status = 'ARCHIVED',
                     archived_at = SYSDATETIME(),
@@ -287,6 +286,14 @@ public class SyllabusVersionDAO extends DBContext {
                     updated_by = ?
                 WHERE syllabus_id = ?
                   AND deleted_at IS NULL
+                """;
+
+        String completeAssignmentSql = """
+                UPDATE syllabus_assignments
+                SET assignment_status = 'COMPLETED',
+                    completed_at = SYSDATETIME()
+                WHERE syllabus_id = ? 
+                  AND assignment_status NOT IN ('COMPLETED', 'CANCELLED', 'REJECTED')
                 """;
 
         if (connection == null || versionId <= 0 || publisherId <= 0) {
@@ -328,8 +335,7 @@ public class SyllabusVersionDAO extends DBContext {
                     return false;
                 }
             }
-
-            try (PreparedStatement updateSyllabusPs = connection.prepareStatement(updateSyllabusSql)) {
+try (PreparedStatement updateSyllabusPs = connection.prepareStatement(updateSyllabusSql)) {
                 updateSyllabusPs.setString(1, versionNumber);
                 updateSyllabusPs.setLong(2, publisherId);
                 updateSyllabusPs.setLong(3, syllabusId);
@@ -337,6 +343,11 @@ public class SyllabusVersionDAO extends DBContext {
                     connection.rollback();
                     return false;
                 }
+            }
+
+            try (PreparedStatement completeAssignmentPs = connection.prepareStatement(completeAssignmentSql)) {
+                completeAssignmentPs.setLong(1, syllabusId);
+                completeAssignmentPs.executeUpdate();
             }
 
             connection.commit();
@@ -425,8 +436,7 @@ public class SyllabusVersionDAO extends DBContext {
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
             ps.setLong(1, syllabusId);
-
-            ResultSet rs = ps.executeQuery();
+ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
                 Map<String, Object> row = new HashMap<>();
@@ -500,7 +510,7 @@ public class SyllabusVersionDAO extends DBContext {
         if (version == null || !isValidVersionNumber(version.getVersionNumber())) {
             return false;
         }
-        String sql = "INSERT INTO syllabus_versions (syllabus_id, version_number, change_type, description_of_changes, status, created_by, submitted_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+String sql = "INSERT INTO syllabus_versions (syllabus_id, version_number, change_type, description_of_changes, status, created_by, submitted_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setLong(1, version.getSyllabusId());
             ps.setString(2, version.getVersionNumber());
@@ -561,7 +571,7 @@ public class SyllabusVersionDAO extends DBContext {
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, versionId);
             return ps.executeUpdate() > 0;
-        } catch (Exception e) {
+} catch (Exception e) {
             e.printStackTrace();
         }
         return false;
@@ -627,7 +637,7 @@ public class SyllabusVersionDAO extends DBContext {
                 row.put("change_type", rs.getString("change_type"));
                 row.put("description_of_changes", rs.getString("description_of_changes"));
                 row.put("status", rs.getString("status"));
-                row.put("submitted_at", rs.getTimestamp("submitted_at"));
+row.put("submitted_at", rs.getTimestamp("submitted_at"));
                 row.put("syllabus_title", rs.getString("syllabus_title"));
                 row.put("course_code", rs.getString("course_code"));
                 row.put("course_name", rs.getString("course_name"));
@@ -701,7 +711,7 @@ public class SyllabusVersionDAO extends DBContext {
                 + "SET status = ?, "
                 + "    approved_at = CASE WHEN ? = 'APPROVED' THEN GETDATE() ELSE approved_at END, "
                 + "    rejected_at = CASE WHEN ? = 'REJECTED' THEN GETDATE() ELSE rejected_at END "
-                + "WHERE version_id = ?";
++ "WHERE version_id = ?";
 
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
