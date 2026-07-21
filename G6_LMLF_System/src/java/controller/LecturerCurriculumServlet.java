@@ -45,6 +45,12 @@ public class LecturerCurriculumServlet extends HttpServlet {
                 case "detail":
                     viewCurriculumDetail(request, response);
                     break;
+                case "mapping":
+                    viewMappingMatrix(request, response);
+                    break;
+                case "po":
+                    viewPoManagement(request, response);
+                    break;
                 default:
                     listCurriculums(request, response);
                     break;
@@ -111,7 +117,7 @@ public class LecturerCurriculumServlet extends HttpServlet {
             
             List<Map<String, Object>> ploList = curriculumDAO.getCurriculumPLOs(curriculumId);
             List<Map<String, Object>> subjectList = curriculumDAO.getCurriculumSubjects(curriculumId);
-            
+
             // Add to recently viewed in session
             jakarta.servlet.http.HttpSession session = request.getSession();
             @SuppressWarnings("unchecked")
@@ -137,12 +143,123 @@ public class LecturerCurriculumServlet extends HttpServlet {
             request.setAttribute("curriculum", curriculum);
             request.setAttribute("ploList", ploList);
             request.setAttribute("subjectList", subjectList);
-            
+
             // Forward directly to the standalone custom detail page
             request.getRequestDispatcher("/views/lecturer/curriculum/curriculum-detail.jsp").forward(request, response);
-            
+
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/lecturer/curriculum?error=InvalidID");
         }
+    }
+
+    /**
+     * Standalone read-only Subject -> PLO mapping matrix page.
+     * Reached from the detail page's "View Mapping subjects" button.
+     */
+    private void viewMappingMatrix(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        String idParam = request.getParameter("id");
+        if (idParam == null || idParam.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/lecturer/curriculum?error=InvalidID");
+            return;
+        }
+
+        try {
+            Long curriculumId = Long.parseLong(idParam);
+            Map<String, Object> curriculum = curriculumDAO.getCurriculumDetail(curriculumId);
+
+            if (curriculum == null || curriculum.isEmpty()) {
+                response.sendRedirect(request.getContextPath() + "/lecturer/curriculum?error=NotFound");
+                return;
+            }
+
+            List<Map<String, Object>> ploList = curriculumDAO.getCurriculumPLOs(curriculumId);
+            List<Map<String, Object>> subjectList = curriculumDAO.getCurriculumSubjects(curriculumId);
+
+            // Matrix data: subjects grouped by knowledge block (row order like the FPT sheet)
+            // + the set of mapped "COURSE|PLO" keys used to tick the cells (read-only).
+            java.util.Set<String> matrixKeys = curriculumDAO.getCoursePloMatrix(curriculumId);
+            java.util.LinkedHashMap<String, java.util.List<Map<String, Object>>> subjectsByBlock =
+                    groupSubjectsByBlock(subjectList);
+
+            request.setAttribute("curriculum", curriculum);
+            request.setAttribute("ploList", ploList);
+            request.setAttribute("subjectsByBlock", subjectsByBlock);
+            request.setAttribute("matrixKeys", matrixKeys);
+
+            request.getRequestDispatcher("/views/lecturer/curriculum/curriculum-mapping.jsp").forward(request, response);
+
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/lecturer/curriculum?error=InvalidID");
+        }
+    }
+
+    /**
+     * Standalone read-only PO Management page: PO list + PLO list + the
+     * "Mapping POs to PLOs" matrix. Reached from the detail page's "View PO"
+     * button. All data comes straight from the curriculum tables.
+     */
+    private void viewPoManagement(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        String idParam = request.getParameter("id");
+        if (idParam == null || idParam.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/lecturer/curriculum?error=InvalidID");
+            return;
+        }
+
+        try {
+            Long curriculumId = Long.parseLong(idParam);
+            Map<String, Object> curriculum = curriculumDAO.getCurriculumDetail(curriculumId);
+
+            if (curriculum == null || curriculum.isEmpty()) {
+                response.sendRedirect(request.getContextPath() + "/lecturer/curriculum?error=NotFound");
+                return;
+            }
+
+            List<Map<String, Object>> poList = curriculumDAO.getCurriculumPOs(curriculumId);
+            List<Map<String, Object>> ploList = curriculumDAO.getCurriculumPLOs(curriculumId);
+
+            // Set of mapped "PLO_CODE|PO_CODE" keys used to tick the matrix cells (read-only).
+            java.util.Set<String> ploPoKeys = curriculumDAO.getPloPoMatrix(curriculumId);
+
+            request.setAttribute("curriculum", curriculum);
+            request.setAttribute("poList", poList);
+            request.setAttribute("ploList", ploList);
+            request.setAttribute("ploPoKeys", ploPoKeys);
+
+            request.getRequestDispatcher("/views/lecturer/curriculum/curriculum-po.jsp").forward(request, response);
+
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/lecturer/curriculum?error=InvalidID");
+        }
+    }
+
+    /**
+     * Group subjects by knowledge block in the fixed order used by the official
+     * curriculum sheet. Blocks that end up empty are removed; any unknown/blank
+     * block is bucketed under "Other" so nothing is silently dropped.
+     */
+    private java.util.LinkedHashMap<String, java.util.List<Map<String, Object>>> groupSubjectsByBlock(
+            List<Map<String, Object>> subjectList) {
+        String[] blockOrder = {
+            "General knowledge and skills_Khối Kiến thức chung",
+            "Major knowledge and skills_Khối kiến thức ngành",
+            "Specialized knowledge and skills _Khối kiến thức chuyên ngành",
+            "Elective combo knowledge and skills_Khối kiến thức combo lựa chọn"
+        };
+        java.util.LinkedHashMap<String, java.util.List<Map<String, Object>>> subjectsByBlock =
+                new java.util.LinkedHashMap<>();
+        for (String b : blockOrder) {
+            subjectsByBlock.put(b, new java.util.ArrayList<>());
+        }
+        for (Map<String, Object> subject : subjectList) {
+            Object kb = subject.get("knowledgeBlock");
+            String block = (kb == null || kb.toString().trim().isEmpty()) ? "Other" : kb.toString();
+            subjectsByBlock.computeIfAbsent(block, k -> new java.util.ArrayList<>()).add(subject);
+        }
+        subjectsByBlock.values().removeIf(java.util.List::isEmpty);
+        return subjectsByBlock;
     }
 }

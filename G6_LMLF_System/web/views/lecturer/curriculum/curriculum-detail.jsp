@@ -17,7 +17,7 @@
     <!-- 1. Top Header -->
     <header class="curr-header">
         <div class="curr-header-left">
-            <a href="javascript:history.back()" class="btn-back">
+            <a href="${pageContext.request.contextPath}/lecturer/curriculum" class="btn-back">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="19" y1="12" x2="5" y2="12"></line>
                     <polyline points="12 19 5 12 12 5"></polyline>
@@ -77,9 +77,8 @@
 
         <!-- 4. Action Buttons -->
         <div class="curr-actions">
-            <button class="btn-action">View PO</button>
-            <button class="btn-action">View Combo</button>
-            <button class="btn-action">View Elective</button>
+            <a href="${pageContext.request.contextPath}/lecturer/curriculum?action=po&id=${curriculum.curriculumId}" class="btn-action" style="text-decoration: none;">View PO</a>
+            <a href="${pageContext.request.contextPath}/lecturer/curriculum?action=mapping&id=${curriculum.curriculumId}" class="btn-action" style="text-decoration: none;">View Mapping subjects</a>
         </div>
 
         <!-- 5. Program Learning Outcomes Section -->
@@ -161,7 +160,7 @@
                 </tbody>
             </table>
         </div>
-        
+
     </main>
 
 </body>

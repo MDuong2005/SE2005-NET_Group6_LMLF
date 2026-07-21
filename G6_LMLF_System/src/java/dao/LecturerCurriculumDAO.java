@@ -174,16 +174,71 @@ public class LecturerCurriculumDAO extends DBContext {
         return list;
     }
 
+    public List<Map<String, Object>> getCurriculumPOs(long curriculumId) {
+        List<Map<String, Object>> list = new ArrayList<>();
+        String sql = """
+            SELECT po_id, code, description
+            FROM curriculum_pos
+            WHERE curriculum_id = ?
+            ORDER BY po_id ASC
+        """;
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, curriculumId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("poId", rs.getLong("po_id"));
+                    map.put("code", rs.getString("code"));
+                    map.put("description", rs.getString("description"));
+                    list.add(map);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    /**
+     * PO <-> PLO mapping of a curriculum. Returns the set of "PLO_CODE|PO_CODE"
+     * keys for mapped cells, used to tick ✓ in the "Mapping POs to PLOs" matrix
+     * (read-only). Joins go through the id-based mapping table so only real,
+     * seeded links appear — nothing is inferred.
+     */
+    public java.util.Set<String> getPloPoMatrix(long curriculumId) {
+        java.util.Set<String> mapped = new java.util.HashSet<>();
+        String sql = """
+            SELECT plo.code AS plo_code, po.code AS po_code
+            FROM curriculum_plo_po_mappings m
+            JOIN curriculum_plos plo ON m.plo_id = plo.plo_id
+            JOIN curriculum_pos po ON m.po_id = po.po_id
+            WHERE plo.curriculum_id = ? AND po.curriculum_id = ?
+        """;
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, curriculumId);
+            ps.setLong(2, curriculumId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    mapped.add(rs.getString("plo_code") + "|" + rs.getString("po_code"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return mapped;
+    }
+
     public List<Map<String, Object>> getCurriculumSubjects(long curriculumId) {
         List<Map<String, Object>> list = new ArrayList<>();
         String sql = """
-            SELECT 
+            SELECT
                 c.code,
                 c.name,
                 cc.semester,
                 c.credits,
+                cc.knowledge_block,
                 (
-                    SELECT STRING_AGG(cp_c.code, ', ') 
+                    SELECT STRING_AGG(cp_c.code, ', ')
                     FROM course_prerequisites cp
                     JOIN courses cp_c ON cp.prerequisite_course_id = cp_c.course_id
                     WHERE cp.course_id = c.course_id
@@ -202,6 +257,7 @@ public class LecturerCurriculumDAO extends DBContext {
                     map.put("name", rs.getString("name"));
                     map.put("semester", rs.getInt("semester"));
                     map.put("credits", rs.getInt("credits"));
+                    map.put("knowledgeBlock", rs.getString("knowledge_block"));
                     map.put("prerequisites", rs.getString("prerequisites"));
                     list.add(map);
                 }
@@ -210,5 +266,32 @@ public class LecturerCurriculumDAO extends DBContext {
             e.printStackTrace();
         }
         return list;
+    }
+
+    /**
+     * Ma trận Subject -> PLO của một curriculum.
+     * Trả về Set các khóa "COURSE_CODE|PLO_CODE" cho những ô đã được map,
+     * dùng để tick ✓ trong bảng matrix (read-only). Tra cứu O(1) trên JSP.
+     */
+    public java.util.Set<String> getCoursePloMatrix(long curriculumId) {
+        java.util.Set<String> mapped = new java.util.HashSet<>();
+        String sql = """
+            SELECT c.code AS course_code, p.code AS plo_code
+            FROM curriculum_course_plo_mappings ccpm
+            JOIN courses c ON ccpm.course_id = c.course_id
+            JOIN curriculum_plos p ON ccpm.plo_id = p.plo_id
+            WHERE ccpm.curriculum_id = ?
+        """;
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, curriculumId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    mapped.add(rs.getString("course_code") + "|" + rs.getString("plo_code"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return mapped;
     }
 }

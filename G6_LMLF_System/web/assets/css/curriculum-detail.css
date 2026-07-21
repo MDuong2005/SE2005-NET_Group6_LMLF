@@ -244,6 +244,69 @@ body {
     text-decoration: underline;
 }
 
+/* Subject - PLO Mapping Matrix */
+.matrix-table {
+    table-layout: auto;
+}
+
+/* Full-width orange banner row spanning all PLO columns */
+.matrix-table .matrix-title-row {
+    background-color: var(--primary-orange);
+    color: var(--table-header-text);
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 0.9rem 1rem;
+}
+
+/* Column headers (Subject Code + each PLOn) */
+.matrix-table .matrix-subject-col,
+.matrix-table .matrix-plo-col {
+    background-color: var(--primary-orange);
+    color: var(--table-header-text);
+    text-align: center;
+    font-weight: 600;
+    padding: 0.75rem 0.5rem;
+    border: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.matrix-table .matrix-subject-col {
+    text-align: center;
+    min-width: 120px;
+}
+
+/* Red category group header (knowledge block), like the FPT sheet */
+.matrix-table .matrix-block-row {
+    color: #dc2626;
+    font-weight: 700;
+    text-align: center;
+    background-color: #ffffff;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+}
+
+/* Subject code cell + centered check cells */
+.matrix-table .matrix-subject-cell {
+    text-align: center;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.matrix-table .matrix-check-cell {
+    text-align: center;
+    color: var(--text-main);
+    font-weight: 700;
+    border: 1px solid var(--border-color);
+    min-width: 48px;
+}
+
+/* Keep the zebra striping subtle and readable under the checkmarks */
+.matrix-table tbody tr:nth-child(even) {
+    background-color: var(--table-row-alt);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .info-table th, .info-table td {
