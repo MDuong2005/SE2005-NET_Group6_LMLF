@@ -733,4 +733,32 @@ public class UserDAO extends DBContext {
             }
         }
     }
+
+    public boolean undoCreateExpertTx(long userId) {
+        boolean previousAutoCommit = true;
+        try {
+            if (connection == null) return false;
+            previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            
+            // Delete user_roles
+            try (PreparedStatement ps1 = connection.prepareStatement("DELETE FROM user_roles WHERE user_id = ?")) {
+                ps1.setLong(1, userId);
+                ps1.executeUpdate();
+            }
+            // Delete user
+            try (PreparedStatement ps2 = connection.prepareStatement("DELETE FROM users WHERE user_id = ?")) {
+                ps2.setLong(1, userId);
+                ps2.executeUpdate();
+            }
+
+            connection.commit();
+            return true;
+        } catch (SQLException e) {
+            try { connection.rollback(); } catch (SQLException ex) {}
+            return false;
+        } finally {
+            try { connection.setAutoCommit(previousAutoCommit); } catch (SQLException ex) {}
+        }
+    }
 }

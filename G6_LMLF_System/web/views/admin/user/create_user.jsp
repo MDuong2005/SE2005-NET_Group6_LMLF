@@ -9,6 +9,7 @@
         <form action="${pageContext.request.contextPath}/admin/users" method="POST">
             <input type="hidden" name="action" value="create">
 
+
             <c:if test="${not empty param.error}">
                 <div style="background-color: #fee2e2; color: #991b1b; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #f87171;">
                     <c:choose>
@@ -21,12 +22,19 @@
                         <c:when test="${param.error == 'db_error'}">
                             <strong>Database Error:</strong> Failed to create user. The email or username might already exist.
                         </c:when>
+                        <c:when test="${param.error == 'email_exists'}">
+                            <strong>Error:</strong> This email address is already registered in the system.
+                        </c:when>
+                        <c:when test="${param.error == 'username_exists'}">
+                            <strong>Error:</strong> This username is already taken.
+                        </c:when>
                         <c:otherwise>
                             <strong>Error:</strong> An unexpected error occurred.
                         </c:otherwise>
                     </c:choose>
                 </div>
             </c:if>
+
 
             <div class="form-group">
                 <label>Username</label>

@@ -140,9 +140,15 @@ public class DashboardServlet extends HttpServlet {
             request.setAttribute("totalMajors", majorDAO.getAllMajors().size());
             request.setAttribute("totalAssignments", assignmentDAO.listAll().size());
             request.setAttribute("recentAssignments", assignmentDAO.listRecent(5));
-        } else if (user.hasRole("EXTERNAL_EXPERT") && !hasBussinessRole(user)) {
-            // External user is still in the waiting room - no business role yet
-            response.sendRedirect(request.getContextPath() + "/waiting-room");
+        } else if (user.hasRole("EXTERNAL_EXPERT")) {
+            dao.SyllabusAssignmentDAO assignDAO = new dao.SyllabusAssignmentDAO();
+            if (!assignDAO.hasAssignments(user.getUserId())) {
+                // Chưa được Academic Office phân công -> vào phòng chờ
+                request.getRequestDispatcher("/views/expert/waiting_standalone.jsp").forward(request, response);
+            } else {
+                // External chỉ đóng vai reviewer -> vào thẳng màn hình review
+                response.sendRedirect(request.getContextPath() + "/review?action=pending");
+            }
             return;
         }
 
@@ -151,18 +157,5 @@ public class DashboardServlet extends HttpServlet {
 
         // Forward tới file master layout (dashboard.jsp)
         request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
-    }
-
-    /**
-     * Returns true if the user has at least one "business" role beyond EXTERNAL_EXPERT.
-     * Once Academic assigns a real review role, they leave the waiting room.
-     */
-    private boolean hasBussinessRole(model.User user) {
-        String[] businessRoles = {"ADMIN", "ACADEMIC_OFFICE", "LECTURER", "DESIGNER",
-                                   "REVIEWER", "STUDENT", "ALUMNI"};
-        for (String role : businessRoles) {
-            if (user.hasRole(role)) return true;
-        }
-        return false;
     }
 }

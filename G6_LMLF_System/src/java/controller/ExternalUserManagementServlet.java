@@ -135,9 +135,22 @@ public class ExternalUserManagementServlet extends HttpServlet {
         if (generatedId > 0) {
             // Send credentials email
             boolean emailSent = EmailUtil.sendExternalUserCredentials(email, plainPassword, extRole.getRoleName());
-            if (!emailSent) {
+            if (emailSent) {
+                utils.AuditUtil.logAction(request, "CREATE_EXTERNAL_USER", "users", generatedId, null, "{\"email\":\"" + email + "\"}");
+                request.getSession().setAttribute("successMessage", "User created and email sent successfully.");
+            } else {
                 System.err.println("Failed to send email to " + email);
+                boolean undone = userDAO.undoCreateExpertTx(generatedId);
+                if (undone) {
+                    response.sendRedirect(request.getContextPath() + "/admin/external-users?action=create&error=email_failed_rollback");
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/admin/external-users?action=create&error=email_failed_critical");
+                }
+                return;
             }
+        } else {
+            response.sendRedirect(request.getContextPath() + "/admin/external-users?action=create&error=db_error");
+            return;
         }
 
         response.sendRedirect(request.getContextPath() + "/admin/external-users");
@@ -148,6 +161,8 @@ public class ExternalUserManagementServlet extends HttpServlet {
             long userId = Long.parseLong(request.getParameter("id"));
             String status = action.equals("ban") ? "BANNED" : "ACTIVE";
             userDAO.updateUserStatus(userId, status);
+            String logAction = action.equals("ban") ? "BAN_EXTERNAL_USER" : "UNBAN_EXTERNAL_USER";
+            utils.AuditUtil.logAction(request, logAction, "users", userId, null, "{\"status\":\"" + status + "\"}");
             // When re-activating an external user, force them back to the
             // change-password waiting room so they must re-authenticate properly.
             if ("unban".equals(action)) {
