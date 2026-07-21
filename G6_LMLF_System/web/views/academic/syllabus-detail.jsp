@@ -11,10 +11,17 @@
     <style>
         .syl-header-right { min-width: 170px; justify-content: flex-end; }
         .syl-header-left { min-width: 170px; }
-        .header-action { border: 0; border-radius: 4px; padding: 11px 16px; color: #fff; font-weight: 700; cursor: pointer; }
-        .publish-action { background: #17a84b; }
-        .publish-action:hover { background: #12853b; }
-        .archive-action { background: #dc2626; }
+        .detail-title-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+        .detail-title-row .page-title { margin: 0; }
+        .detail-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+        .detail-actions form { margin: 0; }
+        .header-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; border-radius: 9px; padding: 10px 17px; font-weight: 750; cursor: pointer; text-decoration: none; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+        .header-action:hover { transform: translateY(-1px); }
+        .request-action { border: 1px solid #ea580c; background: linear-gradient(135deg, #fff7ed, #ffedd5); color: #c2410c; box-shadow: 0 3px 10px rgba(234,88,12,.12); }
+        .request-action:hover { background: linear-gradient(135deg, #ffedd5, #fed7aa); box-shadow: 0 6px 16px rgba(234,88,12,.2); }
+        .publish-action { border: 1px solid #15803d; background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; box-shadow: 0 4px 12px rgba(22,163,74,.22); }
+        .publish-action:hover { background: linear-gradient(135deg, #16a34a, #15803d); box-shadow: 0 7px 18px rgba(22,163,74,.28); }
+        .archive-action { border: 1px solid #b91c1c; background: #dc2626; color: #fff; }
         .archive-action:hover { background: #b91c1c; }
         .status-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: .75rem; font-weight: 700; }
         .status-published { background: #bbf7d0; color: #166534; }
@@ -30,6 +37,8 @@
             .syl-header-left, .syl-header-right { min-width: auto; }
             .syl-header-center h1 { font-size: 1rem; }
             .header-action { padding: 9px 8px; }
+            .detail-title-row { align-items: flex-start; flex-direction: column; }
+            .detail-actions { width: 100%; justify-content: flex-start; }
         }
     </style>
 </head>
@@ -44,11 +53,21 @@
             </a>
         </div>
         <div class="syl-header-center"><h1>FPT University Learning Materials</h1></div>
-        <div class="syl-header-right">
+        <div class="syl-header-right"></div>
+    </header>
+
+    <main class="syl-container">
+        <div class="detail-title-row">
+            <h2 class="page-title">Syllabus Details</h2>
+            <div class="detail-actions">
+                <a class="header-action request-action" href="${pageContext.request.contextPath}/role-assignment?action=create&amp;courseId=${syllabus.courseId}&amp;syllabusId=${syllabus.syllabusId}">
+                    <span aria-hidden="true">+</span> Request New Version
+                </a>
             <c:if test="${syllabus.status == 'APPROVED' || syllabus.status == 'ARCHIVED'}">
                 <form method="post" action="${pageContext.request.contextPath}/academic/syllabus" onsubmit="return confirm('Are you sure you want to publish this syllabus?');">
                     <input type="hidden" name="action" value="publish">
                     <input type="hidden" name="id" value="${syllabus.syllabusId}">
+                    <input type="hidden" name="versionId" value="${syllabus.versionId}">
                     <button type="submit" class="header-action publish-action">Publish Syllabus</button>
                 </form>
             </c:if>
@@ -56,14 +75,12 @@
                 <form method="post" action="${pageContext.request.contextPath}/academic/syllabus" onsubmit="return confirm('Are you sure you want to archive this syllabus?');">
                     <input type="hidden" name="action" value="archive">
                     <input type="hidden" name="id" value="${syllabus.syllabusId}">
+                    <input type="hidden" name="versionId" value="${syllabus.versionId}">
                     <button type="submit" class="header-action archive-action">ARCHIVED Syllabus</button>
                 </form>
             </c:if>
+            </div>
         </div>
-    </header>
-
-    <main class="syl-container">
-        <h2 class="page-title">Syllabus Details</h2>
         <table class="info-table">
             <tbody>
                 <tr><th>Syllabus ID</th><td><c:out value="${syllabus.syllabusId}"/></td></tr>
@@ -80,7 +97,7 @@
                     <td><c:forEach var="task" items="${studentTasks}" varStatus="loop">- <c:out value="${task.taskContent}"/><c:if test="${!loop.last}">&#10;</c:if></c:forEach><c:if test="${empty studentTasks}">N/A</c:if></td>
                 </tr>
                 <tr><th>Tools</th><td><c:out value="${empty syllabus.tools ? 'N/A' : syllabus.tools}"/></td></tr>
-                <tr><th>Version</th><td><c:out value="${empty syllabus.currentVersion ? 'N/A' : syllabus.currentVersion}"/></td></tr>
+                <tr><th>Version</th><td><c:out value="${empty syllabus.versionNumber ? 'N/A' : syllabus.versionNumber}"/></td></tr>
                 <tr>
                     <th>Status</th>
                     <td><c:choose>

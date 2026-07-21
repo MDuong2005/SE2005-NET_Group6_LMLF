@@ -27,6 +27,7 @@
 
                                             // Retain form values for error feedback
                                             String tempCourseId = (String) request.getAttribute("tempCourseId");
+                                            String tempSyllabusId = (String) request.getAttribute("tempSyllabusId");
                                             String tempDesignerId = (String) request.getAttribute("tempDesignerId");
                                             String tempReviewerId = (String) request.getAttribute("tempReviewerId");
                                             String tempSemester = (String) request.getAttribute("tempSemester");
@@ -1486,6 +1487,7 @@
                                                             action="${pageContext.request.contextPath}/role-assignment?action=create"
                                                             method="post" enctype="multipart/form-data"
                                                             class="modal-form" onsubmit="return validateCreateForm()">
+                                                            <input type="hidden" name="syllabusId" value="<%= tempSyllabusId == null ? "" : tempSyllabusId %>">
                                                             <div class="modal-body"
                                                                 style="padding: 24px; max-height: 520px; overflow-y: auto;">
 

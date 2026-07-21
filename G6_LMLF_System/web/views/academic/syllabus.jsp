@@ -81,6 +81,11 @@
     }
     .syllabus-action:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
     .syllabus-empty { padding: 40px 20px !important; text-align: center; color: #64748b !important; }
+    .syllabus-filter { display: flex; gap: 10px; flex: 1; justify-content: flex-end; margin: 0; flex-wrap: wrap; }
+    .syllabus-filter input, .syllabus-filter select { padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; color: #334155; outline: none; }
+    .syllabus-filter input:focus, .syllabus-filter select:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,.12); }
+    .filter-button { padding: 9px 16px; border: 0; border-radius: 7px; background: #f97316; color: #fff; font-weight: 700; cursor: pointer; }
+    .filter-reset { padding: 9px 14px; border: 1px solid #cbd5e1; border-radius: 7px; color: #475569; text-decoration: none; background: #fff; }
 </style>
 
 <div class="content-header">
@@ -93,10 +98,20 @@
 <div class="panel">
     <div class="panel-header" style="display: flex; gap: 1rem; flex-wrap: wrap;">
         <h3 class="panel-title" style="min-width: 150px;">Syllabus List</h3>
-        <form method="GET" action="${pageContext.request.contextPath}/academic/syllabus" style="display: flex; gap: 10px; flex: 1; justify-content: flex-end; margin: 0;">
+        <form method="GET" action="${pageContext.request.contextPath}/academic/syllabus" class="syllabus-filter">
             <input type="hidden" name="action" value="list">
             <input type="text" name="search" value="${search}" placeholder="Search Syllabus..." style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none; width: 250px;">
-            <button type="submit" style="display: none;"></button>
+            <select name="status" aria-label="Filter by status">
+                <option value="">All statuses</option>
+                <option value="DRAFT" ${statusFilter == 'DRAFT' ? 'selected' : ''}>Draft</option>
+                <option value="SUBMITTED" ${statusFilter == 'SUBMITTED' ? 'selected' : ''}>Submitted</option>
+                <option value="APPROVED" ${statusFilter == 'APPROVED' ? 'selected' : ''}>Approved</option>
+                <option value="PUBLISHED" ${statusFilter == 'PUBLISHED' ? 'selected' : ''}>Published</option>
+                <option value="REJECTED" ${statusFilter == 'REJECTED' ? 'selected' : ''}>Rejected</option>
+                <option value="ARCHIVED" ${statusFilter == 'ARCHIVED' ? 'selected' : ''}>Archived</option>
+            </select>
+            <button type="submit" class="filter-button">Filter</button>
+            <a class="filter-reset" href="${pageContext.request.contextPath}/academic/syllabus?action=list">Reset</a>
         </form>
     </div>
     <div class="panel-body">
@@ -118,7 +133,7 @@
                             <tr>
                                 <td><span class="syllabus-code-badge">${s.courseCode}</span></td>
                                 <td style="font-weight: 600;">${s.courseName}</td>
-                                <td><span class="syllabus-version-badge">${s.currentVersion != null ? s.currentVersion : 'N/A'}</span></td>
+                                <td><span class="syllabus-version-badge">${s.versionNumber != null ? s.versionNumber : 'N/A'}</span></td>
                                 <td>
                                     <c:choose>
                                         <c:when test="${s.status == 'PUBLISHED'}">
@@ -136,7 +151,7 @@
                                     </c:choose>
                                 </td>
                                 <td style="text-align: center;">
-                                    <a class="syllabus-action" href="${pageContext.request.contextPath}/academic/syllabus?action=detail&id=${s.syllabusId}" title="View Details">
+                                    <a class="syllabus-action" href="${pageContext.request.contextPath}/academic/syllabus?action=detail&amp;id=${s.syllabusId}&amp;versionId=${s.versionId}" title="View Details">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                             <circle cx="12" cy="12" r="3"></circle>
@@ -163,13 +178,13 @@
                     Showing Page <span style="font-weight: 600; color: #1e293b;">${currentPage}</span> of <span style="font-weight: 600; color: #1e293b;">${totalPages}</span>
                 </div>
                 <div style="display: flex; gap: 0.5rem;">
-                    <a href="${pageContext.request.contextPath}/academic/syllabus?action=list&search=${search}&page=${currentPage - 1}" 
+                    <a href="${pageContext.request.contextPath}/academic/syllabus?action=list&amp;search=${search}&amp;status=${statusFilter}&amp;page=${currentPage - 1}"
                        style="padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 6px; text-decoration: none; color: #475569; font-size: 0.875rem; background-color: ${currentPage <= 1 ? '#f8fafc' : 'white'}; pointer-events: ${currentPage <= 1 ? 'none' : 'auto'}; opacity: ${currentPage <= 1 ? '0.5' : '1'}; transition: all 0.2s;"
                        onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor='${currentPage <= 1 ? '#f8fafc' : 'white'}'">
                        Previous
                     </a>
                     
-                    <a href="${pageContext.request.contextPath}/academic/syllabus?action=list&search=${search}&page=${currentPage + 1}" 
+                    <a href="${pageContext.request.contextPath}/academic/syllabus?action=list&amp;search=${search}&amp;status=${statusFilter}&amp;page=${currentPage + 1}"
                        style="padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 6px; text-decoration: none; color: #475569; font-size: 0.875rem; background-color: ${currentPage >= totalPages ? '#f8fafc' : 'white'}; pointer-events: ${currentPage >= totalPages ? 'none' : 'auto'}; opacity: ${currentPage >= totalPages ? '0.5' : '1'}; transition: all 0.2s;"
                        onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor='${currentPage >= totalPages ? '#f8fafc' : 'white'}'">
                        Next
