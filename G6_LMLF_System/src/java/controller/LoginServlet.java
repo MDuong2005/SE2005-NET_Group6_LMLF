@@ -28,6 +28,13 @@ public class LoginServlet extends HttpServlet {
         if (SessionUtil.isLoggedIn(request)) {
             User currentUser = SessionUtil.getCurrentUser(request);
 
+            if (currentUser != null && currentUser.isMustChangePassword()) {
+                response.sendRedirect(
+                        request.getContextPath() + "/change-password"
+                );
+                return;
+            }
+
             redirectByRole(
                     request,
                     response,
@@ -170,6 +177,13 @@ public class LoginServlet extends HttpServlet {
                 email.trim(),
                 rememberMe
         );
+
+        if (user.isMustChangePassword()) {
+            response.sendRedirect(
+                    request.getContextPath() + "/change-password"
+            );
+            return;
+        }
 
         redirectByRole(
                 request,
