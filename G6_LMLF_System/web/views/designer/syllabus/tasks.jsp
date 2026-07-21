@@ -482,6 +482,7 @@
                                                 <c:choose>
                                                     <c:when test="${task.versionStatus == 'REJECTED'}"><span class="status-badge status-rejected">Rejected</span></c:when>
                                                     <c:when test="${task.versionStatus == 'APPROVED'}"><span class="status-badge status-approved">Approved</span></c:when>
+                                                    <c:when test="${task.versionStatus == 'PUBLISHED' || task.syllabusStatus == 'PUBLISHED'}"><span class="status-badge status-published">Published</span></c:when>
                                                     <c:when test="${task.versionStatus == 'ARCHIVED'}"><span class="status-badge status-archived">Archived</span></c:when>
                                                     <c:when test="${task.versionStatus == 'SUBMITTED'}"><span class="status-badge status-submitted">Submitted</span></c:when>
                                                     <c:otherwise><span class="status-badge status-draft">Draft</span></c:otherwise>

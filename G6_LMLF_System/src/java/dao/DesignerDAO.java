@@ -94,6 +94,8 @@ public class DesignerDAO extends DBContext {
                 AND sf.is_active = 1
 
             WHERE sa.designer_id = ?
+              AND (s.status IS NULL OR s.status <> 'PUBLISHED')
+              AND (sv.status IS NULL OR sv.status <> 'PUBLISHED')
             """);
 
     if ("draft".equalsIgnoreCase(filter)) {

@@ -63,7 +63,9 @@ public class DesignerTask {
         }
 
         if ("CANCELLED".equalsIgnoreCase(assignmentStatus)
-                || "COMPLETED".equalsIgnoreCase(assignmentStatus)) {
+                || "COMPLETED".equalsIgnoreCase(assignmentStatus)
+                || "PUBLISHED".equalsIgnoreCase(syllabusStatus)
+                || "PUBLISHED".equalsIgnoreCase(versionStatus)) {
             return false;
         }
 
