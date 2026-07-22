@@ -1,0 +1,140 @@
+@import url("student.css");
+
+.learning-path-card {
+    padding: 1.75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .06);
+}
+
+.learning-path-form {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin: .5rem 0 1.75rem;
+    flex-wrap: wrap;
+}
+
+.learning-path-form label {
+    color: #1f2937;
+    font-weight: 600;
+}
+
+.learning-path-input {
+    width: 190px;
+    padding: .65rem .8rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 5px;
+    background: #fff;
+    color: #0f172a;
+    font-size: .95rem;
+    text-transform: uppercase;
+}
+
+.learning-path-input:focus {
+    outline: 2px solid rgba(16, 185, 129, .2);
+    border-color: #10b981;
+}
+
+.learning-path-search {
+    padding: .68rem 1.3rem;
+    border: 0;
+    border-radius: 5px;
+    background: #10b981;
+    color: #fff;
+    font-weight: 700;
+}
+
+.learning-path-search:hover {
+    background: #059669;
+}
+
+.learning-path-count {
+    margin-bottom: .35rem;
+    color: #059669;
+    font-weight: 600;
+}
+
+.learning-path-table-wrap {
+    overflow-x: auto;
+    border: 1px solid #e5e7eb;
+}
+
+.learning-path-table {
+    width: 100%;
+    min-width: 1050px;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.learning-path-table th {
+    padding: .8rem .65rem;
+    border-right: 1px solid rgba(255, 255, 255, .3);
+    background: #f59a45;
+    color: #fff;
+    text-align: left;
+    font-size: .9rem;
+}
+
+.learning-path-table td {
+    padding: .75rem .65rem;
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: top;
+    color: #111827;
+    line-height: 1.5;
+}
+
+.learning-path-table .row-number { width: 42px; text-align: center; }
+.learning-path-table .syllabus-id { width: 105px; }
+.learning-path-table .subject-code { width: 135px; }
+.learning-path-table .syllabus-name { width: 280px; }
+.learning-path-table .decision-number { width: 250px; }
+
+.syllabus-detail-link {
+    color: #0284c7;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.syllabus-detail-link:hover {
+    text-decoration: underline;
+}
+
+.prerequisite-summary {
+    margin-bottom: .65rem;
+    font-weight: 700;
+}
+
+.prerequisite-list {
+    margin: 0;
+    padding-left: 1.35rem;
+}
+
+.prerequisite-list li {
+    margin: .25rem 0;
+}
+
+.prerequisite-code {
+    font-weight: 600;
+}
+
+.learning-path-message {
+    padding: 1rem;
+    border-radius: 7px;
+    background: #f8fafc;
+    color: #64748b;
+}
+
+.learning-path-message.error {
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+@media (max-width: 720px) {
+    .learning-path-card { padding: 1rem; }
+    .learning-path-form { align-items: stretch; flex-direction: column; }
+    .learning-path-input { width: 100%; }
+}
