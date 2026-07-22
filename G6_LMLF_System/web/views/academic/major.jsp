@@ -15,6 +15,9 @@
     String tempDescription = (String) request.getAttribute("description");
     
     Major editMajor = (Major) request.getAttribute("major");
+    int majorTotalEntries = majorList == null ? 0 : majorList.size();
+    int majorInitialEnd = Math.min(5, majorTotalEntries);
+    int majorTotalPages = majorTotalEntries == 0 ? 1 : (int) Math.ceil(majorTotalEntries / 5.0);
 %>
 
 <!DOCTYPE html>
@@ -22,7 +25,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Curriculum Matrix - LMLF</title>
+    <title>Major Management - LMLF</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -121,21 +124,28 @@
         }
         
         .search-group {
-            position: relative;
             flex: 2;
         }
-        
-        .search-group .form-input {
+
+        .search-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .search-input-wrapper .form-input {
+            width: 100%;
             padding-left: 44px;
         }
         
-        .search-group svg {
+        .search-input-wrapper svg {
             position: absolute;
             left: 14px;
-            top: 12px;
+            top: 50%;
+            transform: translateY(-50%);
             width: 18px;
             height: 18px;
             fill: var(--text-muted);
+            pointer-events: none;
         }
         
         .btn-search {
@@ -153,6 +163,28 @@
         
         .btn-search:hover {
             background-color: var(--primary-hover);
+        }
+
+        .btn-filter-reset {
+            height: 42px;
+            padding: 0 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-muted);
+            background-color: #FFFFFF;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 700;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .btn-filter-reset:hover {
+            background-color: #F8FAFC;
+            color: var(--text-dark);
         }
         
         /* Table styles */
@@ -219,30 +251,46 @@
             align-items: center;
         }
         
-        .btn-link-edit {
-            color: var(--primary);
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            background-color: #FFFFFF;
+            cursor: pointer;
             text-decoration: none;
-            font-weight: 700;
-            font-size: 14px;
             transition: var(--transition);
         }
-        
-        .btn-link-edit:hover {
-            color: var(--primary-hover);
-            text-decoration: underline;
+
+        .btn-action-edit {
+            color: #2563EB;
         }
-        
-        .btn-link-delete {
+
+        .btn-action-edit:hover {
+            color: #1D4ED8;
+            border-color: #93C5FD;
+            background-color: #EFF6FF;
+        }
+
+        .btn-action-delete {
             color: var(--text-muted);
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-            transition: var(--transition);
         }
-        
-        .btn-link-delete:hover {
+
+        .btn-action-delete:hover {
             color: var(--danger);
-            text-decoration: underline;
+            border-color: #FCA5A5;
+            background-color: #FEF2F2;
+        }
+
+        .btn-action svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: currentColor;
         }
         
         /* Empty State inside table */
@@ -498,7 +546,7 @@
                 <div class="workspace-container">
                     
                     <div class="workspace-header">
-                        <h1>Curriculum Matrix Settings</h1>
+                        <h1>Major Management</h1>
                         <button type="button" class="btn-primary" onclick="openCreateModal()">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                             Add New Major
@@ -516,24 +564,19 @@
             <!-- Filter Card -->
             <div class="card">
                 <form action="${pageContext.request.contextPath}/major" method="get" class="filter-row">
-                    <input type="hidden" name="action" value="search">
-                    
-                    <div class="form-group" style="max-width: 280px;">
-                        <label for="selectMajor">Select Major</label>
-                        <select id="selectMajor" class="form-select">
-                            <option value="all">All Majors</option>
-                        </select>
-                    </div>
-                    
+                    <input type="hidden" name="action" value="list">
                     <div class="form-group search-group">
-                        <label for="searchKeyword">Search Course</label>
-                        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                        <input type="text" id="searchKeyword" name="keyword" class="form-input" 
-                               placeholder="Enter major code or name..." 
-                               value="<%= request.getAttribute("keyword") == null ? "" : request.getAttribute("keyword") %>">
+                        <label for="searchKeyword">Search by Name or Code</label>
+                        <div class="search-input-wrapper">
+                            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                            <input type="text" id="searchKeyword" name="keyword" class="form-input"
+                                   placeholder="Enter major name or code..."
+                                   value="<%= request.getAttribute("keyword") == null ? "" : request.getAttribute("keyword") %>">
+                        </div>
                     </div>
-                    
+
                     <button type="submit" class="btn-search">Search</button>
+                    <a href="${pageContext.request.contextPath}/major?action=list" class="btn-filter-reset">Reset</a>
                 </form>
             </div>
 
@@ -561,10 +604,18 @@
                             <td><%= majorItem.getDescription() == null ? "" : majorItem.getDescription() %></td>
                             <td>
                                 <div class="actions-cell">
-                                    <a href="${pageContext.request.contextPath}/major?action=edit&id=<%= majorItem.getMajorId() %>" class="btn-link-edit">Edit</a>
-                                    <a href="${pageContext.request.contextPath}/major?action=delete&id=<%= majorItem.getMajorId() %>" 
-                                       class="btn-link-delete" 
-                                       onclick="return confirm('Delete this major?')">Delete</a>
+                                    <a href="${pageContext.request.contextPath}/major?action=edit&id=<%= majorItem.getMajorId() %>"
+                                       class="btn-action btn-action-edit" title="Edit Major">
+                                        <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7m-1.5-10.5a2.121 2.121 0 013 3L12 13l-4 1 1-4 7.5-7.5z"/></svg>
+                                    </a>
+                                    <form method="post" action="${pageContext.request.contextPath}/major" style="margin: 0; display: inline-flex;"
+                                          onsubmit="return confirm('Are you sure you want to delete this major?')">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="id" value="<%= majorItem.getMajorId() %>">
+                                        <button type="submit" class="btn-action btn-action-delete" title="Delete Major">
+                                            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -593,12 +644,12 @@
                 <% if(majorList != null && !majorList.isEmpty()){ %>
                 <div class="pagination-footer">
                     <div class="pagination-info" id="paginationInfo">
-                        Showing <span>0</span> to <span>0</span> of <span><%= majorList.size() %></span> majors
+                        Showing <span>1</span> to <span><%= majorInitialEnd %></span> of <span><%= majorTotalEntries %></span> entries
                     </div>
                     <div class="pagination-controls">
                         <button class="page-btn" id="btnFirst" title="First Page">&lt;&lt;</button>
                         <button class="page-btn" id="btnPrev" title="Previous Page">&lt;</button>
-                        <span class="page-indicator" id="pageIndicator">Page 1 of 1</span>
+                        <span class="page-indicator" id="pageIndicator">Page 1 of <%= majorTotalPages %></span>
                         <button class="page-btn" id="btnNext" title="Next Page">&gt;</button>
                         <button class="page-btn" id="btnLast" title="Last Page">&gt;&gt;</button>
                     </div>
@@ -673,13 +724,15 @@
                     
                     <div class="form-group" style="margin-bottom: 16px;">
                         <label for="editCode">Major Code *</label>
-                        <input type="text" id="editCode" name="code" class="form-input" required 
+                        <input type="text" id="editCode" class="form-input" readonly
+                               style="background-color: #F1F5F9; color: #64748B; cursor: not-allowed;"
                                value="<%= editMajor.getCode() != null ? editMajor.getCode() : "" %>">
                     </div>
                     
                     <div class="form-group" style="margin-bottom: 16px;">
                         <label for="editName">Major Name *</label>
-                        <input type="text" id="editName" name="name" class="form-input" required 
+                        <input type="text" id="editName" class="form-input" readonly
+                               style="background-color: #F1F5F9; color: #64748B; cursor: not-allowed;"
                                value="<%= editMajor.getName() != null ? editMajor.getName() : "" %>">
                     </div>
                     
@@ -743,8 +796,8 @@
                 });
                 
                 // Update text indicators
-                document.getElementById('pageIndicator').textContent = `Page ${page} of ${totalPages}`;
-                document.getElementById('paginationInfo').innerHTML = `Showing <span>${start + 1}</span> to <span>${end}</span> of <span>${rows.length}</span> majors`;
+                document.getElementById('pageIndicator').textContent = 'Page ' + page + ' of ' + totalPages;
+                document.getElementById('paginationInfo').innerHTML = 'Showing <span>' + (start + 1) + '</span> to <span>' + end + '</span> of <span>' + rows.length + '</span> entries';
                 
                 // Toggle state of buttons
                 document.getElementById('btnFirst').disabled = (page === 1);

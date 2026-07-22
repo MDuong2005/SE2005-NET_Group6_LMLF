@@ -86,6 +86,18 @@
     .syllabus-filter input:focus, .syllabus-filter select:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,.12); }
     .filter-button { padding: 9px 16px; border: 0; border-radius: 7px; background: #f97316; color: #fff; font-weight: 700; cursor: pointer; }
     .filter-reset { padding: 9px 14px; border: 1px solid #cbd5e1; border-radius: 7px; color: #475569; text-decoration: none; background: #fff; }
+    .pagination-footer { border-top: 1px solid #e2e8f0; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; background: #fff; }
+    .pagination-info { font-size: 14px; color: #64748b; }
+    .pagination-info span { font-weight: 700; color: #1e293b; }
+    .pagination-controls { display: flex; align-items: center; gap: 8px; }
+    .page-btn { width: 36px; height: 36px; border: 1px solid #e2e8f0; background: #fff; color: #1e293b; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; cursor: pointer; text-decoration: none; transition: all .2s ease; }
+    .page-btn:hover:not(.disabled) { border-color: #f97316; color: #f97316; background: #fff7ed; }
+    .page-btn.disabled { opacity: .4; cursor: not-allowed; pointer-events: none; }
+    .page-indicator { font-size: 14px; font-weight: 600; color: #1e293b; margin: 0 12px; }
+    @media (max-width: 640px) {
+        .pagination-footer { align-items: flex-start; flex-direction: column; gap: 12px; }
+        .page-indicator { margin: 0 4px; }
+    }
 </style>
 
 <div class="content-header">
@@ -116,7 +128,7 @@
     </div>
     <div class="panel-body">
         <div class="syllabus-table-card">
-        <table class="syllabus-data-table">
+        <table class="syllabus-data-table" id="syllabusTable">
             <thead>
                 <tr>
                     <th>Subject Code</th>
@@ -169,29 +181,34 @@
                 </c:choose>
             </tbody>
         </table>
-        </div>
 
-        <!-- Pagination Controls -->
-        <c:if test="${totalPages > 1}">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
-                <div style="color: #64748b; font-size: 0.875rem;">
-                    Showing Page <span style="font-weight: 600; color: #1e293b;">${currentPage}</span> of <span style="font-weight: 600; color: #1e293b;">${totalPages}</span>
+        <c:if test="${not empty syllabuses}">
+            <c:url var="firstPageUrl" value="/academic/syllabus">
+                <c:param name="action" value="list"/><c:param name="search" value="${search}"/><c:param name="status" value="${statusFilter}"/><c:param name="page" value="1"/>
+            </c:url>
+            <c:url var="previousPageUrl" value="/academic/syllabus">
+                <c:param name="action" value="list"/><c:param name="search" value="${search}"/><c:param name="status" value="${statusFilter}"/><c:param name="page" value="${currentPage - 1}"/>
+            </c:url>
+            <c:url var="nextPageUrl" value="/academic/syllabus">
+                <c:param name="action" value="list"/><c:param name="search" value="${search}"/><c:param name="status" value="${statusFilter}"/><c:param name="page" value="${currentPage + 1}"/>
+            </c:url>
+            <c:url var="lastPageUrl" value="/academic/syllabus">
+                <c:param name="action" value="list"/><c:param name="search" value="${search}"/><c:param name="status" value="${statusFilter}"/><c:param name="page" value="${totalPages}"/>
+            </c:url>
+            <div class="pagination-footer">
+                <div class="pagination-info">
+                    Showing <span>${pageStart}</span> to <span>${pageEnd}</span> of <span>${totalRecords}</span> entries
                 </div>
-                <div style="display: flex; gap: 0.5rem;">
-                    <a href="${pageContext.request.contextPath}/academic/syllabus?action=list&amp;search=${search}&amp;status=${statusFilter}&amp;page=${currentPage - 1}"
-                       style="padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 6px; text-decoration: none; color: #475569; font-size: 0.875rem; background-color: ${currentPage <= 1 ? '#f8fafc' : 'white'}; pointer-events: ${currentPage <= 1 ? 'none' : 'auto'}; opacity: ${currentPage <= 1 ? '0.5' : '1'}; transition: all 0.2s;"
-                       onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor='${currentPage <= 1 ? '#f8fafc' : 'white'}'">
-                       Previous
-                    </a>
-                    
-                    <a href="${pageContext.request.contextPath}/academic/syllabus?action=list&amp;search=${search}&amp;status=${statusFilter}&amp;page=${currentPage + 1}"
-                       style="padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 6px; text-decoration: none; color: #475569; font-size: 0.875rem; background-color: ${currentPage >= totalPages ? '#f8fafc' : 'white'}; pointer-events: ${currentPage >= totalPages ? 'none' : 'auto'}; opacity: ${currentPage >= totalPages ? '0.5' : '1'}; transition: all 0.2s;"
-                       onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor='${currentPage >= totalPages ? '#f8fafc' : 'white'}'">
-                       Next
-                    </a>
+                <div class="pagination-controls">
+                    <a href="${firstPageUrl}" class="page-btn ${currentPage <= 1 ? 'disabled' : ''}" title="First Page">&lt;&lt;</a>
+                    <a href="${previousPageUrl}" class="page-btn ${currentPage <= 1 ? 'disabled' : ''}" title="Previous Page">&lt;</a>
+                    <span class="page-indicator">Page ${currentPage} of ${totalPages}</span>
+                    <a href="${nextPageUrl}" class="page-btn ${currentPage >= totalPages ? 'disabled' : ''}" title="Next Page">&gt;</a>
+                    <a href="${lastPageUrl}" class="page-btn ${currentPage >= totalPages ? 'disabled' : ''}" title="Last Page">&gt;&gt;</a>
                 </div>
             </div>
         </c:if>
+        </div>
 
     </div>
 </div>

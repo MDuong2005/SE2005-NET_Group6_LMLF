@@ -140,7 +140,7 @@ public class AcademicSyllabusServlet extends HttpServlet {
         if (status == null) status = "";
         
         int page = 1;
-        int pageSize = 10;
+        int pageSize = 5;
         
         String pageParam = request.getParameter("page");
         if (pageParam != null && !pageParam.trim().isEmpty()) {
@@ -157,10 +157,15 @@ public class AcademicSyllabusServlet extends HttpServlet {
         if (page > totalPages && totalPages > 0) page = totalPages;
         
         List<Map<String, Object>> syllabuses = syllabusDAO.getSyllabuses(search, status, page, pageSize);
+        int pageStart = syllabuses.isEmpty() ? 0 : (page - 1) * pageSize + 1;
+        int pageEnd = syllabuses.isEmpty() ? 0 : pageStart + syllabuses.size() - 1;
         
         request.setAttribute("syllabuses", syllabuses);
         request.setAttribute("currentPage", page);
         request.setAttribute("totalPages", totalPages);
+        request.setAttribute("totalRecords", totalRecords);
+        request.setAttribute("pageStart", pageStart);
+        request.setAttribute("pageEnd", pageEnd);
         request.setAttribute("search", search);
         request.setAttribute("statusFilter", status);
         

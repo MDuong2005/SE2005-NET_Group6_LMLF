@@ -35,6 +35,13 @@
             Dashboard
         </a>
         <c:if test="${sessionScope.user.hasRole('ACADEMIC_OFFICE')}">
+            <a href="${pageContext.request.contextPath}/academic/notifications" class="nav-item ${currentURI.contains('/academic/notifications') ? 'active' : ''}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                Notifications
+            </a>
+
             <div class="nav-section-title">COURSE MANAGEMENT</div>
             
             <a href="${pageContext.request.contextPath}/course" class="nav-item ${currentURI.endsWith('/course') ? 'active' : ''}">
@@ -44,18 +51,18 @@
                 Courses
             </a>
             
-            <a href="${pageContext.request.contextPath}/course-prerequisite" class="nav-item ${currentURI.contains('/course-prerequisite') ? 'active' : ''}">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                </svg>
-                Prerequisites
-            </a>
-            
             <a href="${pageContext.request.contextPath}/curriculum" class="nav-item ${currentURI.endsWith('/curriculum') ? 'active' : ''}">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
                 Curriculums
+            </a>
+
+            <a href="${pageContext.request.contextPath}/major" class="nav-item ${currentURI.contains('/major') ? 'active' : ''}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                Majors
             </a>
 
             <div class="nav-section-title">SYLLABUS MANAGEMENT</div>
