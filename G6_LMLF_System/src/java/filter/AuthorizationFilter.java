@@ -91,6 +91,20 @@ public class AuthorizationFilter implements Filter {
             return;
         }
 
+        // Lecturer module: only lecturers may reach /lecturer/* routes.
+        if (path.startsWith("/lecturer/")
+                && !hasAnyRole(user, RoleConstants.LECTURER)) {
+            sendAccessDenied(httpRequest, httpResponse);
+            return;
+        }
+
+        // Student module: only students may reach /student/* routes.
+        if (path.startsWith("/student/")
+                && !hasAnyRole(user, RoleConstants.STUDENT)) {
+            sendAccessDenied(httpRequest, httpResponse);
+            return;
+        }
+
         // Allow access if passed all checks
         chain.doFilter(request, response);
     }
