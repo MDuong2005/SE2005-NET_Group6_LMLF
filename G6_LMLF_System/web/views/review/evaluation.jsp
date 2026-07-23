@@ -1349,6 +1349,32 @@
         }
     }
 
+    function loadAllCourseObjectivesFromPage() {
+        var coTarget = document.querySelector(
+                '.section-content[data-section-code="COURSE_OBJECTIVES"]'
+        );
+
+        if (!coTarget) {
+            return [];
+        }
+
+        var card = coTarget.closest("[data-review-card]");
+        var parsed = parseJsonSource(card);
+
+        if (!Array.isArray(parsed)) {
+            return [];
+        }
+
+        return parsed.filter(function (item) {
+            return item && typeof item === "object" && item.code;
+        }).map(function (item) {
+            return {
+                code: String(item.code),
+                description: item.description ? String(item.description) : ""
+            };
+        });
+    }
+
     function loadAllClosFromPage() {
         var cloTarget = document.querySelector(
                 '.section-content[data-section-code="COURSE_LEARNING_OUTCOMES"]'
@@ -1579,6 +1605,90 @@
         return card;
     }
 
+    function renderCloCoMapping(target, data) {
+        if (!data || typeof data !== "object" || Array.isArray(data)) {
+            renderEmpty(target);
+            return;
+        }
+
+        var clos = loadAllClosFromPage();
+        var cos = loadAllCourseObjectivesFromPage();
+
+        if (!clos.length || !cos.length) {
+            renderEmpty(target);
+            return;
+        }
+
+        var wrap = document.createElement("div");
+        wrap.className = "clo-plo-table-wrap";
+
+        var table = document.createElement("table");
+        table.className = "clo-plo-matrix";
+
+        var thead = document.createElement("thead");
+        var headerRow = document.createElement("tr");
+        var cloHeader = document.createElement("th");
+        cloHeader.className = "clo-column";
+        cloHeader.textContent = "CLO";
+        headerRow.appendChild(cloHeader);
+
+        cos.forEach(function (co) {
+            var th = document.createElement("th");
+            var code = document.createElement("span");
+            code.className = "plo-header-code";
+            code.textContent = co.code || "CO";
+            var description = document.createElement("span");
+            description.className = "plo-header-description";
+            description.textContent = co.description || "";
+            th.appendChild(code);
+            th.appendChild(description);
+            headerRow.appendChild(th);
+        });
+
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        var tbody = document.createElement("tbody");
+        clos.forEach(function (clo) {
+            var row = document.createElement("tr");
+            var cloCell = document.createElement("td");
+            cloCell.className = "clo-column";
+            var cloCode = document.createElement("div");
+            cloCode.className = "clo-code";
+            cloCode.textContent = clo.code || "CLO";
+            var cloDescription = document.createElement("div");
+            cloDescription.className = "clo-description";
+            cloDescription.textContent = clo.description || "";
+            cloCell.appendChild(cloCode);
+            cloCell.appendChild(cloDescription);
+            row.appendChild(cloCell);
+
+            var selectedCos = Array.isArray(data[clo.code])
+                    ? data[clo.code].map(function (value) {
+                        return String(value).toUpperCase();
+                    })
+                    : [];
+
+            cos.forEach(function (co) {
+                var cell = document.createElement("td");
+                var marker = document.createElement("div");
+                var selected = selectedCos.indexOf(
+                        String(co.code || "").toUpperCase()
+                ) >= 0;
+                marker.className = selected ? "mapping-check" : "mapping-empty";
+                marker.textContent = selected ? "✓" : "—";
+                cell.appendChild(marker);
+                row.appendChild(cell);
+            });
+
+            tbody.appendChild(row);
+        });
+
+        table.appendChild(tbody);
+        wrap.appendChild(table);
+        target.appendChild(wrap);
+    }
+
     function renderCloPloMapping(target, data) {
         if (!Array.isArray(data) || data.length === 0) {
             renderEmpty(target);
@@ -1630,6 +1740,11 @@
                         && !Array.isArray(data)
                         && Object.keys(data).length === 0)) {
                 renderEmpty(target);
+                return;
+            }
+
+            if (sectionCode === "CLO_CO_MAPPING") {
+                renderCloCoMapping(target, data);
                 return;
             }
 
