@@ -38,6 +38,25 @@ public class ReviewAssignmentDAO extends DBContext {
         }
     }
 
+    /**
+     * True if this user is a reviewer on ANY version review assignment.
+     * Used to gate access to the /review workspace: a reviewer may be an
+     * internal lecturer or an external expert, so we authorize by "has a
+     * review assignment" rather than by a fixed role name.
+     */
+    public boolean isReviewer(long userId) {
+        String sql = "SELECT 1 FROM syllabus_version_review_assignments WHERE reviewer_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, userId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            return false;
+        }
+    }
+
     public boolean markInProgress(
             long versionId,
             long reviewerId

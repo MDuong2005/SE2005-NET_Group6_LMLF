@@ -399,10 +399,11 @@ public class UserManagementServlet extends HttpServlet {
             userToUpdate.setLastName(lastName);
             userToUpdate.setStatus(status);
             userDAO.updateUser(userToUpdate);
-            
-            userDAO.removeAllRoles(userId);
-            userDAO.assignRole(userId, roleId);
-            
+
+            // Atomic role swap: never leave the user with zero roles if the
+            // second step fails.
+            userDAO.replaceUserRoleTx(userId, roleId);
+
             String newData = "{\"firstName\":\"" + userToUpdate.getFirstName() + "\", \"lastName\":\"" + userToUpdate.getLastName() + "\", \"status\":\"" + userToUpdate.getStatus() + "\"}";
             utils.AuditUtil.logAction(request, "UPDATE_USER", "users", userId, oldData, newData);
         }
