@@ -11,7 +11,6 @@
                     <c:when test="${sessionScope.user.hasRole('ADMIN')}">LMLF Admin</c:when>
                     <c:when test="${sessionScope.user.hasRole('STUDENT')}">LMLF Student</c:when>
                     <c:when test="${sessionScope.user.hasRole('LECTURER')}">LMLF Lecturer</c:when>
-                    <c:when test="${sessionScope.user.hasRole('ALUMNI')}">LMLF Alumni</c:when>
                     <c:when test="${sessionScope.user.hasRole('ACADEMIC_OFFICE')}">LMLF Office</c:when>
                     <c:when test="${sessionScope.user.hasRole('SYLLABUS_DESIGNER')}">LMLF Designer</c:when>
                     <c:when test="${sessionScope.user.hasRole('SYLLABUS_REVIEWER')}">LMLF Reviewer</c:when>

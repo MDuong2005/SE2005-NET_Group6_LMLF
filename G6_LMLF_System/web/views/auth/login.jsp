@@ -68,11 +68,11 @@
                                     <!-- Google OAuth Log-in (Primary) -->
                                     <div id="googleLoginSection" style="display: <%= showEmailForm ? "none" : "block" %>;">
                                         <p style="text-align: center; font-size: 13px; font-weight: 500; color: #737373; margin-bottom: 10px;">
-                                            Login for Lecturer, Student, Alumni
+                                            Login for Lecturer and Student
                                         </p>
                                         <button type="button" class="btn-google"
                                             onclick="window.location.href='${pageContext.request.contextPath}/Logingoogle'"
-                                            style="margin-bottom: 20px; font-size: 16px; padding: 12px;">
+                                            style="margin-bottom: 12px; font-size: 16px; padding: 12px;">
                                             <svg style="width:18px; height:18px;" viewBox="0 0 24 24">
                                                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                                                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -81,6 +81,10 @@
                                             </svg>
                                             Sign in with Google
                                         </button>
+                                        <a href="${pageContext.request.contextPath}/guest" class="btn-guest"
+                                           style="margin-bottom: 20px;">
+                                            Continue as Guest
+                                        </a>
                                     </div>
 
                                     <!-- Hidden Email/Password Form for Internal Users -->

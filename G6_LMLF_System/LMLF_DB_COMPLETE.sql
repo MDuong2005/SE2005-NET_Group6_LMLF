@@ -1080,7 +1080,6 @@ VALUES
 ('DESIGNER', 'Syllabus Designer'),
 ('REVIEWER', 'Syllabus Reviewer'),
 ('STUDENT', 'Student'),
-('ALUMNI', 'Alumni'),
 ('EXTERNAL_EXPERT', 'External Expert');
 GO
 
@@ -1580,17 +1579,7 @@ BEGIN
     INSERT INTO user_roles (user_id, role_id) VALUES (@CurrentUserId, @RoleId);
 END
 
--- 7. ALUMNI (Account)
-IF NOT EXISTS (SELECT 1 FROM users WHERE username = 'cuusinhvien.local')
-BEGIN
-    INSERT INTO users (username, first_name, last_name, email, password_hash, auth_provider, is_external, must_change_password, status)
-    VALUES (N'cuusinhvien.local', N'Cựu Học', N'Đỗ', N'alumni.local@gmail.com', N'$2a$12$hTZK.nYKr3LDGQGHqjIxLugnX5wTFZuRcknKS79w0XmkCn.VZesZ2', 'LOCAL', 0, 0, 'ACTIVE');
-    SET @CurrentUserId = SCOPE_IDENTITY();
-    SELECT @RoleId = role_id FROM roles WHERE role_name = 'ALUMNI';
-    INSERT INTO user_roles (user_id, role_id) VALUES (@CurrentUserId, @RoleId);
-END
-
--- 8. Additional LECTURERS (Lecture accounts)
+-- 7. Additional LECTURERS (Lecture accounts)
 IF NOT EXISTS (SELECT 1 FROM users WHERE username = 'giangvien1.local')
 BEGIN
     INSERT INTO users (username, first_name, last_name, email, password_hash, auth_provider, is_external, must_change_password, status)

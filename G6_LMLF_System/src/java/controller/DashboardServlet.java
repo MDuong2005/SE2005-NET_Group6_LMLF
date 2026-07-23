@@ -49,9 +49,6 @@ public class DashboardServlet extends HttpServlet {
         } else if (user.hasRole("STUDENT")) {
             contentPage = "student/dashboard.jsp";
             cssFile = "student/student.css";
-        } else if (user.hasRole("ALUMNI")) {
-            contentPage = "alumni/dashboard.jsp";
-            cssFile = "alumni/alumni.css";
         } else if (user.hasRole("LECTURER")) {
             contentPage = "lecturer/dashboard.jsp";
             cssFile = "lecturer/lecturer.css";

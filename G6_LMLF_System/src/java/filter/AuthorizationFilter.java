@@ -22,11 +22,11 @@ public class AuthorizationFilter implements Filter {
 
     // Paths that don't require any authentication
     private static final String[] WHITELIST_PREFIXES = {
-        "/css/", "/js/", "/images/", "/assets/", "/views/auth/"
+        "/css/", "/js/", "/images/", "/assets/", "/views/auth/", "/guest/"
     };
 
     private static final String[] WHITELIST_EXACT = {
-        "/", "/login", "/Logingoogle", "/logout", "/forgot-password"
+        "/", "/login", "/Logingoogle", "/logout", "/forgot-password", "/guest"
     };
 
     @Override
@@ -91,6 +91,22 @@ public class AuthorizationFilter implements Filter {
             return;
         }
 
+        // Lecturer module: only lecturers may reach /lecturer/* routes.
+        // (Several lecturer servlets only check "logged in", so the role gate
+        // must live here, otherwise a Student could open Lecturer Materials.)
+        if (path.startsWith("/lecturer/")
+                && !hasAnyRole(user, RoleConstants.LECTURER)) {
+            sendAccessDenied(httpRequest, httpResponse);
+            return;
+        }
+
+        // Student module: only students may reach /student/* routes.
+        if (path.startsWith("/student/")
+                && !hasAnyRole(user, RoleConstants.STUDENT)) {
+            sendAccessDenied(httpRequest, httpResponse);
+            return;
+        }
+
         // Allow access if passed all checks
         chain.doFilter(request, response);
     }
@@ -144,7 +160,7 @@ public class AuthorizationFilter implements Filter {
      */
     private boolean isExternalExpertOnly(User user) {
         if (user == null || !user.isExternal()) return false;
-        String[] businessRoles = {"ADMIN", "ACADEMIC_OFFICE", "LECTURER", "STUDENT", "ALUMNI"};
+        String[] businessRoles = {"ADMIN", "ACADEMIC_OFFICE", "LECTURER", "STUDENT"};
         dao.RoleDAO roleDAO = new dao.RoleDAO();
         for (String role : businessRoles) {
             if (roleDAO.hasRole(user.getUserId(), role)) return false;
