@@ -1,7 +1,7 @@
 package controller;
 
-import dao.SyllabusAssignmentDAO;
-import model.SyllabusAssignment;
+import dao.LecturerTaskDAO;
+import model.LecturerTask;
 import model.User;
 import utils.SessionUtil;
 
@@ -12,12 +12,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @WebServlet(name = "LecturerTasksServlet", urlPatterns = {"/assigned-roles"})
 public class LecturerTasksServlet extends HttpServlet {
 
-    private final SyllabusAssignmentDAO assignDAO = new SyllabusAssignmentDAO();
+    private final LecturerTaskDAO taskDAO = new LecturerTaskDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -30,25 +29,37 @@ public class LecturerTasksServlet extends HttpServlet {
         }
 
         // Fetch assignments
-        List<SyllabusAssignment> assignments = assignDAO.getAssignmentsByUser(currentUser.getUserId());
+        List<LecturerTask> assignments = taskDAO.getTasksByUser(
+                currentUser.getUserId()
+        );
         
         // Calculate stats
         long totalTasks = assignments.size();
-        long pendingCount = assignments.stream().filter(a -> "PENDING".equalsIgnoreCase(a.getAssignmentStatus())).count();
-        long inProgressCount = assignments.stream().filter(a -> "ACTIVE".equalsIgnoreCase(a.getAssignmentStatus()) || "IN_PROGRESS".equalsIgnoreCase(a.getAssignmentStatus())).count();
-        long completedCount = assignments.stream().filter(a -> "COMPLETED".equalsIgnoreCase(a.getAssignmentStatus())).count();
-
-        // Assign mock data for the UI that doesn't exist in DB
-        // Priority, Due Date
+        long pendingCount = countByStatusGroup(assignments, "PENDING");
+        long inProgressCount = countByStatusGroup(assignments, "INPROGRESS");
+        long completedCount = countByStatusGroup(assignments, "COMPLETED");
+        long closedCount = countByStatusGroup(assignments, "CLOSED");
         
         request.setAttribute("tasks", assignments);
         request.setAttribute("totalTasks", totalTasks);
         request.setAttribute("pendingCount", pendingCount);
         request.setAttribute("inProgressCount", inProgressCount);
         request.setAttribute("completedCount", completedCount);
+        request.setAttribute("closedCount", closedCount);
 
         request.setAttribute("contentPage", "lecturer/tasks.jsp");
         request.setAttribute("cssFile", "lecturer/lecturer.css");
         request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
+    }
+
+    private long countByStatusGroup(
+            List<LecturerTask> assignments,
+            String statusGroup
+    ) {
+        return assignments.stream()
+                .filter(assignment -> statusGroup.equalsIgnoreCase(
+                        assignment.getTaskStatusGroup()
+                ))
+                .count();
     }
 }

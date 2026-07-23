@@ -51,14 +51,32 @@
         <h3 class="panel-title" style="min-width: 150px;">
             ${activeTab == 'shared' ? 'Materials Shared With You' : 'Your Materials'}
         </h3>
-        <div style="display: flex; gap: 10px; flex: 1; justify-content: flex-end;">
-            <input type="text" placeholder="Search Materials..." style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none; width: 250px;">
-            <select style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none;">
+        <form method="GET"
+              action="${pageContext.request.contextPath}/lecturer/materials"
+              style="display: flex; gap: 10px; flex: 1; justify-content: flex-end; flex-wrap: wrap;">
+            <input type="hidden" name="tab" value="${activeTab}">
+            <input type="text"
+                   name="search"
+                   value="<c:out value="${search}"/>"
+                   placeholder="Search by material name..."
+                   style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none; width: 250px;">
+            <select name="category"
+                    style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none; min-width: 170px;">
                 <option value="">All Categories</option>
-                <option value="Lecture Slides">Lecture Slides</option>
-                <option value="Sample Code">Sample Code</option>
+                <c:forEach var="categoryOption" items="${availableCategories}">
+                    <option value="<c:out value="${categoryOption}"/>"
+                            ${selectedCategory == categoryOption ? 'selected' : ''}>
+                        <c:out value="${categoryOption}"/>
+                    </option>
+                </c:forEach>
             </select>
-        </div>
+            <button type="submit" class="action-button" style="padding: 8px 16px;">Filter</button>
+            <c:if test="${not empty search or not empty selectedCategory}">
+                <a href="${pageContext.request.contextPath}/lecturer/materials?tab=${activeTab}"
+                   class="action-button"
+                   style="padding: 8px 16px; text-decoration: none;">Reset</a>
+            </c:if>
+        </form>
     </div>
     
     <div class="panel-body">
@@ -133,7 +151,23 @@
         <h3 style="margin-top: 0;">Upload / Add Material</h3>
         <form action="${pageContext.request.contextPath}/lecturer/materials" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="action" value="upload">
-            
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+                    Course
+                </label>
+                <select name="courseId" required
+                        style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="">Select a course</option>
+                    <c:forEach var="course" items="${availableCourses}">
+                        <option value="${course.courseId}">
+                            <c:out value="${course.code}"/> -
+                            <c:out value="${course.name}"/>
+                        </option>
+                    </c:forEach>
+                </select>
+            </div>
+
             <div style="margin-bottom: 1rem;">
                 <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Title</label>
                 <input type="text" name="title" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">

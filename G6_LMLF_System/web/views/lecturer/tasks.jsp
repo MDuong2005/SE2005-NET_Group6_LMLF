@@ -27,6 +27,10 @@
         <p style="font-weight: 600; color: #7f8c8d; margin-bottom: 5px; font-size: 0.9rem; text-transform: uppercase;">Completed</p>
         <div class="stat-value" style="margin-top: 0; font-size: 2rem; color: #2ecc71;"><c:out value="${completedCount}" default="0"/></div>
     </div>
+    <div class="stat-card" style="cursor: pointer;" onclick="filterTasks('CLOSED')" title="Show rejected or cancelled tasks">
+        <p style="font-weight: 600; color: #7f8c8d; margin-bottom: 5px; font-size: 0.9rem; text-transform: uppercase;">Closed</p>
+        <div class="stat-value" style="margin-top: 0; font-size: 2rem; color: #ef4444;"><c:out value="${closedCount}" default="0"/></div>
+    </div>
 </div>
 
 <!-- FILTERS & TASK LIST PANEL -->
@@ -38,6 +42,7 @@
             <button type="button" class="task-filter-btn"        data-filter="PENDING"    onclick="filterTasks('PENDING', this)">Pending</button>
             <button type="button" class="task-filter-btn"        data-filter="INPROGRESS" onclick="filterTasks('INPROGRESS', this)">In Progress</button>
             <button type="button" class="task-filter-btn"        data-filter="COMPLETED"  onclick="filterTasks('COMPLETED', this)">Completed</button>
+            <button type="button" class="task-filter-btn"        data-filter="CLOSED"     onclick="filterTasks('CLOSED', this)">Closed</button>
         </div>
     </div>
     <style>
@@ -65,30 +70,23 @@
                     <tbody>
                         <c:forEach var="task" items="${requestScope.tasks}" varStatus="loop">
                             
-                            <c:set var="roleName" value="" />
-                            <c:set var="workspaceUrl" value="#" />
-                            <c:if test="${task.designerId == sessionScope.user.userId}">
-                                <c:set var="roleName" value="Designer" />
-                                <c:set var="workspaceUrl" value="${pageContext.request.contextPath}/designer/tasks" />
-                            </c:if>
-                            <c:if test="${task.reviewerId == sessionScope.user.userId}">
-                                <c:set var="roleName" value="Reviewer" />
-                                <c:set var="workspaceUrl" value="${pageContext.request.contextPath}/review?action=pending" />
-                            </c:if>
+                            <c:set var="roleName" value="${task.taskRole == 'DESIGNER' ? 'Designer' : 'Reviewer'}" />
+                            <c:choose>
+                                <c:when test="${task.taskRole == 'DESIGNER'}">
+                                    <c:set var="workspaceUrl" value="${pageContext.request.contextPath}/designer/tasks" />
+                                </c:when>
+                                <c:otherwise>
+                                    <c:set var="workspaceUrl" value="${pageContext.request.contextPath}/review?action=pending" />
+                                </c:otherwise>
+                            </c:choose>
                             
                             <%-- Priority Mocked for now since DB lacks priority column --%>
                             <c:set var="priority" value="Normal" />
                             <c:set var="priorityColor" value="#3498db" />
                             <c:set var="taskName" value="${roleName == 'Designer' ? 'Design Syllabus' : 'Review Syllabus'}" />
 
-                            <%-- Normalize status into 3 filter groups (ACTIVE+IN_PROGRESS => INPROGRESS) --%>
-                            <c:set var="rawStatus" value="${task.assignmentStatus}" />
-                            <c:choose>
-                                <c:when test="${rawStatus == 'PENDING'}"><c:set var="filterKey" value="PENDING" /></c:when>
-                                <c:when test="${rawStatus == 'COMPLETED'}"><c:set var="filterKey" value="COMPLETED" /></c:when>
-                                <c:when test="${rawStatus == 'ACTIVE' || rawStatus == 'IN_PROGRESS'}"><c:set var="filterKey" value="INPROGRESS" /></c:when>
-                                <c:otherwise><c:set var="filterKey" value="OTHER" /></c:otherwise>
-                            </c:choose>
+                            <c:set var="filterKey" value="${task.taskStatusGroup}" />
+                            <c:set var="statusLabel" value="${task.taskStatusLabel}" />
 
                             <tr class="task-row" data-status="${filterKey}" style="border-bottom: 1px solid #f1f5f9; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
                                 <td style="padding: 1rem; font-weight: 600; color: #1e293b;">
@@ -113,24 +111,26 @@
                                     <span style="color: ${priorityColor}; font-weight: 600; font-size: 0.875rem;"><c:out value="${priority}" /></span>
                                 </td>
                                 <td style="padding: 1rem;">
-                                    <c:set var="status" value="${task.assignmentStatus}" />
                                     <c:set var="statusBg" value="#f1f5f9" />
                                     <c:set var="statusColor" value="#475569" />
                                     
-                                    <c:if test="${status == 'PENDING'}"> <c:set var="statusBg" value="#fef08a" /><c:set var="statusColor" value="#854d0e" /> </c:if>
-                                    <c:if test="${status == 'ACTIVE' || status == 'IN_PROGRESS'}"> <c:set var="statusBg" value="#bfdbfe" /><c:set var="statusColor" value="#1e40af" /> </c:if>
-                                    <c:if test="${status == 'COMPLETED'}"> <c:set var="statusBg" value="#bbf7d0" /><c:set var="statusColor" value="#166534" /> </c:if>
+                                    <c:if test="${filterKey == 'PENDING'}"> <c:set var="statusBg" value="#fef08a" /><c:set var="statusColor" value="#854d0e" /> </c:if>
+                                    <c:if test="${filterKey == 'INPROGRESS'}"> <c:set var="statusBg" value="#bfdbfe" /><c:set var="statusColor" value="#1e40af" /> </c:if>
+                                    <c:if test="${filterKey == 'COMPLETED'}"> <c:set var="statusBg" value="#bbf7d0" /><c:set var="statusColor" value="#166534" /> </c:if>
+                                    <c:if test="${filterKey == 'CLOSED'}"> <c:set var="statusBg" value="#fee2e2" /><c:set var="statusColor" value="#991b1b" /> </c:if>
                                     
                                     <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background-color: ${statusBg}; color: ${statusColor};">
-                                        <c:out value="${status}" />
+                                        <c:out value="${statusLabel}" />
                                     </span>
                                 </td>
-                                <td style="padding: 1rem; color: #64748b;">1.0</td>
+                                <td style="padding: 1rem; color: #64748b;">
+                                    <c:out value="${task.versionNumber}" default="-" />
+                                </td>
                                 <td style="padding: 1rem; text-align: right;">
                                     <%-- Pass real DB fields to JS modal --%>
                                     <c:set var="jsDueDate"><fmt:formatDate value="${task.dueDate}" pattern="dd-MMM-yyyy"/></c:set>
                                     <c:set var="jsAssignedAt"><fmt:formatDate value="${task.assignedAt}" pattern="dd-MMM-yyyy HH:mm"/></c:set>
-                                    <button class="action-button" onclick="openTaskModal('${taskName} for ${task.courseCode}', '${task.courseCode}', '${task.courseName}', '${roleName}', '${workspaceUrl}', '${status}', '${task.assignedByName}', '${jsDueDate}', '${jsAssignedAt}')" style="padding: 6px 12px; font-size: 0.75rem; margin-right: 5px;">
+                                    <button class="action-button" onclick="openTaskModal('${taskName} for ${task.courseCode}', '${task.courseCode}', '${task.courseName}', '${roleName}', '${workspaceUrl}', '${statusLabel}', '${task.assignedByName}', '${jsDueDate}', '${jsAssignedAt}')" style="padding: 6px 12px; font-size: 0.75rem; margin-right: 5px;">
                                         Details
                                     </button>
                                     <a href="${workspaceUrl}" class="action-button" style="background-color: #f26f21; color: white; padding: 6px 12px; font-size: 0.75rem; border: none; text-decoration: none;">

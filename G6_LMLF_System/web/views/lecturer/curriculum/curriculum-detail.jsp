@@ -29,12 +29,6 @@
             <h1>FPT University Learning Materials</h1>
         </div>
         <div class="curr-header-right">
-            <div class="lang-selector">
-                <select>
-                    <option value="en">EN</option>
-                    <option value="vi">VI</option>
-                </select>
-            </div>
             <div class="user-avatar">
                 <%-- Later replace with ${sessionScope.user.username.substring(0,2).toUpperCase()} --%>
                 AD
@@ -142,8 +136,17 @@
                     <c:choose>
                         <c:when test="${not empty subjectList}">
                             <c:forEach var="subject" items="${subjectList}">
+                                <c:url var="subjectSyllabusUrl" value="/lecturer/syllabus">
+                                    <c:param name="search" value="${subject.code}"/>
+                                </c:url>
                                 <tr>
-                                    <td><a href="#" class="subject-link">${subject.code}</a></td>
+                                    <td>
+                                        <a href="${subjectSyllabusUrl}"
+                                           class="subject-link"
+                                           title="View published syllabus">
+                                            <c:out value="${subject.code}"/>
+                                        </a>
+                                    </td>
                                     <td>${subject.name}</td>
                                     <td>${subject.semester}</td>
                                     <td>${subject.credits}</td>

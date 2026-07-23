@@ -1,7 +1,6 @@
 package controller;
 
 import dao.LecturerMaterialDAO;
-import dao.UserDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
@@ -52,19 +51,47 @@ public class LecturerMaterialServlet extends HttpServlet {
         LecturerMaterialDAO dao = new LecturerMaterialDAO();
         
         String tab = request.getParameter("tab");
-        if (tab == null || tab.isEmpty()) {
+        if (!"shared".equals(tab)) {
             tab = "my";
         }
+
+        String search = request.getParameter("search");
+        search = search == null ? "" : search.trim();
+
+        String category = request.getParameter("category");
+        category = category == null ? "" : category.trim();
         
         if ("shared".equals(tab)) {
-            List<LecturerMaterial> sharedList = dao.getSharedWithMe(user.getEmail());
+            List<LecturerMaterial> sharedList = dao.getSharedWithMe(
+                    user.getEmail(),
+                    search,
+                    category
+            );
             request.setAttribute("materialList", sharedList);
         } else {
-            List<LecturerMaterial> myList = dao.getMyMaterials(user.getUserId());
+            List<LecturerMaterial> myList = dao.getMyMaterials(
+                    user.getUserId(),
+                    search,
+                    category
+            );
             request.setAttribute("materialList", myList);
         }
         
         request.setAttribute("activeTab", tab);
+        request.setAttribute("search", search);
+        request.setAttribute("selectedCategory", category);
+        request.setAttribute(
+                "availableCategories",
+                dao.getAvailableCategories(
+                        user.getUserId(),
+                        user.getEmail(),
+                        "shared".equals(tab)
+                )
+        );
+        request.setAttribute(
+                "availableCourses",
+                dao.getAvailableCourses()
+        );
         
         request.setAttribute("contentPage", "lecturer/materials.jsp");
         request.setAttribute("cssFile", "lecturer/lecturer.css");
@@ -104,9 +131,19 @@ public class LecturerMaterialServlet extends HttpServlet {
         String title = request.getParameter("title");
         String category = request.getParameter("category");
         String materialType = request.getParameter("materialType"); // "FILE" or "LINK"
-        
-        // Hardcode a default course_id for demo purposes (e.g. SWP391)
-        long courseId = 1; 
+
+        long courseId;
+        try {
+            courseId = Long.parseLong(
+                    request.getParameter("courseId")
+            );
+        } catch (NumberFormatException exception) {
+            throw new Exception("A valid course is required.");
+        }
+
+        if (!dao.courseExists(courseId)) {
+            throw new Exception("The selected course does not exist.");
+        }
         
         LecturerMaterial material = new LecturerMaterial();
         material.setCourseId(courseId);
@@ -148,19 +185,16 @@ public class LecturerMaterialServlet extends HttpServlet {
 
     private void handleShare(HttpServletRequest request, User user, LecturerMaterialDAO dao) throws Exception {
         long materialId = Long.parseLong(request.getParameter("materialId"));
-        String shareEmail = request.getParameter("shareEmail");
-        
-        UserDAO userDAO = new UserDAO();
-        User targetUser = userDAO.getUserByEmail(shareEmail);
-        
-        if (targetUser == null) {
-            request.getSession().setAttribute("errorMsg", "User with email " + shareEmail + " not found.");
-            return;
-        }
-        
-        // Validate that the target user is actually a Lecturer (role_id = 3)
-        if (!userDAO.hasUserRole(targetUser.getUserId(), 3)) {
-            request.getSession().setAttribute("errorMsg", "Cannot share material. The user " + shareEmail + " is not a Lecturer.");
+        String requestedEmail = request.getParameter("shareEmail");
+        String shareEmail = dao.findLecturerEmail(requestedEmail);
+
+        if (shareEmail == null) {
+            request.getSession().setAttribute(
+                    "errorMsg",
+                    "Cannot share material. The user "
+                    + requestedEmail
+                    + " is not a Lecturer."
+            );
             return;
         }
         

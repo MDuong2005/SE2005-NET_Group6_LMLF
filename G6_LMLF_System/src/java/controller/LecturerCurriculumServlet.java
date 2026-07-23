@@ -65,7 +65,13 @@ public class LecturerCurriculumServlet extends HttpServlet {
             throws ServletException, IOException {
             
         String search = request.getParameter("search");
-        if (search == null) search = "";
+        if (search == null) {
+            search = "";
+        } else {
+            search = search.trim();
+        }
+
+        long majorId = parsePositiveLong(request.getParameter("majorId"));
         
         int page = 1;
         int pageSize = 10;
@@ -80,21 +86,41 @@ public class LecturerCurriculumServlet extends HttpServlet {
             }
         }
         
-        int totalRecords = curriculumDAO.getTotalActiveCurriculums(search);
+        int totalRecords = curriculumDAO.getTotalActiveCurriculums(search, majorId);
         int totalPages = (int) Math.ceil((double) totalRecords / pageSize);
         if (page > totalPages && totalPages > 0) page = totalPages;
         
-        List<Map<String, Object>> curriculums = curriculumDAO.getActiveCurriculums(search, page, pageSize);
+        List<Map<String, Object>> curriculums = curriculumDAO.getActiveCurriculums(
+                search,
+                majorId,
+                page,
+                pageSize
+        );
         
         request.setAttribute("curriculums", curriculums);
+        request.setAttribute("majors", curriculumDAO.getActiveCurriculumMajors());
         request.setAttribute("currentPage", page);
         request.setAttribute("totalPages", totalPages);
+        request.setAttribute("totalRecords", totalRecords);
         request.setAttribute("search", search);
+        request.setAttribute("selectedMajorId", majorId);
         
         // Use the user's custom layout
         request.setAttribute("contentPage", "lecturer/curriculum.jsp");
         request.setAttribute("cssFile", "lecturer/lecturer.css");
         request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
+    }
+
+    private long parsePositiveLong(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return 0L;
+        }
+        try {
+            long parsed = Long.parseLong(value.trim());
+            return parsed > 0 ? parsed : 0L;
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
     }
 
     private void viewCurriculumDetail(HttpServletRequest request, HttpServletResponse response) 
