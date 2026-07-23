@@ -64,8 +64,17 @@ public class DesignerTask {
 
         if ("CANCELLED".equalsIgnoreCase(assignmentStatus)
                 || "COMPLETED".equalsIgnoreCase(assignmentStatus)
-                || "PUBLISHED".equalsIgnoreCase(syllabusStatus)
                 || "PUBLISHED".equalsIgnoreCase(versionStatus)) {
+            return false;
+        }
+
+        /*
+         * A published syllabus may receive a new Academic update assignment.
+         * Academic already created the next DRAFT version (2.0, 3.0, ...),
+         * so Designer must be allowed to edit that DRAFT.
+         */
+        if ("PUBLISHED".equalsIgnoreCase(syllabusStatus)
+                && !"DRAFT".equalsIgnoreCase(versionStatus)) {
             return false;
         }
 

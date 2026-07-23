@@ -58,10 +58,10 @@ public class DesignerDAO extends DBContext {
                 r.email AS reviewer_email,
 
                 sv.version_id AS submitted_version_id,
-                sv.version_number,
-                sv.status AS version_status,
-                sv.description_of_changes,
-                sv.submitted_at AS version_submitted_at,
+                COALESCE(sv.version_number, draftVersion.version_number) AS version_number,
+                COALESCE(sv.status, draftVersion.status) AS version_status,
+                COALESCE(sv.description_of_changes, draftVersion.description_of_changes) AS description_of_changes,
+                COALESCE(sv.submitted_at, draftVersion.submitted_at) AS version_submitted_at,
 
                 tf.file_id AS template_file_id,
                 tf.original_file_name AS template_file_name,
@@ -83,6 +83,20 @@ public class DesignerDAO extends DBContext {
             LEFT JOIN syllabus_versions sv
                 ON sv.version_id = sa.submitted_version_id
 
+            OUTER APPLY (
+                SELECT TOP 1
+                    draft.version_id,
+                    draft.version_number,
+                    draft.status,
+                    draft.description_of_changes,
+                    draft.submitted_at
+                FROM syllabus_versions draft
+                WHERE draft.syllabus_id = sa.syllabus_id
+                  AND draft.created_by = sa.designer_id
+                  AND draft.status = 'DRAFT'
+                ORDER BY draft.version_id DESC
+            ) draftVersion
+
             LEFT JOIN syllabus_version_files tf
                 ON tf.file_id = sa.template_file_id
                 AND tf.file_type = 'TEMPLATE'
@@ -94,8 +108,7 @@ public class DesignerDAO extends DBContext {
                 AND sf.is_active = 1
 
             WHERE sa.designer_id = ?
-              AND (s.status IS NULL OR s.status <> 'PUBLISHED')
-              AND (sv.status IS NULL OR sv.status <> 'PUBLISHED')
+              AND sa.assignment_status NOT IN ('COMPLETED', 'CANCELLED')
             """);
 
     if ("draft".equalsIgnoreCase(filter)) {
@@ -182,10 +195,10 @@ public class DesignerDAO extends DBContext {
                 r.email AS reviewer_email,
 
                 sv.version_id AS submitted_version_id,
-                sv.version_number,
-                sv.status AS version_status,
-                sv.description_of_changes,
-                sv.submitted_at AS version_submitted_at,
+                COALESCE(sv.version_number, draftVersion.version_number) AS version_number,
+                COALESCE(sv.status, draftVersion.status) AS version_status,
+                COALESCE(sv.description_of_changes, draftVersion.description_of_changes) AS description_of_changes,
+                COALESCE(sv.submitted_at, draftVersion.submitted_at) AS version_submitted_at,
 
                 tf.file_id AS template_file_id,
                 tf.original_file_name AS template_file_name,
@@ -206,6 +219,20 @@ public class DesignerDAO extends DBContext {
 
             LEFT JOIN syllabus_versions sv
                 ON sv.version_id = sa.submitted_version_id
+
+            OUTER APPLY (
+                SELECT TOP 1
+                    draft.version_id,
+                    draft.version_number,
+                    draft.status,
+                    draft.description_of_changes,
+                    draft.submitted_at
+                FROM syllabus_versions draft
+                WHERE draft.syllabus_id = sa.syllabus_id
+                  AND draft.created_by = sa.designer_id
+                  AND draft.status = 'DRAFT'
+                ORDER BY draft.version_id DESC
+            ) draftVersion
 
             LEFT JOIN syllabus_version_files tf
                 ON tf.file_id = sa.template_file_id

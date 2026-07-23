@@ -11,6 +11,7 @@ public class SyllabusEditorData {
     private String versionNumber;
     private String status;
     private GeneralInformation generalInformation = new GeneralInformation();
+    private List<CoItem> courseObjectives = new ArrayList<>();
     private List<CloItem> clos = new ArrayList<>();
     private List<TextItem> studentTasks = new ArrayList<>();
     private List<ResourceItem> learningResources = new ArrayList<>();
@@ -29,6 +30,13 @@ public class SyllabusEditorData {
      * curriculumPloGroups.
      */
     private List<PloItem> plos = new ArrayList<>();
+
+    /**
+     * Key: CLO code. Value: selected Designer-owned PLO snapshot option IDs.
+     * Academic Office PLO IDs remain read-only source identifiers and are never
+     * written by the Designer module.
+     */
+    private Map<String, List<String>> cloCoMappings = new LinkedHashMap<>();
 
     /**
      * Key: CLO code. Value: selected Designer-owned PLO snapshot option IDs.
@@ -69,6 +77,17 @@ public class SyllabusEditorData {
         this.generalInformation = generalInformation == null
                 ? new GeneralInformation()
                 : generalInformation;
+    }
+
+
+    public List<CoItem> getCourseObjectives() {
+        return courseObjectives;
+    }
+
+    public void setCourseObjectives(List<CoItem> courseObjectives) {
+        this.courseObjectives = courseObjectives == null
+                ? new ArrayList<>()
+                : courseObjectives;
     }
 
     public List<CloItem> getClos() {
@@ -137,6 +156,19 @@ public class SyllabusEditorData {
 
     public void setPlos(List<PloItem> plos) {
         this.plos = plos == null ? new ArrayList<>() : plos;
+    }
+
+
+    public Map<String, List<String>> getCloCoMappings() {
+        return cloCoMappings;
+    }
+
+    public void setCloCoMappings(
+            Map<String, List<String>> cloCoMappings
+    ) {
+        this.cloCoMappings = cloCoMappings == null
+                ? new LinkedHashMap<>()
+                : cloCoMappings;
     }
 
     public Map<String, List<Long>> getCloPloMappings() {
@@ -215,6 +247,29 @@ public class SyllabusEditorData {
 
         public void setCourseDescription(String courseDescription) {
             this.courseDescription = courseDescription;
+        }
+    }
+
+
+    public static class CoItem {
+
+        private String code;
+        private String description;
+
+        public String getCode() {
+            return code;
+        }
+
+        public void setCode(String code) {
+            this.code = code;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
         }
     }
 
