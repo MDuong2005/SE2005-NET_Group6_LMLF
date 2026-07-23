@@ -36,6 +36,11 @@ public class LecturerUIServlet extends HttpServlet {
         String jspPath = "lecturer/dashboard.jsp"; // Default
         
         switch (page) {
+            case "dashboard":
+                response.sendRedirect(
+                        request.getContextPath() + "/dashboard"
+                );
+                return;
             case "curriculum":
                 jspPath = "lecturer/curriculum.jsp";
                 break;
@@ -43,8 +48,10 @@ public class LecturerUIServlet extends HttpServlet {
                 jspPath = "lecturer/syllabus.jsp";
                 break;
             case "materials":
-                jspPath = "lecturer/materials.jsp";
-                break;
+                response.sendRedirect(
+                        request.getContextPath() + "/lecturer/materials"
+                );
+                return;
             case "notifications":
                 NotificationDAO notificationDAO
                         = new NotificationDAO();

@@ -54,6 +54,42 @@ public class LecturerMaterialDAO extends DBContext {
         return list;
     }
 
+    public List<LecturerMaterial> getRecentMaterials(long lecturerId, int limit) {
+        List<LecturerMaterial> list = new ArrayList<>();
+
+        if (connection == null || lecturerId <= 0) {
+            return list;
+        }
+
+        int safeLimit = Math.max(1, Math.min(limit, 20));
+        String sql = "SELECT TOP (?) * FROM lecturer_materials "
+                + "WHERE lecturer_id = ? ORDER BY uploaded_at DESC";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, safeLimit);
+            ps.setLong(2, lecturerId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    LecturerMaterial material = new LecturerMaterial();
+                    material.setLecturerMaterialId(rs.getLong("lecturer_material_id"));
+                    material.setCourseId(rs.getLong("course_id"));
+                    material.setLecturerId(rs.getLong("lecturer_id"));
+                    material.setTitle(rs.getString("title"));
+                    material.setFileUrl(rs.getString("file_url"));
+                    material.setUploadedAt(rs.getTimestamp("uploaded_at"));
+                    material.setCategory(rs.getString("category"));
+                    material.setMaterialType(rs.getString("material_type"));
+                    list.add(material);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+
     public List<LecturerMaterial> getSharedWithMe(String myEmail) {
         List<LecturerMaterial> list = new ArrayList<>();
         String sql = "SELECT lm.*, u.email as shared_by_email, sm.shared_at " +

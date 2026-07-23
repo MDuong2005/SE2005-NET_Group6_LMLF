@@ -1,5 +1,6 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 
 <div class="content-header">
     <div>
@@ -33,7 +34,7 @@
             </svg>
             Search Syllabus
         </a>
-        <a href="${pageContext.request.contextPath}/lecturer-ui?page=materials" class="action-button" style="background-color: var(--fpt-orange-light); color: var(--fpt-orange); border-color: var(--fpt-orange-border);">
+        <a href="${pageContext.request.contextPath}/lecturer/materials" class="action-button" style="background-color: var(--fpt-orange-light); color: var(--fpt-orange); border-color: var(--fpt-orange-border);">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
             </svg>
@@ -135,18 +136,36 @@
         <div class="panel">
             <div class="panel-header">
                 <h3 class="panel-title">Recent Teaching Materials</h3>
-                <a href="${pageContext.request.contextPath}/lecturer-ui?page=materials" class="view-all">Manage</a>
+                <a href="${pageContext.request.contextPath}/lecturer/materials" class="view-all">Manage</a>
             </div>
             <div class="panel-body" style="padding: 1.5rem;">
-                <div class="list-group">
-                    <div class="list-item" style="padding: 0.75rem; border: 1px solid #e2e8f0;">
-                        <div class="list-item-icon" style="padding: 0.5rem;"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg></div>
-                        <div class="list-item-content">
-                            <h4 class="list-item-title">SWP391_Lecture1_Slides.pdf</h4>
-                            <p class="list-item-desc">Uploaded today</p>
+                <c:choose>
+                    <c:when test="${empty recentMaterials}">
+                        <div style="padding: 1rem; text-align: center; color: #94a3b8; font-style: italic;">
+                            No teaching materials uploaded yet.
                         </div>
-                    </div>
-                </div>
+                    </c:when>
+                    <c:otherwise>
+                        <div class="list-group">
+                            <c:forEach var="material" items="${recentMaterials}">
+                                <div class="list-item" style="padding: 0.75rem; border: 1px solid #e2e8f0;">
+                                    <div class="list-item-icon" style="padding: 0.5rem;">
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                    </div>
+                                    <div class="list-item-content">
+                                        <h4 class="list-item-title"><c:out value="${material.title}"/></h4>
+                                        <p class="list-item-desc">
+                                            <c:out value="${material.category}"/>
+                                            <c:if test="${not empty material.uploadedAt}">
+                                                · <fmt:formatDate value="${material.uploadedAt}" pattern="MMM dd, yyyy HH:mm"/>
+                                            </c:if>
+                                        </p>
+                                    </div>
+                                </div>
+                            </c:forEach>
+                        </div>
+                    </c:otherwise>
+                </c:choose>
             </div>
         </div>
 
@@ -157,14 +176,31 @@
                 <a href="${pageContext.request.contextPath}/lecturer-ui?page=notifications" class="view-all">View All</a>
             </div>
             <div class="panel-body" style="padding: 1.5rem;">
-                <div class="list-group">
-                    <div class="list-item" style="padding: 0.75rem; border: 1px solid #e2e8f0; border-left: 4px solid var(--fpt-orange);">
-                        <div class="list-item-content">
-                            <h4 class="list-item-title" style="font-size: 0.8rem;">New Syllabus Version Published</h4>
-                            <p class="list-item-desc" style="font-size: 0.7rem;">PRJ301 v2.0 is now available.</p>
+                <c:choose>
+                    <c:when test="${empty recentNotifications}">
+                        <div style="padding: 1rem; text-align: center; color: #94a3b8; font-style: italic;">
+                            You do not have any notifications.
                         </div>
-                    </div>
-                </div>
+                    </c:when>
+                    <c:otherwise>
+                        <div class="list-group">
+                            <c:forEach var="notification" items="${recentNotifications}">
+                                <c:url var="dashboardNotificationUrl" value="${empty notification.targetUrl ? '/lecturer-ui?page=notifications' : notification.targetUrl}"/>
+                                <a href="${dashboardNotificationUrl}" class="list-item" style="padding: 0.75rem; border: 1px solid #e2e8f0; border-left: 4px solid ${notification.read ? '#e2e8f0' : 'var(--fpt-orange)'}; text-decoration: none;">
+                                    <div class="list-item-content">
+                                        <h4 class="list-item-title" style="font-size: 0.8rem;"><c:out value="${notification.subject}"/></h4>
+                                        <p class="list-item-desc" style="font-size: 0.7rem;"><c:out value="${notification.body}"/></p>
+                                        <c:if test="${not empty notification.sentAt}">
+                                            <p class="list-item-desc" style="font-size: 0.7rem; margin-top: 0.25rem;">
+                                                <fmt:formatDate value="${notification.sentAt}" pattern="MMM dd, yyyy 'at' HH:mm"/>
+                                            </p>
+                                        </c:if>
+                                    </div>
+                                </a>
+                            </c:forEach>
+                        </div>
+                    </c:otherwise>
+                </c:choose>
             </div>
         </div>
         
