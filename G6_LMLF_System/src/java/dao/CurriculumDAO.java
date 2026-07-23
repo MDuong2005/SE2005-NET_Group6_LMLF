@@ -65,6 +65,28 @@ public class CurriculumDAO extends DBContext {
                                   "ALTER TABLE curriculums DROP CONSTRAINT uq_curriculum_version;";
                 stmt.execute(checkSql);
             }
+
+            // Versions share the same curriculum code. Uniqueness therefore
+            // belongs to the curriculum identity plus its version.
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("""
+                    IF EXISTS (
+                        SELECT 1 FROM sys.objects
+                        WHERE name = 'uq_curriculum_code'
+                          AND parent_object_id = OBJECT_ID('curriculums')
+                    )
+                        ALTER TABLE curriculums DROP CONSTRAINT uq_curriculum_code;
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.objects
+                        WHERE name = 'uq_curriculum_code_version'
+                          AND parent_object_id = OBJECT_ID('curriculums')
+                    )
+                        ALTER TABLE curriculums
+                        ADD CONSTRAINT uq_curriculum_code_version
+                        UNIQUE (major_id, curriculum_code, version);
+                """);
+            }
         } catch (Exception e) {
             System.err.println("Migration warning (knowledge_block / mapping table / uq constraint): " + e.getMessage());
         }
@@ -88,6 +110,28 @@ public class CurriculumDAO extends DBContext {
             e.printStackTrace();
         }
         return curriculums;
+    }
+
+    public List<Curriculum> getLatestVersions() {
+        List<Curriculum> latestVersions = new ArrayList<>();
+        java.util.Map<String, Curriculum> latestByCurriculum
+                = new java.util.LinkedHashMap<>();
+
+        for (Curriculum curriculum : getAll()) {
+            String groupKey = curriculum.getMajorId()
+                    + "::"
+                    + (curriculum.getCurriculumCode() == null
+                            ? ""
+                            : curriculum.getCurriculumCode().trim().toUpperCase());
+            Curriculum currentLatest = latestByCurriculum.get(groupKey);
+            if (currentLatest == null
+                    || parseMajorVersion(curriculum.getVersion())
+                    > parseMajorVersion(currentLatest.getVersion())) {
+                latestByCurriculum.put(groupKey, curriculum);
+            }
+        }
+        latestVersions.addAll(latestByCurriculum.values());
+        return latestVersions;
     }
 
     public List<Curriculum> filter(String keyword, Long majorId, Boolean isActive) {
@@ -917,16 +961,302 @@ public class CurriculumDAO extends DBContext {
     }
 
     public boolean updateActiveStatus(Long curriculumId, boolean isActive) {
-        String sql = "UPDATE curriculums SET is_active = ?, updated_at = ? WHERE curriculum_id = ?";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setBoolean(1, isActive);
-            ps.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
-            ps.setLong(3, curriculumId);
-            return ps.executeUpdate() > 0;
+        boolean originalAutoCommit = true;
+        try {
+            originalAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+
+            if (isActive) {
+                String deactivateOldVersionsSql = """
+                    UPDATE curriculums
+                    SET is_active = 0,
+                        updated_at = SYSDATETIME()
+                    WHERE deleted_at IS NULL
+                      AND curriculum_id <> ?
+                      AND EXISTS (
+                          SELECT 1
+                          FROM curriculums target
+                          WHERE target.curriculum_id = ?
+                            AND target.deleted_at IS NULL
+                            AND target.major_id = curriculums.major_id
+                            AND target.curriculum_code = curriculums.curriculum_code
+                      )
+                """;
+                try (PreparedStatement ps = connection.prepareStatement(deactivateOldVersionsSql)) {
+                    ps.setLong(1, curriculumId);
+                    ps.setLong(2, curriculumId);
+                    ps.executeUpdate();
+                }
+            }
+
+            String updateTargetSql = """
+                UPDATE curriculums
+                SET is_active = ?,
+                    updated_at = SYSDATETIME()
+                WHERE curriculum_id = ?
+                  AND deleted_at IS NULL
+            """;
+            int affected;
+            try (PreparedStatement ps = connection.prepareStatement(updateTargetSql)) {
+                ps.setBoolean(1, isActive);
+                ps.setLong(2, curriculumId);
+                affected = ps.executeUpdate();
+            }
+
+            if (affected != 1) {
+                connection.rollback();
+                return false;
+            }
+            connection.commit();
+            return true;
         } catch (SQLException e) {
+            try {
+                connection.rollback();
+            } catch (SQLException ignored) {
+            }
             e.printStackTrace();
+            return false;
+        } finally {
+            try {
+                connection.setAutoCommit(originalAutoCommit);
+            } catch (SQLException ignored) {
+            }
         }
-        return false;
+    }
+
+    public long createNextMajorVersion(long sourceCurriculumId, Long updatedBy)
+            throws SQLException {
+        boolean originalAutoCommit = connection.getAutoCommit();
+        int originalIsolation = connection.getTransactionIsolation();
+
+        try {
+            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            connection.setAutoCommit(false);
+
+            Curriculum source = null;
+            String sourceSql = """
+                SELECT *
+                FROM curriculums WITH (UPDLOCK, HOLDLOCK)
+                WHERE curriculum_id = ?
+                  AND deleted_at IS NULL
+            """;
+            try (PreparedStatement ps = connection.prepareStatement(sourceSql)) {
+                ps.setLong(1, sourceCurriculumId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        source = mapResultSetToCurriculum(rs);
+                    }
+                }
+            }
+            if (source == null) {
+                throw new SQLException("Source curriculum was not found.");
+            }
+
+            int highestMajor = 0;
+            String versionsSql = """
+                SELECT version
+                FROM curriculums WITH (UPDLOCK, HOLDLOCK)
+                WHERE major_id = ?
+                  AND curriculum_code = ?
+                  AND deleted_at IS NULL
+            """;
+            try (PreparedStatement ps = connection.prepareStatement(versionsSql)) {
+                ps.setLong(1, source.getMajorId());
+                ps.setString(2, source.getCurriculumCode());
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        highestMajor = Math.max(
+                                highestMajor,
+                                parseMajorVersion(rs.getString("version"))
+                        );
+                    }
+                }
+            }
+            int sourceMajor = parseMajorVersion(source.getVersion());
+            if (sourceMajor != highestMajor) {
+                throw new SQLException("A newer curriculum version already exists.");
+            }
+            String nextVersion = (highestMajor + 1) + ".0";
+
+            long newCurriculumId;
+            String insertCurriculumSql = """
+                INSERT INTO curriculums (
+                    major_id, curriculum_code, name, is_active, description,
+                    decision_no, issued_date, total_credits, version,
+                    total_semesters, created_at, updated_at, updated_by
+                )
+                VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?, SYSDATETIME(), SYSDATETIME(), ?)
+            """;
+            try (PreparedStatement ps = connection.prepareStatement(
+                    insertCurriculumSql,
+                    Statement.RETURN_GENERATED_KEYS
+            )) {
+                ps.setLong(1, source.getMajorId());
+                ps.setString(2, source.getCurriculumCode());
+                ps.setString(3, source.getName());
+                ps.setString(4, source.getDescription());
+                ps.setString(5, source.getDecisionNo());
+                ps.setDate(6, source.getIssuedDate());
+                if (source.getTotalCredits() == null) {
+                    ps.setNull(7, Types.INTEGER);
+                } else {
+                    ps.setInt(7, source.getTotalCredits());
+                }
+                ps.setString(8, nextVersion);
+                ps.setInt(9, source.getTotalSemesters());
+                if (updatedBy == null) {
+                    ps.setNull(10, Types.BIGINT);
+                } else {
+                    ps.setLong(10, updatedBy);
+                }
+                ps.executeUpdate();
+
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    if (!keys.next()) {
+                        throw new SQLException("Creating the new curriculum version returned no ID.");
+                    }
+                    newCurriculumId = keys.getLong(1);
+                }
+            }
+
+            executeCloneInsert("""
+                INSERT INTO curriculum_courses (
+                    curriculum_id, course_id, semester, knowledge_block
+                )
+                SELECT ?, course_id, semester, knowledge_block
+                FROM curriculum_courses
+                WHERE curriculum_id = ?
+            """, newCurriculumId, sourceCurriculumId);
+
+            executeCloneInsert("""
+                INSERT INTO curriculum_pos (
+                    curriculum_id, code, description, created_at
+                )
+                SELECT ?, code, description, SYSDATETIME()
+                FROM curriculum_pos
+                WHERE curriculum_id = ?
+            """, newCurriculumId, sourceCurriculumId);
+
+            executeCloneInsert("""
+                INSERT INTO curriculum_plos (
+                    curriculum_id, code, description, created_at
+                )
+                SELECT ?, code, description, SYSDATETIME()
+                FROM curriculum_plos
+                WHERE curriculum_id = ?
+            """, newCurriculumId, sourceCurriculumId);
+
+            String clonePloPoSql = """
+                INSERT INTO curriculum_plo_po_mappings (plo_id, po_id, mapped_at)
+                SELECT new_plo.plo_id, new_po.po_id, SYSDATETIME()
+                FROM curriculum_plo_po_mappings old_map
+                JOIN curriculum_plos old_plo ON old_map.plo_id = old_plo.plo_id
+                JOIN curriculum_pos old_po ON old_map.po_id = old_po.po_id
+                JOIN curriculum_plos new_plo
+                  ON new_plo.curriculum_id = ?
+                 AND new_plo.code = old_plo.code
+                JOIN curriculum_pos new_po
+                  ON new_po.curriculum_id = ?
+                 AND new_po.code = old_po.code
+                WHERE old_plo.curriculum_id = ?
+                  AND old_po.curriculum_id = ?
+            """;
+            try (PreparedStatement ps = connection.prepareStatement(clonePloPoSql)) {
+                ps.setLong(1, newCurriculumId);
+                ps.setLong(2, newCurriculumId);
+                ps.setLong(3, sourceCurriculumId);
+                ps.setLong(4, sourceCurriculumId);
+                ps.executeUpdate();
+            }
+
+            String cloneCoursePloSql = """
+                INSERT INTO curriculum_course_plo_mappings (
+                    curriculum_id, course_id, plo_id, mapped_at
+                )
+                SELECT ?, old_map.course_id, new_plo.plo_id, SYSDATETIME()
+                FROM curriculum_course_plo_mappings old_map
+                JOIN curriculum_plos old_plo ON old_map.plo_id = old_plo.plo_id
+                JOIN curriculum_plos new_plo
+                  ON new_plo.curriculum_id = ?
+                 AND new_plo.code = old_plo.code
+                WHERE old_map.curriculum_id = ?
+            """;
+            try (PreparedStatement ps = connection.prepareStatement(cloneCoursePloSql)) {
+                ps.setLong(1, newCurriculumId);
+                ps.setLong(2, newCurriculumId);
+                ps.setLong(3, sourceCurriculumId);
+                ps.executeUpdate();
+            }
+
+            connection.commit();
+            return newCurriculumId;
+        } catch (SQLException | RuntimeException exception) {
+            connection.rollback();
+            throw exception;
+        } finally {
+            connection.setAutoCommit(originalAutoCommit);
+            connection.setTransactionIsolation(originalIsolation);
+        }
+    }
+
+    public String getNextMajorVersion(long sourceCurriculumId) throws SQLException {
+        Curriculum source = getById(sourceCurriculumId);
+        if (source == null) {
+            throw new SQLException("Source curriculum was not found.");
+        }
+        int highestMajor = 0;
+        String sql = """
+            SELECT version
+            FROM curriculums
+            WHERE major_id = ?
+              AND curriculum_code = ?
+              AND deleted_at IS NULL
+        """;
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, source.getMajorId());
+            ps.setString(2, source.getCurriculumCode());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    highestMajor = Math.max(
+                            highestMajor,
+                            parseMajorVersion(rs.getString("version"))
+                    );
+                }
+            }
+        }
+
+        if (parseMajorVersion(source.getVersion()) != highestMajor) {
+            throw new SQLException("A newer curriculum version already exists.");
+        }
+        return (highestMajor + 1) + ".0";
+    }
+
+    private void executeCloneInsert(String sql, long newCurriculumId, long sourceCurriculumId)
+            throws SQLException {
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, newCurriculumId);
+            ps.setLong(2, sourceCurriculumId);
+            ps.executeUpdate();
+        }
+    }
+
+    private int parseMajorVersion(String version) {
+        if (version == null || version.isBlank()) {
+            return 0;
+        }
+        String normalized = version.trim();
+        if (normalized.startsWith("v") || normalized.startsWith("V")) {
+            normalized = normalized.substring(1);
+        }
+        int dotIndex = normalized.indexOf('.');
+        String majorPart = dotIndex >= 0
+                ? normalized.substring(0, dotIndex)
+                : normalized;
+        try {
+            return Math.max(0, Integer.parseInt(majorPart));
+        } catch (NumberFormatException exception) {
+            return 0;
+        }
     }
 
     private Curriculum mapResultSetToCurriculum(ResultSet rs) throws SQLException {

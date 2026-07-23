@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.*, model.*" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
     List<Major> majors = (List<Major>) request.getAttribute("majors");
     if (majors == null) {
@@ -9,6 +10,9 @@
     if (courses == null) {
         courses = new ArrayList<Course>();
     }
+    Curriculum versionSource = (Curriculum) request.getAttribute("versionSource");
+    boolean isVersionMode = versionSource != null;
+    String versionSourceJson = (String) request.getAttribute("versionSourceJson");
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -139,11 +143,13 @@
             position: absolute;
             top: 25px;
             left: 60px;
+            right: 60px;
             height: 2px;
             background-color: var(--fpt-orange, #FF6B00);
             z-index: 1;
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            width: 0%;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: scaleX(0);
+            transform-origin: left center;
         }
         .wizard-step {
             display: flex;
@@ -793,8 +799,12 @@
                     <!-- General Workspace Header -->
                     <div class="workspace-header">
                         <div>
-                            <h1>Create New Curriculum</h1>
-                            <p style="color: #64748B; margin-top: 4px; font-size: 14px;">Step-by-step building of a standard curriculum</p>
+                            <h1><c:out value="${pageTitle != null ? pageTitle : 'Create New Curriculum'}"/></h1>
+                            <p style="color: #64748B; margin-top: 4px; font-size: 14px;">
+                                <%= isVersionMode
+                                        ? "Review and modify the current data before saving the new curriculum version"
+                                        : "Step-by-step building of a standard curriculum" %>
+                            </p>
                         </div>
                         <a href="${pageContext.request.contextPath}/curriculum" class="action-button">
                             <i class="fas fa-arrow-left"></i> Back to List
@@ -855,12 +865,15 @@
                                     </div>
                                     <div class="form-group">
                                         <label for="curriculumCode">Curriculum Code <span class="required">*</span></label>
-                                        <input type="text" id="curriculumCode" placeholder="e.g., SE-2026" required>
-                                        <div class="help-text">Enter the curriculum code</div>
+                                        <input type="text" id="curriculumCode" placeholder="e.g., SE-2026"
+                                               value="<c:out value='${versionSource.curriculumCode}'/>"
+                                               <%= isVersionMode ? "readonly" : "" %> required>
+                                        <div class="help-text"><%= isVersionMode ? "Curriculum identity is kept across versions" : "Enter the curriculum code" %></div>
                                     </div>
                                     <div class="form-group">
                                         <label for="curriculumName">Curriculum Name <span class="required">*</span></label>
-                                        <input type="text" id="curriculumName" placeholder="e.g., Software Engineering 2026" required>
+                                        <input type="text" id="curriculumName" placeholder="e.g., Software Engineering 2026"
+                                               value="<c:out value='${versionSource.name}'/>" required>
                                         <div class="help-text">Enter full name of the curriculum</div>
                                     </div>
                                 </div>
@@ -873,7 +886,10 @@
                                             <%
                                                 for (Major major : majors) {
                                             %>
-                                                <option value="<%= major.getMajorId() %>"><%= major.getCode() %> - <%= major.getName() %></option>
+                                                <option value="<%= major.getMajorId() %>"
+                                                        <%= isVersionMode && versionSource.getMajorId().equals(major.getMajorId()) ? "selected" : "" %>>
+                                                    <%= major.getCode() %> - <%= major.getName() %>
+                                                </option>
                                             <%
                                                 }
                                             %>
@@ -882,8 +898,17 @@
                                     </div>
                                     <div class="form-group">
                                         <label for="decisionNo">Decision Number <span class="required">*</span></label>
-                                        <input type="text" id="decisionNo" placeholder="e.g., 1024/QD-DHFPT" required>
-                                        <div class="help-text">Enter decision document number</div>
+                                        <div style="display: flex; align-items: center;">
+                                            <input type="text" id="decisionNo" inputmode="numeric"
+                                                   pattern="[0-9]+" maxlength="20"
+                                                   placeholder="e.g., 1024" required
+                                                   value="<c:out value='${versionDecisionNumber}'/>"
+                                                   style="border-radius: 8px 0 0 8px;">
+                                            <span style="height: 42px; display: inline-flex; align-items: center; padding: 0 14px; border: 1px solid #cbd5e1; border-left: 0; border-radius: 0 8px 8px 0; background: #f8fafc; white-space: nowrap; font-weight: 600;">
+                                                /QĐ-ĐHFPT
+                                            </span>
+                                        </div>
+                                        <div class="help-text">Enter the numeric part only. The suffix /QĐ-ĐHFPT is added automatically.</div>
                                     </div>
                                 </div>
                                 
@@ -913,7 +938,7 @@
                                 
                                 <div class="form-group">
                                     <label for="description">Detailed Description</label>
-                                    <textarea id="description" rows="4" placeholder="Enter summary description of the curriculum..."></textarea>
+                                    <textarea id="description" rows="4" placeholder="Enter summary description of the curriculum..."><c:out value="${versionSource.description}"/></textarea>
                                     <div class="help-text">Brief overview of the curriculum</div>
                                 </div>
                             </div>
@@ -1070,19 +1095,21 @@
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label for="totalSemesters">Total Semesters <span class="required">*</span></label>
-                                        <input type="number" id="totalSemesters" value="9" min="1" max="12" required onchange="updateSemesterLimit()">
+                                        <input type="number" id="totalSemesters"
+                                               value="<%= isVersionMode ? versionSource.getTotalSemesters() : 9 %>"
+                                               min="1" max="12" required onchange="updateSemesterLimit()">
                                         <div class="help-text">Total required semesters (Default: 9 semesters)</div>
                                     </div>
                                     <div class="form-group">
-                                        <label for="graduationCondition">Graduation Conditions</label>
-                                        <select id="graduationCondition">
-                                            <option value="Standard" selected>Standard (GPA >= 2.0 & English proficiency)</option>
-                                            <option value="Advanced">Advanced (GPA >= 2.5 & Graduation thesis)</option>
-                                        </select>
-                                        <div class="help-text">General graduation requirements</div>
+                                        <label for="totalCredits">Total Credits <span class="required">*</span></label>
+                                        <input type="number" id="totalCredits"
+                                               value="<%= isVersionMode && versionSource.getTotalCredits() != null ? versionSource.getTotalCredits() : 145 %>"
+                                               min="1" required>
+                                        <div class="help-text">
+                                            Required curriculum credits (Default: 145).
+                                        </div>
                                     </div>
                                 </div>
-                                <input type="hidden" id="totalCredits" value="0">
                             </div>
                         </div>
 
@@ -1534,13 +1561,64 @@
             return matches.map(p => p.prereqCode).join(', ');
         }
 
+        const versionSourceData = <%= versionSourceJson != null ? versionSourceJson : "null" %>;
+        const isVersionMode = versionSourceData !== null;
         let currentStep = 1;
         const totalSteps = 7;
         
         // Arrays storing dynamic PO, PLO, and Courses lists
-        let poList = [];
-        let ploList = [];
-        let courseList = [];
+        let poList = isVersionMode
+            ? (versionSourceData.pos || []).map(po => ({
+                id: po.code.replace(/^PO-?/i, 'PO-'),
+                text: po.description || ''
+            }))
+            : [];
+        let ploList = isVersionMode
+            ? (versionSourceData.plos || []).map(plo => ({
+                id: plo.code.replace(/^PLO-?/i, 'PLO-'),
+                text: plo.description || ''
+            }))
+            : [];
+        let courseList = isVersionMode
+            ? (versionSourceData.courses || []).map(item => ({
+                code: item.course.code,
+                name: item.course.name,
+                credits: item.course.credits,
+                semester: item.semester,
+                prerequisites: getCoursePrerequisitesStr(item.course.code),
+                knowledgeBlock: item.knowledgeBlock
+            }))
+            : [];
+
+        window.ploPoSelections = {};
+        if (isVersionMode) {
+            const poById = new Map(
+                (versionSourceData.pos || []).map(po => [
+                    po.poId,
+                    po.code.replace(/^PO-?/i, 'PO-')
+                ])
+            );
+            const ploById = new Map(
+                (versionSourceData.plos || []).map(plo => [
+                    plo.ploId,
+                    plo.code.replace(/^PLO-?/i, 'PLO-')
+                ])
+            );
+            (versionSourceData.mappings || []).forEach(mapping => {
+                const ploCode = ploById.get(mapping.ploId);
+                const poCode = poById.get(mapping.poId);
+                if (ploCode && poCode) {
+                    window.ploPoSelections[ploCode + '::' + poCode] = true;
+                }
+            });
+
+            window.coursePloSelections = {};
+            (versionSourceData.coursePloMappings || []).forEach(mapping => {
+                if (!mapping || mapping.length < 2) return;
+                const ploCode = String(mapping[1]).replace(/^PLO-?/i, 'PLO-');
+                window.coursePloSelections[mapping[0] + '_' + ploCode] = true;
+            });
+        }
 
         // Initialization
         document.addEventListener('DOMContentLoaded', () => {
@@ -1571,9 +1649,12 @@
 
         // Function updates the progress bar and indicator highlights
         function updateProgressBar() {
+            currentStep = Math.min(totalSteps, Math.max(1, Number(currentStep) || 1));
             const steps = document.querySelectorAll('.wizard-step');
-            const percent = ((currentStep - 1) / (totalSteps - 1)) * 100;
-            document.getElementById('progressBar').style.width = percent + '%';
+            const progressRatio = Math.min(1, Math.max(0,
+                (currentStep - 1) / (totalSteps - 1)
+            ));
+            document.getElementById('progressBar').style.transform = 'scaleX(' + progressRatio + ')';
             
             steps.forEach((step, index) => {
                 const stepNum = index + 1;
@@ -1603,6 +1684,7 @@
 
         // Navigation
         async function goToStep(step) {
+            step = Math.min(totalSteps, Math.max(1, Number(step) || 1));
             // Validation check when moving forward
             if (step > currentStep) {
                 for (let s = currentStep; s < step; s++) {
@@ -1667,8 +1749,16 @@
                     showToast('Please enter all required fields (*) in Step 1!', false);
                     return false;
                 }
+
+                if (!/^\d+$/.test(decision)) {
+                    showToast('Decision Number must contain digits only. The suffix /QĐ-ĐHFPT is added automatically.', false);
+                    return false;
+                }
                 
                 try {
+                    if (isVersionMode) {
+                        return true;
+                    }
                     const response = await fetch('${pageContext.request.contextPath}/curriculum?action=checkCodeUnique&code=' + encodeURIComponent(code));
                     const resData = await response.json();
                     if (!resData.unique) {
@@ -1682,10 +1772,178 @@
                 }
             }
             if (step === 4) {
-                const sems = document.getElementById('totalSemesters').value;
+                const sems = parseInt(document.getElementById('totalSemesters').value, 10);
+                const requiredCredits = parseInt(document.getElementById('totalCredits').value, 10);
                 
-                if (!sems || sems < 1) {
-                    showToast('Please set valid semesters in Step 4!', false);
+                if (!Number.isInteger(sems) || sems < 1 || sems > 12) {
+                    showToast('Total Semesters must be between 1 and 12.', false);
+                    return false;
+                }
+                if (!Number.isInteger(requiredCredits) || requiredCredits < 1) {
+                    showToast('Total Credits must be a positive integer.', false);
+                    return false;
+                }
+            }
+            if (step === 2) {
+                if (poList.length === 0) {
+                    showToast('Please add at least one Program Objective (PO).', false);
+                    return false;
+                }
+                const invalidPo = poList.find(po => !po.id || !po.text || !po.text.trim());
+                if (invalidPo) {
+                    showToast('Every PO must have a valid code and description.', false);
+                    return false;
+                }
+            }
+            if (step === 3) {
+                if (ploList.length === 0) {
+                    showToast('Please add at least one Program Learning Outcome (PLO).', false);
+                    return false;
+                }
+                const invalidPlo = ploList.find(plo => !plo.id || !plo.text || !plo.text.trim());
+                if (invalidPlo) {
+                    showToast('Every PLO must have a valid code and description.', false);
+                    return false;
+                }
+            }
+            if (step === 5) {
+                const totalSemesters = parseInt(document.getElementById('totalSemesters').value, 10);
+                const requiredCredits = parseInt(document.getElementById('totalCredits').value, 10);
+                const selectedTotal = courseList.reduce(
+                    (sum, course) => sum + (parseInt(course.credits, 10) || 0),
+                    0
+                );
+                const invalidCourse = courseList.find(course => {
+                    const semester = parseInt(course.semester, 10);
+                    return !Number.isInteger(semester)
+                        || semester < 0
+                        || semester > totalSemesters;
+                });
+                const selectedCoursesByCode = new Map(
+                    courseList.map(course => [course.code, course])
+                );
+                let prerequisiteError = null;
+                courseList.some(course => {
+                    const prerequisiteCodes = course.prerequisites === 'None'
+                        ? []
+                        : (Array.isArray(course.prerequisites)
+                            ? course.prerequisites
+                            : String(course.prerequisites).split(',').map(code => code.trim()).filter(Boolean));
+
+                    return prerequisiteCodes.some(prerequisiteCode => {
+                        const prerequisiteCourse = selectedCoursesByCode.get(prerequisiteCode);
+                        if (!prerequisiteCourse) {
+                            prerequisiteError = 'Prerequisite ' + prerequisiteCode
+                                + ' of course ' + course.code
+                                + ' must be included in the curriculum.';
+                            return true;
+                        }
+                        if (parseInt(prerequisiteCourse.semester, 10)
+                                > parseInt(course.semester, 10)) {
+                            prerequisiteError = 'Prerequisite ' + prerequisiteCode
+                                + ' must be in the same or an earlier semester than '
+                                + course.code + '.';
+                            return true;
+                        }
+                        return false;
+                    });
+                });
+
+                if (courseList.length === 0) {
+                    showToast('Please add at least one course.', false);
+                    return false;
+                }
+                if (invalidCourse) {
+                    showToast('Course ' + invalidCourse.code
+                        + ' must have a semester between 0 and ' + totalSemesters + '.', false);
+                    return false;
+                }
+                if (prerequisiteError) {
+                    showToast(prerequisiteError, false);
+                    return false;
+                }
+                if (selectedTotal !== requiredCredits) {
+                    const difference = requiredCredits - selectedTotal;
+                    showToast(difference > 0
+                        ? 'Selected courses are missing ' + difference + ' credits.'
+                        : 'Selected courses exceed Total Credits by ' + Math.abs(difference) + ' credits.',
+                        false);
+                    return false;
+                }
+            }
+            if (step === 6) {
+                const ploPoMappings = collectMappings();
+                const coursePloMappings = collectCoursePloMappings();
+                const validPoCodes = new Set(poList.map(po => po.id));
+                const validPloCodes = new Set(ploList.map(plo => plo.id));
+                const validCourseCodes = new Set(courseList.map(course => course.code));
+                const ploPoPairs = new Set();
+                const coursePloPairs = new Set();
+                const mappedPlosToPo = new Set();
+                const coveredPos = new Set();
+                const mappedCourses = new Set();
+                const coveredPlosByCourse = new Set();
+
+                if (poList.length === 0 || ploList.length === 0 || courseList.length === 0) {
+                    showToast('PO, PLO and Course lists must not be empty before mapping.', false);
+                    return false;
+                }
+
+                for (const mapping of ploPoMappings) {
+                    if (!mapping.ploCode || !mapping.poCode
+                            || !validPloCodes.has(mapping.ploCode)
+                            || !validPoCodes.has(mapping.poCode)) {
+                        showToast('PLO–PO mapping contains an invalid PO or PLO.', false);
+                        return false;
+                    }
+                    const pair = mapping.ploCode + '::' + mapping.poCode;
+                    if (ploPoPairs.has(pair)) {
+                        showToast('Duplicate PLO–PO mapping: ' + mapping.ploCode
+                            + ' → ' + mapping.poCode + '.', false);
+                        return false;
+                    }
+                    ploPoPairs.add(pair);
+                    mappedPlosToPo.add(mapping.ploCode);
+                    coveredPos.add(mapping.poCode);
+                }
+
+                const unmappedPloToPo = ploList.find(plo => !mappedPlosToPo.has(plo.id));
+                if (unmappedPloToPo) {
+                    showToast(unmappedPloToPo.id + ' must map to at least one PO.', false);
+                    return false;
+                }
+                const uncoveredPo = poList.find(po => !coveredPos.has(po.id));
+                if (uncoveredPo) {
+                    showToast(uncoveredPo.id + ' must be covered by at least one PLO.', false);
+                    return false;
+                }
+
+                for (const mapping of coursePloMappings) {
+                    if (!mapping.courseCode || !mapping.ploCode
+                            || !validCourseCodes.has(mapping.courseCode)
+                            || !validPloCodes.has(mapping.ploCode)) {
+                        showToast('Course–PLO mapping contains a course or PLO outside this curriculum.', false);
+                        return false;
+                    }
+                    const pair = mapping.courseCode + '::' + mapping.ploCode;
+                    if (coursePloPairs.has(pair)) {
+                        showToast('Duplicate Course–PLO mapping: ' + mapping.courseCode
+                            + ' → ' + mapping.ploCode + '.', false);
+                        return false;
+                    }
+                    coursePloPairs.add(pair);
+                    mappedCourses.add(mapping.courseCode);
+                    coveredPlosByCourse.add(mapping.ploCode);
+                }
+
+                const unmappedCourse = courseList.find(course => !mappedCourses.has(course.code));
+                if (unmappedCourse) {
+                    showToast('Course ' + unmappedCourse.code + ' must map to at least one PLO.', false);
+                    return false;
+                }
+                const uncoveredPloByCourse = ploList.find(plo => !coveredPlosByCourse.has(plo.id));
+                if (uncoveredPloByCourse) {
+                    showToast(uncoveredPloByCourse.id + ' must be supported by at least one course.', false);
                     return false;
                 }
             }
@@ -1818,6 +2076,13 @@
 
         let activeImportTargetBlock = '';
 
+        function normalizeKnowledgeBlock(value) {
+            return String(value || '')
+                .trim()
+                .replace(/\s+/g, ' ')
+                .toLowerCase();
+        }
+
         function toggleImportCoursesForm(block) {
             const form = document.getElementById('importCoursesFormContainer');
             if (!form) return;
@@ -1843,6 +2108,10 @@
         function executeCoursesImport() {
             const select = document.getElementById('importCoursesCurriculumSelect');
             const val = select.value;
+            if (!activeImportTargetBlock) {
+                showToast('Please select the knowledge block where courses will be imported.', false);
+                return;
+            }
             if (!val) {
                 showToast('Please select a curriculum to import from.', false);
                 return;
@@ -1853,21 +2122,28 @@
             .then(res => res.json())
             .then(res => {
                 if (res.success && res.courses) {
-                    res.courses.forEach(cc => {
+                    const normalizedTargetBlock = normalizeKnowledgeBlock(activeImportTargetBlock);
+                    const matchingCourses = res.courses.filter(cc =>
+                        cc.course
+                        && normalizeKnowledgeBlock(cc.knowledgeBlock) === normalizedTargetBlock
+                    );
+                    const importedCourseCodes = new Set();
+
+                    matchingCourses.forEach(cc => {
                         if (cc.course) {
                             if (courseList.some(existing => existing.code === cc.course.code)) {
                                 return; // Skip duplicate
                             }
                             const prereqs = getCoursePrerequisitesStr(cc.course.code);
-                            let kBlock = cc.knowledgeBlock || activeImportTargetBlock;
                             courseList.push({
                                 code: cc.course.code,
                                 name: cc.course.name,
                                 credits: cc.course.credits,
                                 semester: cc.semester,
                                 prerequisites: prereqs,
-                                knowledgeBlock: kBlock
+                                knowledgeBlock: cc.knowledgeBlock
                             });
+                            importedCourseCodes.add(cc.course.code);
                         }
                     });
                     
@@ -1875,7 +2151,9 @@
                         if (!window.coursePloSelections) {
                             window.coursePloSelections = {};
                         }
-                        res.coursePloMappings.forEach(m => {
+                        res.coursePloMappings
+                        .filter(m => importedCourseCodes.has(m[0]))
+                        .forEach(m => {
                             const ploId = m[1].replace('PLO', 'PLO-');
                             const selectionKey = `\${m[0]}_\${ploId}`;
                             window.coursePloSelections[selectionKey] = true;
@@ -1886,7 +2164,15 @@
                     renderCoursesList();
                     
                     document.getElementById('importCoursesFormContainer').style.display = 'none';
-                    showToast(`Successfully imported courses from curriculum: "${selectedText}"!`, true);
+                    if (matchingCourses.length === 0) {
+                        showToast('No courses in "' + selectedText
+                            + '" belong to the selected knowledge block.', false);
+                    } else if (importedCourseCodes.size === 0) {
+                        showToast('All matching courses in this knowledge block are already included.', false);
+                    } else {
+                        showToast('Successfully imported ' + importedCourseCodes.size
+                            + ' course(s) from the selected knowledge block.', true);
+                    }
                 } else {
                     showToast('Failed to import courses from selected curriculum.', false);
                 }
@@ -2035,10 +2321,12 @@
         function updateSemesterLimit() {
             const semesterSelect = document.getElementById('semesterSelect');
             if (!semesterSelect) return;
+            const totalSemesters = parseInt(document.getElementById('totalSemesters').value, 10);
             
             // clear semester options
             semesterSelect.innerHTML = '';
-            for (let i = 0; i <= 9; i++) {
+            if (!Number.isInteger(totalSemesters) || totalSemesters < 1) return;
+            for (let i = 0; i <= totalSemesters; i++) {
                 semesterSelect.innerHTML += '<option value="' + i + '">' + i + '</option>';
             }
         }
@@ -2361,7 +2649,13 @@
             }
             
             const semesterSelect = document.getElementById('semesterSelect');
-            const semester = parseInt(semesterSelect.value) || 1;
+            const semester = parseInt(semesterSelect.value, 10);
+            const totalSemesters = parseInt(document.getElementById('totalSemesters').value, 10);
+
+            if (!Number.isInteger(semester) || semester < 0 || semester > totalSemesters) {
+                alert('Semester must be between 0 and ' + totalSemesters + '!');
+                return;
+            }
             
             if (courseList.some(c => c.code === activeSelectedCourse.code)) {
                 alert('This course is already added to the curriculum framework!');
@@ -2393,9 +2687,9 @@
             courseList.forEach(course => {
                 total += parseInt(course.credits) || 0;
             });
-            const totalCreditsInput = document.getElementById('totalCredits');
-            if (totalCreditsInput) {
-                totalCreditsInput.value = total;
+            const selectedCredits = document.getElementById('selectedCredits');
+            if (selectedCredits) {
+                selectedCredits.textContent = total;
             }
 
             const blocks = [
@@ -2502,9 +2796,12 @@
             ploList.forEach(plo => {
                 let cellsHtml = '';
                 poList.forEach(po => {
-                    const isSelected = (presetMappings[plo.id] && presetMappings[plo.id].includes(po.id));
+                    const selectionKey = plo.id + '::' + po.id;
+                    const isSelected = isVersionMode
+                        ? Boolean(window.ploPoSelections[selectionKey])
+                        : (presetMappings[plo.id] && presetMappings[plo.id].includes(po.id));
                     const cellVal = isSelected ? '✓' : '';
-                    cellsHtml += `<td onclick="toggleCell(this)" style="text-align: center; font-weight: 800; font-size: 16px; color: #1E293B; user-select: none;">\${cellVal}</td>`;
+                    cellsHtml += `<td onclick="toggleCell(this, '\${plo.id}', '\${po.id}')" style="text-align: center; font-weight: 800; font-size: 16px; color: #1E293B; user-select: none;">\${cellVal}</td>`;
                 });
                 
                 body.innerHTML += `
@@ -2516,11 +2813,14 @@
             });
         }
 
-        function toggleCell(cell) {
+        function toggleCell(cell, ploCode, poCode) {
+            const selectionKey = ploCode + '::' + poCode;
             if (cell.textContent === '✓') {
                 cell.textContent = '';
+                window.ploPoSelections[selectionKey] = false;
             } else {
                 cell.textContent = '✓';
+                window.ploPoSelections[selectionKey] = true;
             }
         }
 
@@ -2667,7 +2967,8 @@
         function generatePreviewData() {
             document.getElementById('prevCode').textContent = document.getElementById('curriculumCode').value || '---';
             document.getElementById('prevName').textContent = document.getElementById('curriculumName').value || '---';
-            document.getElementById('prevDecision').textContent = document.getElementById('decisionNo').value || '---';
+            const decisionNumber = document.getElementById('decisionNo').value.trim();
+            document.getElementById('prevDecision').textContent = decisionNumber ? decisionNumber + '/QĐ-ĐHFPT' : '---';
             document.getElementById('prevDate').textContent = document.getElementById('issuedDate').value || '---';
             
             const majorSelect = document.getElementById('majorId');
@@ -2700,38 +3001,113 @@
         }
 
         // Final Submission
-        function handleWizardSubmit(e) {
+        function showValidationStep(step) {
+            currentStep = Math.min(totalSteps, Math.max(1, Number(step) || 1));
+            showPanel();
+            updateProgressBar();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function inferValidationStep(message) {
+            const text = String(message || '').toLowerCase();
+            if (text.includes('course-plo') || text.includes('plo-po')
+                    || text.includes('mapping') || text.includes('map to')
+                    || text.includes('covered by') || text.includes('supported by')) return 6;
+            if (text.includes('prerequisite') || text.includes('selected course')
+                    || text.includes('duplicate course') || text.includes('course ')) return 5;
+            if (text.includes('total semester') || text.includes('total credit')) return 4;
+            if (text.includes('plo')) return 3;
+            if (text.includes('po')) return 2;
+            return 1;
+        }
+
+        async function handleWizardSubmit(e) {
             if (e) e.preventDefault();
+
+            // Revalidate every step because data may have changed after a step
+            // was first completed. Stop and display the first invalid step.
+            for (let step = 1; step < totalSteps; step++) {
+                const isValid = await validateStepAsync(step);
+                if (!isValid) {
+                    showValidationStep(step);
+                    return;
+                }
+            }
             
             // Validate step 1 fields
             const curriculumCode = document.getElementById('curriculumCode').value.trim();
             const curriculumName = document.getElementById('curriculumName').value.trim();
             const majorId = document.getElementById('majorId').value;
-            const decisionNo = document.getElementById('decisionNo').value.trim();
+            const decisionNumber = document.getElementById('decisionNo').value.trim();
             const description = document.getElementById('description').value.trim();
             const totalSemesters = document.getElementById('totalSemesters').value;
             const totalCredits = document.getElementById('totalCredits').value;
             
-            if (!curriculumCode || !curriculumName || !majorId || !decisionNo) {
+            if (!curriculumCode || !curriculumName || !majorId || !decisionNumber) {
                 alert('Please fill out all required fields in Step 1 & Step 4!');
                 goToStep(1);
+                return;
+            }
+
+            if (!/^\d+$/.test(decisionNumber)) {
+                alert('Decision Number must contain digits only.');
+                goToStep(1);
+                return;
+            }
+
+            const parsedTotalSemesters = parseInt(totalSemesters, 10);
+            const parsedTotalCredits = parseInt(totalCredits, 10);
+            if (!Number.isInteger(parsedTotalSemesters) || parsedTotalSemesters < 1 || parsedTotalSemesters > 12
+                    || !Number.isInteger(parsedTotalCredits) || parsedTotalCredits < 1) {
+                alert('Total Semesters or Total Credits is invalid.');
+                goToStep(4);
+                return;
+            }
+
+            const selectedCreditsTotal = courseList.reduce((sum, course) => sum + (parseInt(course.credits, 10) || 0), 0);
+            if (selectedCreditsTotal !== parsedTotalCredits) {
+                const difference = parsedTotalCredits - selectedCreditsTotal;
+                alert(difference > 0
+                    ? 'Selected courses are missing ' + difference + ' credits.'
+                    : 'Selected courses exceed Total Credits by ' + Math.abs(difference) + ' credits.');
+                goToStep(5);
+                return;
+            }
+
+            const invalidSemesterCourse = courseList.find(course => {
+                const semester = parseInt(course.semester, 10);
+                return !Number.isInteger(semester) || semester < 0 || semester > parsedTotalSemesters;
+            });
+            if (invalidSemesterCourse) {
+                alert('Course ' + invalidSemesterCourse.code + ' has an invalid semester. Semester must be between 0 and ' + parsedTotalSemesters + '.');
+                goToStep(5);
                 return;
             }
             
             const issuedDate = new Date().toISOString().split('T')[0]; // yyyy-MM-dd
             
             const payload = {
+                sourceCurriculumId: isVersionMode ? versionSourceData.curriculumId : null,
                 curriculumCode: curriculumCode,
                 curriculumName: curriculumName,
                 majorId: parseInt(majorId),
-                decisionNo: decisionNo,
+                decisionNo: decisionNumber + '/QĐ-ĐHFPT',
                 issuedDate: issuedDate,
                 description: description,
-                totalSemesters: parseInt(totalSemesters),
-                totalCredits: parseInt(totalCredits),
+                totalSemesters: parsedTotalSemesters,
+                totalCredits: parsedTotalCredits,
                 pos: poList.map(po => ({ id: po.id, text: po.text })),
                 plos: ploList.map(plo => ({ id: plo.id, text: plo.text })),
-                courses: courseList.map(c => ({ code: c.code, semester: parseInt(c.semester), knowledgeBlock: c.knowledgeBlock })),
+                courses: courseList.map(c => ({
+                    code: c.code,
+                    semester: parseInt(c.semester),
+                    knowledgeBlock: c.knowledgeBlock,
+                    prerequisites: c.prerequisites === 'None'
+                        ? []
+                        : (Array.isArray(c.prerequisites)
+                            ? c.prerequisites
+                            : String(c.prerequisites).split(',').map(code => code.trim()).filter(Boolean))
+                })),
                 mappings: collectMappings(),
                 coursePloMappings: collectCoursePloMappings()
             };
@@ -2750,11 +3126,16 @@
             .then(res => res.json())
             .then(res => {
                 if (res.success) {
-                    showToast('Curriculum created successfully!', true);
+                    showToast(isVersionMode
+                        ? 'New curriculum version created successfully!'
+                        : 'Curriculum created successfully!', true);
                     setTimeout(() => {
-                        window.location.href = '${pageContext.request.contextPath}/curriculum?action=list';
+                        window.location.href = isVersionMode && res.curriculumId
+                            ? '${pageContext.request.contextPath}/curriculum?action=detail&id=' + res.curriculumId
+                            : '${pageContext.request.contextPath}/curriculum?action=list';
                     }, 1000);
                 } else {
+                    showValidationStep(res.step || inferValidationStep(res.message));
                     showToast('Failed to save curriculum: ' + res.message, false);
                     if (submitBtn) submitBtn.disabled = false;
                 }

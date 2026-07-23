@@ -100,8 +100,7 @@ CREATE TABLE curriculums (
     updated_by BIGINT NULL,
     deleted_at DATETIME2 NULL,
 
-    CONSTRAINT uq_curriculum_code UNIQUE (curriculum_code),
-    CONSTRAINT uq_curriculum_version UNIQUE (major_id, version),
+    CONSTRAINT uq_curriculum_code_version UNIQUE (major_id, curriculum_code, version),
     CONSTRAINT fk_curriculums_major FOREIGN KEY (major_id) REFERENCES majors(major_id),
     CONSTRAINT fk_curriculum_updated_by FOREIGN KEY (updated_by) REFERENCES users(user_id)
 );

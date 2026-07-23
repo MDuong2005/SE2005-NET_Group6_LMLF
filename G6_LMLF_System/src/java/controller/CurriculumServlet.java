@@ -55,6 +55,9 @@ public class CurriculumServlet extends HttpServlet {
                 case "create":
                     showCreateForm(request, response);
                     break;
+                case "createVersion":
+                    showCreateVersionForm(request, response);
+                    break;
                 case "view":
                     viewCurriculum(request, response);
                     break;
@@ -173,7 +176,7 @@ public class CurriculumServlet extends HttpServlet {
             throws ServletException, IOException {
         List<Major> majors = majorDAO.getAllMajors();
         List<Course> courses = courseDAO.listAll();
-        List<Curriculum> curriculums = curriculumDAO.getAll();
+        List<Curriculum> curriculums = curriculumDAO.getLatestVersions();
         List<model.CoursePrerequisite> prerequisites = prerequisiteDAO.listAll();
         request.setAttribute("mode", "create");
         request.setAttribute("pageTitle", "Create New Curriculum");
@@ -182,6 +185,54 @@ public class CurriculumServlet extends HttpServlet {
         request.setAttribute("curriculums", curriculums);
         request.setAttribute("prerequisites", prerequisites);
         request.getRequestDispatcher("/views/academic/curriculum/add-curriculum.jsp").forward(request, response);
+    }
+
+    private void showCreateVersionForm(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws ServletException, IOException {
+        String idParam = request.getParameter("id");
+        if (idParam == null || idParam.isBlank()) {
+            response.sendRedirect("curriculum?action=list&error=Invalid curriculum ID");
+            return;
+        }
+
+        try {
+            long sourceId = Long.parseLong(idParam.trim());
+            Curriculum source = curriculumDAO.getById(sourceId);
+            if (source == null) {
+                response.sendRedirect("curriculum?action=list&error=Curriculum not found");
+                return;
+            }
+            curriculumDAO.getNextMajorVersion(sourceId);
+
+            String decisionNumber = source.getDecisionNo() == null
+                    ? ""
+                    : source.getDecisionNo().replaceFirst("/QĐ-ĐHFPT$", "");
+
+            request.setAttribute("mode", "createVersion");
+            request.setAttribute("pageTitle", "Create New Curriculum Version");
+            request.setAttribute("versionSource", source);
+            request.setAttribute("versionSourceJson", new Gson().toJson(source));
+            request.setAttribute("versionDecisionNumber", decisionNumber);
+            request.setAttribute("majors", majorDAO.getAllMajors());
+            request.setAttribute("courses", courseDAO.listAll());
+            request.setAttribute("curriculums", curriculumDAO.getLatestVersions());
+            request.setAttribute("prerequisites", prerequisiteDAO.listAll());
+            request.getRequestDispatcher(
+                    "/views/academic/curriculum/add-curriculum.jsp"
+            ).forward(request, response);
+        } catch (NumberFormatException exception) {
+            response.sendRedirect("curriculum?action=list&error=Invalid curriculum ID");
+        } catch (Exception exception) {
+            response.sendRedirect(
+                    "curriculum?action=list&error="
+                    + java.net.URLEncoder.encode(
+                            exception.getMessage(),
+                            java.nio.charset.StandardCharsets.UTF_8
+                    )
+            );
+        }
     }
 
     // ==================== CREATE CURRICULUM ====================
@@ -335,6 +386,17 @@ public class CurriculumServlet extends HttpServlet {
             
             if (curriculum == null) {
                 response.sendRedirect("curriculum?action=list&error=Curriculum not found");
+                return;
+            }
+
+            if (curriculum.getIsActive()) {
+                response.sendRedirect(
+                        "curriculum?action=list&error="
+                        + java.net.URLEncoder.encode(
+                                "This curriculum is active. Please set it to inactive before deleting.",
+                                java.nio.charset.StandardCharsets.UTF_8
+                        )
+                );
                 return;
             }
             
@@ -588,17 +650,62 @@ public class CurriculumServlet extends HttpServlet {
                 response.getWriter().write("{\"success\":false,\"message\":\"Curriculum Code is required\"}");
                 return;
             }
+
+            if (data.curriculumName == null || data.curriculumName.trim().isEmpty()) {
+                response.getWriter().write("{\"success\":false,\"message\":\"Curriculum Name is required\"}");
+                return;
+            }
+
+            if (data.majorId == null || data.majorId <= 0
+                    || majorDAO.getMajorById(data.majorId) == null) {
+                response.getWriter().write("{\"success\":false,\"message\":\"A valid Major is required\"}");
+                return;
+            }
+
+            if (data.decisionNo == null
+                    || !data.decisionNo.trim().matches("^\\d+/QĐ-ĐHFPT$")) {
+                response.getWriter().write("{\"success\":false,\"message\":\"Decision Number must follow the format (number)/QĐ-ĐHFPT\"}");
+                return;
+            }
+
+            if (data.totalSemesters < 1 || data.totalSemesters > 12) {
+                response.getWriter().write("{\"success\":false,\"message\":\"Total Semesters must be between 1 and 12\"}");
+                return;
+            }
+
+            if (data.totalCredits < 1) {
+                response.getWriter().write("{\"success\":false,\"message\":\"Total Credits must be a positive integer\"}");
+                return;
+            }
             
-            if (curriculumDAO.checkCodeExists(data.curriculumCode.trim())) {
+            Curriculum versionSource = null;
+            String version = "1.0";
+            if (data.sourceCurriculumId != null) {
+                versionSource = curriculumDAO.getById(data.sourceCurriculumId);
+                if (versionSource == null) {
+                    response.getWriter().write("{\"success\":false,\"message\":\"Source curriculum was not found\"}");
+                    return;
+                }
+                version = curriculumDAO.getNextMajorVersion(data.sourceCurriculumId);
+                data.majorId = versionSource.getMajorId();
+                data.curriculumCode = versionSource.getCurriculumCode();
+            } else if (curriculumDAO.checkCodeExists(data.curriculumCode.trim())) {
                 response.getWriter().write("{\"success\":false,\"message\":\"Curriculum Code '" + data.curriculumCode.trim() + "' already exists.\"}");
                 return;
             }
             
             Curriculum curriculum = new Curriculum();
             curriculum.setMajorId(data.majorId);
-            curriculum.setCurriculumCode(data.curriculumCode);
-            curriculum.setName(data.curriculumName);
-            curriculum.setVersion("1.0");
+            curriculum.setCurriculumCode(
+                    versionSource == null
+                            ? data.curriculumCode.trim().toUpperCase()
+                            : versionSource.getCurriculumCode()
+            );
+            curriculum.setName(data.curriculumName.trim());
+            curriculum.setDescription(
+                    data.description == null ? null : data.description.trim()
+            );
+            curriculum.setVersion(version);
             curriculum.setDecisionNo(data.decisionNo);
             if (data.issuedDate != null && !data.issuedDate.isEmpty()) {
                 curriculum.setIssuedDate(java.sql.Date.valueOf(data.issuedDate));
@@ -610,56 +717,226 @@ public class CurriculumServlet extends HttpServlet {
             curriculum.setIsActive(false);
             
             List<CurriculumPO> pos = new ArrayList<>();
+            java.util.Set<String> poCodes = new java.util.HashSet<>();
             if (data.pos != null) {
                 for (PoDto dto : data.pos) {
-                    String cleanCode = dto.id.replace("-", "");
-                    pos.add(new CurriculumPO(null, cleanCode, dto.text));
+                    if (dto == null || dto.id == null || dto.id.trim().isEmpty()
+                            || dto.text == null || dto.text.trim().isEmpty()) {
+                        response.getWriter().write("{\"success\":false,\"message\":\"Every PO must have a code and description\"}");
+                        return;
+                    }
+                    String cleanCode = dto.id.replace("-", "").trim().toUpperCase();
+                    if (!poCodes.add(cleanCode)) {
+                        response.getWriter().write("{\"success\":false,\"message\":\"Duplicate PO code: " + cleanCode + "\"}");
+                        return;
+                    }
+                    pos.add(new CurriculumPO(null, cleanCode, dto.text.trim()));
                 }
+            }
+            if (pos.isEmpty()) {
+                response.getWriter().write("{\"success\":false,\"message\":\"At least one PO is required\"}");
+                return;
             }
             
             List<CurriculumPLO> plos = new ArrayList<>();
+            java.util.Set<String> ploCodes = new java.util.HashSet<>();
             if (data.plos != null) {
                 for (PloDto dto : data.plos) {
-                    String cleanCode = dto.id.replace("-", "");
-                    plos.add(new CurriculumPLO(null, cleanCode, dto.text));
+                    if (dto == null || dto.id == null || dto.id.trim().isEmpty()
+                            || dto.text == null || dto.text.trim().isEmpty()) {
+                        response.getWriter().write("{\"success\":false,\"message\":\"Every PLO must have a code and description\"}");
+                        return;
+                    }
+                    String cleanCode = dto.id.replace("-", "").trim().toUpperCase();
+                    if (!ploCodes.add(cleanCode)) {
+                        response.getWriter().write("{\"success\":false,\"message\":\"Duplicate PLO code: " + cleanCode + "\"}");
+                        return;
+                    }
+                    plos.add(new CurriculumPLO(null, cleanCode, dto.text.trim()));
                 }
+            }
+            if (plos.isEmpty()) {
+                response.getWriter().write("{\"success\":false,\"message\":\"At least one PLO is required\"}");
+                return;
             }
             
             List<CurriculumCourse> courses = new ArrayList<>();
+            int selectedCourseCredits = 0;
+            java.util.Set<String> selectedCourseCodes = new java.util.HashSet<>();
+            java.util.Map<String, Integer> selectedCourseSemesters = new java.util.HashMap<>();
             if (data.courses != null) {
                 for (CourseDto dto : data.courses) {
-                    Course course = courseDAO.getByCode(dto.code);
-                    if (course != null) {
-                        CurriculumCourse cc = new CurriculumCourse();
-                        cc.setCourseId(course.getCourseId());
-                        cc.setSemester(dto.semester);
-                        cc.setKnowledgeBlock(dto.knowledgeBlock);
-                        courses.add(cc);
+                    if (dto == null || dto.code == null || dto.code.trim().isEmpty()) {
+                        response.getWriter().write("{\"success\":false,\"message\":\"Every selected course must have a valid code\"}");
+                        return;
                     }
+
+                    String normalizedCourseCode = dto.code.trim().toUpperCase();
+                    if (!selectedCourseCodes.add(normalizedCourseCode)) {
+                        response.getWriter().write("{\"success\":false,\"message\":\"Duplicate course: " + normalizedCourseCode + "\"}");
+                        return;
+                    }
+
+                    Course course = courseDAO.getByCode(normalizedCourseCode);
+                    if (course == null) {
+                        response.getWriter().write("{\"success\":false,\"message\":\"Course " + normalizedCourseCode + " does not exist\"}");
+                        return;
+                    }
+
+                    if (dto.semester < 0 || dto.semester > data.totalSemesters) {
+                        response.getWriter().write("{\"success\":false,\"message\":\"Semester for course " + normalizedCourseCode
+                                + " must be between 0 and " + data.totalSemesters + "\"}");
+                        return;
+                    }
+
+                    if (course.getCredits() == null || course.getCredits() < 0) {
+                        response.getWriter().write("{\"success\":false,\"message\":\"Course " + normalizedCourseCode + " has invalid credits\"}");
+                        return;
+                    }
+
+                    selectedCourseCredits += course.getCredits();
+                    selectedCourseSemesters.put(normalizedCourseCode, dto.semester);
+                    CurriculumCourse cc = new CurriculumCourse();
+                    cc.setCourseId(course.getCourseId());
+                    cc.setSemester(dto.semester);
+                    cc.setKnowledgeBlock(dto.knowledgeBlock);
+                    courses.add(cc);
+                }
+            }
+
+            if (courses.isEmpty()) {
+                response.getWriter().write("{\"success\":false,\"message\":\"At least one course is required\"}");
+                return;
+            }
+
+            if (selectedCourseCredits != data.totalCredits) {
+                int difference = data.totalCredits - selectedCourseCredits;
+                String message = difference > 0
+                        ? "Selected courses are missing " + difference + " credits"
+                        : "Selected courses exceed Total Credits by " + Math.abs(difference) + " credits";
+                response.getWriter().write("{\"success\":false,\"message\":\"" + message + "\"}");
+                return;
+            }
+
+            for (model.CoursePrerequisite prerequisite : prerequisiteDAO.listAll()) {
+                String courseCode = prerequisite.getCourseCode() == null
+                        ? "" : prerequisite.getCourseCode().trim().toUpperCase();
+                if (!selectedCourseSemesters.containsKey(courseCode)) {
+                    continue;
+                }
+
+                String prerequisiteCode = prerequisite.getPrerequisiteCourseCode() == null
+                        ? "" : prerequisite.getPrerequisiteCourseCode().trim().toUpperCase();
+                Integer prerequisiteSemester = selectedCourseSemesters.get(prerequisiteCode);
+                if (prerequisiteSemester == null) {
+                    response.getWriter().write("{\"success\":false,\"message\":\"Prerequisite "
+                            + prerequisiteCode + " of course " + courseCode
+                            + " must be included in the curriculum\"}");
+                    return;
+                }
+
+                Integer courseSemester = selectedCourseSemesters.get(courseCode);
+                if (prerequisiteSemester > courseSemester) {
+                    response.getWriter().write("{\"success\":false,\"message\":\"Prerequisite "
+                            + prerequisiteCode + " must be in the same or an earlier semester than "
+                            + courseCode + "\"}");
+                    return;
                 }
             }
             
             List<String[]> mappingCodes = new ArrayList<>();
+            java.util.Set<String> ploPoPairs = new java.util.HashSet<>();
+            java.util.Set<String> plosMappedToPo = new java.util.HashSet<>();
+            java.util.Set<String> coveredPoCodes = new java.util.HashSet<>();
             if (data.mappings != null) {
                 for (MappingDto dto : data.mappings) {
-                    String cleanPlo = dto.ploCode.replace("-", "");
-                    String cleanPo = dto.poCode.replace("-", "");
+                    if (dto == null || dto.ploCode == null || dto.poCode == null
+                            || dto.ploCode.trim().isEmpty() || dto.poCode.trim().isEmpty()) {
+                        response.getWriter().write("{\"success\":false,\"message\":\"Every PLO-PO mapping must contain both codes\"}");
+                        return;
+                    }
+                    String cleanPlo = dto.ploCode.replace("-", "").trim().toUpperCase();
+                    String cleanPo = dto.poCode.replace("-", "").trim().toUpperCase();
+                    if (!ploCodes.contains(cleanPlo) || !poCodes.contains(cleanPo)) {
+                        response.getWriter().write("{\"success\":false,\"message\":\"PLO-PO mapping references a PO or PLO outside this curriculum\"}");
+                        return;
+                    }
+                    String pair = cleanPlo + "::" + cleanPo;
+                    if (!ploPoPairs.add(pair)) {
+                        response.getWriter().write("{\"success\":false,\"message\":\"Duplicate PLO-PO mapping: "
+                                + cleanPlo + " -> " + cleanPo + "\"}");
+                        return;
+                    }
+                    plosMappedToPo.add(cleanPlo);
+                    coveredPoCodes.add(cleanPo);
                     mappingCodes.add(new String[]{cleanPlo, cleanPo});
+                }
+            }
+            for (String ploCode : ploCodes) {
+                if (!plosMappedToPo.contains(ploCode)) {
+                    response.getWriter().write("{\"success\":false,\"message\":\""
+                            + ploCode + " must map to at least one PO\"}");
+                    return;
+                }
+            }
+            for (String poCode : poCodes) {
+                if (!coveredPoCodes.contains(poCode)) {
+                    response.getWriter().write("{\"success\":false,\"message\":\""
+                            + poCode + " must be covered by at least one PLO\"}");
+                    return;
                 }
             }
             
             List<String[]> coursePloMappings = new ArrayList<>();
+            java.util.Set<String> coursePloPairs = new java.util.HashSet<>();
+            java.util.Set<String> mappedCourseCodes = new java.util.HashSet<>();
+            java.util.Set<String> plosCoveredByCourses = new java.util.HashSet<>();
             if (data.coursePloMappings != null) {
                 for (CoursePloMappingDto dto : data.coursePloMappings) {
-                    String cleanPlo = dto.ploCode.replace("-", "");
-                    coursePloMappings.add(new String[]{dto.courseCode, cleanPlo});
+                    if (dto == null || dto.courseCode == null || dto.ploCode == null
+                            || dto.courseCode.trim().isEmpty() || dto.ploCode.trim().isEmpty()) {
+                        response.getWriter().write("{\"success\":false,\"message\":\"Every Course-PLO mapping must contain both codes\"}");
+                        return;
+                    }
+                    String cleanCourse = dto.courseCode.trim().toUpperCase();
+                    String cleanPlo = dto.ploCode.replace("-", "").trim().toUpperCase();
+                    if (!selectedCourseCodes.contains(cleanCourse) || !ploCodes.contains(cleanPlo)) {
+                        response.getWriter().write("{\"success\":false,\"message\":\"Course-PLO mapping references a course or PLO outside this curriculum\"}");
+                        return;
+                    }
+                    String pair = cleanCourse + "::" + cleanPlo;
+                    if (!coursePloPairs.add(pair)) {
+                        response.getWriter().write("{\"success\":false,\"message\":\"Duplicate Course-PLO mapping: "
+                                + cleanCourse + " -> " + cleanPlo + "\"}");
+                        return;
+                    }
+                    mappedCourseCodes.add(cleanCourse);
+                    plosCoveredByCourses.add(cleanPlo);
+                    coursePloMappings.add(new String[]{cleanCourse, cleanPlo});
+                }
+            }
+            for (String courseCode : selectedCourseCodes) {
+                if (!mappedCourseCodes.contains(courseCode)) {
+                    response.getWriter().write("{\"success\":false,\"message\":\"Course "
+                            + courseCode + " must map to at least one PLO\"}");
+                    return;
+                }
+            }
+            for (String ploCode : ploCodes) {
+                if (!plosCoveredByCourses.contains(ploCode)) {
+                    response.getWriter().write("{\"success\":false,\"message\":\""
+                            + ploCode + " must be supported by at least one course\"}");
+                    return;
                 }
             }
             
             try {
                 boolean success = curriculumDAO.createWizardCurriculum(curriculum, pos, plos, courses, mappingCodes, coursePloMappings);
                 if (success) {
-                    response.getWriter().write("{\"success\":true,\"message\":\"Curriculum created successfully\"}");
+                    response.getWriter().write(
+                            "{\"success\":true,\"message\":\"Curriculum created successfully\","
+                            + "\"curriculumId\":" + curriculum.getCurriculumId() + "}"
+                    );
                 } else {
                     response.getWriter().write("{\"success\":false,\"message\":\"Failed to save curriculum. Unknown error.\"}");
                 }
@@ -821,6 +1098,7 @@ public class CurriculumServlet extends HttpServlet {
 
     // ==================== GSON DATA DTO CLASSES ====================
     private static class WizardData {
+        Long sourceCurriculumId;
         String curriculumCode;
         String curriculumName;
         Long majorId;
@@ -924,6 +1202,7 @@ public class CurriculumServlet extends HttpServlet {
         String code;
         int semester;
         String knowledgeBlock;
+        List<String> prerequisites;
     }
 
     private static class MappingDto {

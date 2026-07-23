@@ -889,6 +889,7 @@
                         <tr>
                             <th style="width:50px;">#</th>
                             <th>Curriculum Code</th>
+                            <th>Curriculum Name</th>
                             <th>Major</th>
                             <th>Version</th>
                             <th style="width:100px;">Status</th>
@@ -908,10 +909,18 @@
                                 boolean isActiveCurric = curriculum.getIsActive();
                                 String statusClass = isActiveCurric ? "badge-success" : "badge-danger";
                                 String statusText = isActiveCurric ? "Active" : "UnActive";
+                                String curriculumDisplayName = curriculum.getName() != null
+                                        && !curriculum.getName().trim().isEmpty()
+                                        ? curriculum.getName() : "N/A";
                         %>
                             <tr>
                                 <td><%= index++ %></td>
                                 <td><span class="badge-code"><%= curriculum.getCurriculumCode() != null ? curriculum.getCurriculumCode() : "N/A" %></span></td>
+                                <td>
+                                    <span class="text-bold">
+                                        <c:out value="<%= curriculumDisplayName %>"/>
+                                    </span>
+                                </td>
                                 <td>
                                     <span class="badge-prereq-code" style="margin-right: 8px;"><%= curriculum.getMajor() != null ? curriculum.getMajor().getCode() : "N/A" %></span>
                                     <span class="text-bold"><%= curriculum.getMajor() != null ? curriculum.getMajor().getName() : "" %></span>
@@ -931,7 +940,9 @@
                                         </a>
                                         <form method="POST" action="${pageContext.request.contextPath}/curriculum"
                                               style="margin: 0; display: inline-flex;"
-                                              onsubmit="return confirm('Are you sure you want to delete this curriculum?')">
+                                              onsubmit="<%= isActiveCurric
+                                                      ? "showToast('This curriculum is active. Please set it to inactive before deleting.', false); return false;"
+                                                      : "return confirm('Are you sure you want to delete this curriculum?');" %>">
                                             <input type="hidden" name="action" value="delete">
                                             <input type="hidden" name="id" value="<%= curriculum.getCurriculumId() %>">
                                         <button type="submit" class="btn-action btn-action-delete" title="Delete Curriculum"
@@ -952,7 +963,7 @@
                         %>
                         <% if (curriculums.isEmpty()) { %>
                         <tr>
-                            <td colspan="8">
+                            <td colspan="9">
                                 <div class="empty-state">
                                     <div class="empty-state-icon">
                                         <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">

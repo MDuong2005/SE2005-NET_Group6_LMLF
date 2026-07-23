@@ -1,11 +1,13 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.*, model.*" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
     Curriculum curriculum = (Curriculum) request.getAttribute("curriculum");
     if (curriculum == null) {
         // Fallback for direct page access
         curriculum = new Curriculum();
         curriculum.setCurriculumId(1L);
+        curriculum.setName("Software Engineering Curriculum");
         Major m = new Major();
         m.setCode("SE");
         m.setName("Software Engineering");
@@ -409,7 +411,11 @@
                 <!-- Header Card -->
                 <div class="header-card">
                     <div class="header-left">
-                        <h1><%= curriculum.getCurriculumCode() != null ? curriculum.getCurriculumCode() : "N/A" %> - <%= majorName %> (Version <%= version %>)</h1>
+                        <h1>
+                            <c:out value="${curriculum.curriculumCode}"/> -
+                            <c:out value="${empty curriculum.name ? 'N/A' : curriculum.name}"/>
+                            (Version <c:out value="${curriculum.version}"/>)
+                        </h1>
                         <div class="header-meta">
                             <span><i class="fas fa-id-card"></i> ID: <%= id %></span>
                             <span><i class="fas fa-file-signature"></i> Decision: <%= decisionNo %></span>
@@ -417,6 +423,12 @@
                         </div>
                     </div>
                     <div class="header-right" style="display: flex; gap: 12px; align-items: center;">
+                        <button type="button" id="createVersionBtn" onclick="createNewVersion()"
+                                class="btn"
+                                style="padding: 6px 16px; border-radius: 20px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; border: none; background-color: #E0E7FF; color: #3730A3;">
+                            <i class="fas fa-code-branch"></i>
+                            Create New Version
+                        </button>
                         <button type="button" id="activeToggleBtn" onclick="toggleActive()" class="btn" style="padding: 6px 16px; border-radius: 20px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; border: none; transition: all 0.2s; <%= isActive ? "background-color: #FEE2E2; color: #991B1B;" : "background-color: #DCFCE7; color: #15803D;" %>">
                             <i class="fas <%= isActive ? "fa-times-circle" : "fa-check-circle" %>"></i>
                             <%= isActive ? "UnActive" : "Active" %>
@@ -442,6 +454,12 @@
                             <div class="info-field">
                                 <span class="info-label">Curriculum Code</span>
                                 <span class="info-value"><%= curriculum.getCurriculumCode() != null ? curriculum.getCurriculumCode() : "N/A" %></span>
+                            </div>
+                            <div class="info-field">
+                                <span class="info-label">Curriculum Name</span>
+                                <span class="info-value">
+                                    <c:out value="${empty curriculum.name ? 'N/A' : curriculum.name}"/>
+                                </span>
                             </div>
                             <div class="info-field">
                                 <span class="info-label">Version</span>
@@ -1106,6 +1124,10 @@
         }
 
         let currentIsActive = <%= isActive %>;
+
+        function createNewVersion() {
+            window.location.href = '${pageContext.request.contextPath}/curriculum?action=createVersion&id=<%= id %>';
+        }
         
         function toggleActive() {
             const nextStatus = !currentIsActive;
