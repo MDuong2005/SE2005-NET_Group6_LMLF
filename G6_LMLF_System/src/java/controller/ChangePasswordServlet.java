@@ -18,9 +18,16 @@ public class ChangePasswordServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
+
         if (!SessionUtil.isLoggedIn(request)) {
             response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        // Google accounts have no local password to change here.
+        User user = SessionUtil.getCurrentUser(request);
+        if (user != null && "GOOGLE".equalsIgnoreCase(user.getAuthProvider())) {
+            response.sendRedirect(request.getContextPath() + "/dashboard");
             return;
         }
 
@@ -36,13 +43,49 @@ public class ChangePasswordServlet extends HttpServlet {
             return;
         }
 
+        User user = SessionUtil.getCurrentUser(request);
+
+        // Google accounts have no local password to change here.
+        if (user != null && "GOOGLE".equalsIgnoreCase(user.getAuthProvider())) {
+            response.sendRedirect(request.getContextPath() + "/dashboard");
+            return;
+        }
+
         String newPassword = request.getParameter("newPassword");
         String confirmPassword = request.getParameter("confirmPassword");
+        String currentPassword = request.getParameter("currentPassword");
 
         if (newPassword == null || confirmPassword == null || newPassword.trim().isEmpty() || confirmPassword.trim().isEmpty()) {
             request.setAttribute("errorMessage", "Vui lòng nhập đầy đủ mật khẩu mới và xác nhận mật khẩu.");
             request.getRequestDispatcher("/views/auth/change_password.jsp").forward(request, response);
             return;
+        }
+
+        // Normalize before validating/hashing: otherwise a trailing space passes
+        // the checks but gets baked into the hash, so the user can never log in
+        // with what they think they typed. Trim once, use everywhere below.
+        newPassword = newPassword.trim();
+        confirmPassword = confirmPassword.trim();
+        if (currentPassword != null) {
+            currentPassword = currentPassword.trim();
+        }
+
+        // Voluntary change (user is NOT forced to change): require the current
+        // password so a hijacked open session cannot silently take over the
+        // account. Forced first-time changes (must_change_password = true) skip
+        // this because the user just authenticated with the temporary password.
+        if (user != null && !user.isMustChangePassword()) {
+            if (currentPassword == null || currentPassword.trim().isEmpty()) {
+                request.setAttribute("errorMessage", "Vui lòng nhập mật khẩu hiện tại.");
+                request.getRequestDispatcher("/views/auth/change_password.jsp").forward(request, response);
+                return;
+            }
+            if (user.getPasswordHash() == null
+                    || !PasswordUtil.checkPassword(currentPassword, user.getPasswordHash())) {
+                request.setAttribute("errorMessage", "Mật khẩu hiện tại không đúng.");
+                request.getRequestDispatcher("/views/auth/change_password.jsp").forward(request, response);
+                return;
+            }
         }
 
         if (!newPassword.equals(confirmPassword)) {
@@ -58,7 +101,17 @@ public class ChangePasswordServlet extends HttpServlet {
             return;
         }
 
-        User user = SessionUtil.getCurrentUser(request);
+        // New password must differ from the current one. Compared against the
+        // stored hash so it covers BOTH flows: voluntary change AND forced
+        // first-time change (where "current" is the temporary password issued by
+        // email — reusing it means the account was never really secured).
+        if (user != null && user.getPasswordHash() != null
+                && PasswordUtil.checkPassword(newPassword, user.getPasswordHash())) {
+            request.setAttribute("errorMessage", "Mật khẩu mới phải khác mật khẩu hiện tại.");
+            request.getRequestDispatcher("/views/auth/change_password.jsp").forward(request, response);
+            return;
+        }
+
         String hashedPassword = PasswordUtil.hashPassword(newPassword);
 
         UserDAO userDAO = new UserDAO();

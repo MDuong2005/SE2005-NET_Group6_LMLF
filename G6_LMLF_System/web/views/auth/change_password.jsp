@@ -1,6 +1,10 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%
     String error = (String) request.getAttribute("errorMessage");
+    model.User currentUser = utils.SessionUtil.getCurrentUser(request);
+    // Forced first-time change (must_change_password) skips the current-password
+    // field; a voluntary change requires it.
+    boolean forcedChange = currentUser != null && currentUser.isMustChangePassword();
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -38,8 +42,13 @@
 
                 <!-- Header Titles -->
                 <div class="title-block">
-                    <h2>Change Password Required</h2>
-                    <p>For your security, please set a new password before continuing.</p>
+                    <% if (forcedChange) { %>
+                        <h2>Change Password Required</h2>
+                        <p>For your security, please set a new password before continuing.</p>
+                    <% } else { %>
+                        <h2>Change Password</h2>
+                        <p>Enter your current password, then choose a new one.</p>
+                    <% } %>
                 </div>
 
                 <!-- Server Message alerts -->
@@ -53,7 +62,15 @@
                 <!-- Password Form -->
                 <div id="emailLoginForm" style="display: block;">
                     <form action="${pageContext.request.contextPath}/change-password" method="post">
-                        
+
+                        <!-- Current Password (voluntary change only) -->
+                        <% if (!forcedChange) { %>
+                        <div class="form-group">
+                            <label for="currentPassword" class="form-label">Current Password</label>
+                            <input type="password" id="currentPassword" name="currentPassword" required class="form-input password-input" />
+                        </div>
+                        <% } %>
+
                         <!-- New Password -->
                         <div class="form-group">
                             <label for="newPassword" class="form-label">New Password</label>
