@@ -84,8 +84,10 @@ public class LoginGoogleServlet extends HttpServlet {
                         return;
                     }
                     
-                    // Login successful, set session
+                    // Login successful, set session.
+                    // Rotate session id to prevent session fixation.
                     HttpSession session = request.getSession();
+                    request.changeSessionId();
                     session.setAttribute("user", user);
                     
                     // Update last login

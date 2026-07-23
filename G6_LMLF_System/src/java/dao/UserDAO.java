@@ -460,6 +460,54 @@ public class UserDAO extends DBContext {
         }
     }
 
+    /**
+     * Atomically replace a user's roles: delete all existing rows then insert
+     * the new single role, inside one transaction. Prevents the user from being
+     * left with NO role if the insert failed after the delete (which would lock
+     * them out with "no roles assigned" on next login).
+     * Returns true only if the whole swap committed.
+     */
+    public boolean replaceUserRoleTx(long userId, long roleId) {
+        if (connection == null) {
+            return false;
+        }
+        boolean previousAutoCommit = true;
+        try {
+            previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+
+            try (PreparedStatement del = connection.prepareStatement(
+                    "DELETE FROM user_roles WHERE user_id = ?")) {
+                del.setLong(1, userId);
+                del.executeUpdate();
+            }
+            try (PreparedStatement ins = connection.prepareStatement(
+                    "INSERT INTO user_roles (user_id, role_id, assigned_at) VALUES (?, ?, ?)")) {
+                ins.setLong(1, userId);
+                ins.setLong(2, roleId);
+                ins.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
+                ins.executeUpdate();
+            }
+
+            connection.commit();
+            return true;
+        } catch (SQLException e) {
+            try {
+                connection.rollback();
+            } catch (SQLException rb) {
+                System.err.println("UserDAO - replaceUserRoleTx rollback failed: " + rb.getMessage());
+            }
+            System.err.println("UserDAO - Error replaceUserRoleTx: " + e.getMessage());
+            return false;
+        } finally {
+            try {
+                connection.setAutoCommit(previousAutoCommit);
+            } catch (SQLException e) {
+                System.err.println("UserDAO - restore autocommit failed: " + e.getMessage());
+            }
+        }
+    }
+
     public boolean hasUserRole(long userId, long roleId) {
         String sql = "SELECT 1 FROM user_roles WHERE user_id = ? AND role_id = ?";
 

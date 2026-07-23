@@ -160,7 +160,10 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
+        // Prevent session fixation: rotate the session id at the moment of
+        // authentication so any id an attacker may have pre-set becomes invalid.
         HttpSession session = request.getSession(true);
+        request.changeSessionId();
 
         session.setAttribute(
                 "user",

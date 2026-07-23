@@ -45,6 +45,10 @@ public class ReviewServlet extends HttpServlet {
             HttpServletResponse response
     ) throws ServletException, IOException {
 
+        if (!requireReviewer(request, response)) {
+            return;
+        }
+
         String action = request.getParameter("action");
 
         if (action == null || action.trim().isEmpty()) {
@@ -68,6 +72,10 @@ public class ReviewServlet extends HttpServlet {
             HttpServletRequest request,
             HttpServletResponse response
     ) throws ServletException, IOException {
+
+        if (!requireReviewer(request, response)) {
+            return;
+        }
 
         String action = request.getParameter("action");
 
@@ -419,6 +427,31 @@ public class ReviewServlet extends HttpServlet {
                 || "01_ACADEMIC_INFO".equals(code)
                 || name.contains("ACADEMIC INFORMATION")
                 || name.contains("GENERAL INFORMATION");
+    }
+
+    /**
+     * Gate the review workspace: must be logged in AND actually be a reviewer
+     * (has at least one review assignment). A reviewer may be an internal
+     * lecturer or an external expert, so we authorize by assignment, not by a
+     * fixed role. Returns false (and writes the response) if access is denied.
+     */
+    private boolean requireReviewer(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws ServletException, IOException {
+
+        Long userId = getCurrentUserId(request);
+        if (userId == null) {
+            redirectToLogin(request, response);
+            return false;
+        }
+        if (!assignmentDAO.isReviewer(userId)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("text/html;charset=UTF-8");
+            response.getWriter().write("<h1>403 Forbidden</h1><p>You are not assigned as a reviewer.</p>");
+            return false;
+        }
+        return true;
     }
 
     private Long getCurrentUserId(HttpServletRequest request) {

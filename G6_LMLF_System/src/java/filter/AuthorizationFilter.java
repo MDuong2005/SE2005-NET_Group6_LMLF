@@ -49,6 +49,16 @@ public class AuthorizationFilter implements Filter {
             return;
         }
 
+        // 1b. Block DIRECT access to internal JSP views. These are only meant to
+        // be reached via server-side forward from a servlet (which does not pass
+        // through this filter), so any direct client request to /views/* is an
+        // attempt to bypass the controller's role checks. (/views/auth/* is
+        // whitelisted above for the login/forgot pages.)
+        if (path.startsWith("/views/")) {
+            sendAccessDenied(httpRequest, httpResponse);
+            return;
+        }
+
         // 2. Check Authentication
         if (!SessionUtil.isLoggedIn(httpRequest)) {
             // Not logged in, redirect to login page
@@ -158,7 +168,7 @@ public class AuthorizationFilter implements Filter {
      */
     private boolean isExternalExpertOnly(User user) {
         if (user == null || !user.isExternal()) return false;
-        String[] businessRoles = {"ADMIN", "ACADEMIC_OFFICE", "LECTURER", "STUDENT", "ALUMNI"};
+        String[] businessRoles = {"ADMIN", "ACADEMIC_OFFICE", "LECTURER", "STUDENT"};
         dao.RoleDAO roleDAO = new dao.RoleDAO();
         for (String role : businessRoles) {
             if (roleDAO.hasRole(user.getUserId(), role)) return false;
