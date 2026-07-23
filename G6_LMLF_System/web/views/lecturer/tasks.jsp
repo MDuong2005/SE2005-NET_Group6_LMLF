@@ -9,51 +9,47 @@
     </div>
 </div>
 
-<!-- 4 SUMMARY CARDS -->
+<!-- 4 SUMMARY CARDS (click to filter) -->
 <div class="stats-grid">
-    <div class="stat-card">
+    <div class="stat-card" style="cursor: pointer;" onclick="filterTasks('ALL')" title="Show all tasks">
         <p style="font-weight: 600; color: #7f8c8d; margin-bottom: 5px; font-size: 0.9rem; text-transform: uppercase;">Total Tasks</p>
         <div class="stat-value" style="margin-top: 0; font-size: 2rem; color: #f26f21;"><c:out value="${totalTasks}" default="0"/></div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" style="cursor: pointer;" onclick="filterTasks('PENDING')" title="Show pending tasks">
         <p style="font-weight: 600; color: #7f8c8d; margin-bottom: 5px; font-size: 0.9rem; text-transform: uppercase;">Pending</p>
         <div class="stat-value" style="margin-top: 0; font-size: 2rem; color: #f1c40f;"><c:out value="${pendingCount}" default="0"/></div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" style="cursor: pointer;" onclick="filterTasks('INPROGRESS')" title="Show in-progress tasks">
         <p style="font-weight: 600; color: #7f8c8d; margin-bottom: 5px; font-size: 0.9rem; text-transform: uppercase;">In Progress</p>
         <div class="stat-value" style="margin-top: 0; font-size: 2rem; color: #3498db;"><c:out value="${inProgressCount}" default="0"/></div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" style="cursor: pointer;" onclick="filterTasks('COMPLETED')" title="Show completed tasks">
         <p style="font-weight: 600; color: #7f8c8d; margin-bottom: 5px; font-size: 0.9rem; text-transform: uppercase;">Completed</p>
         <div class="stat-value" style="margin-top: 0; font-size: 2rem; color: #2ecc71;"><c:out value="${completedCount}" default="0"/></div>
+    </div>
+    <div class="stat-card" style="cursor: pointer;" onclick="filterTasks('CLOSED')" title="Show rejected or cancelled tasks">
+        <p style="font-weight: 600; color: #7f8c8d; margin-bottom: 5px; font-size: 0.9rem; text-transform: uppercase;">Closed</p>
+        <div class="stat-value" style="margin-top: 0; font-size: 2rem; color: #ef4444;"><c:out value="${closedCount}" default="0"/></div>
     </div>
 </div>
 
 <!-- FILTERS & TASK LIST PANEL -->
 <div class="panel">
-    <div class="panel-header" style="display: flex; gap: 1rem; flex-wrap: wrap;">
-        <h3 class="panel-title" style="min-width: 150px;">Task List</h3>
-        <div style="display: flex; gap: 10px; flex: 1; justify-content: flex-end;">
-            <input type="text" placeholder="Search Task..." style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none;">
-            <select style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none;">
-                <option value="">All Roles</option>
-                <option value="Reviewer">Reviewer</option>
-                <option value="Designer">Designer</option>
-            </select>
-            <select style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none;">
-                <option value="">All Statuses</option>
-                <option value="Pending">Pending</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Completed">Completed</option>
-            </select>
-            <select style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none;">
-                <option value="">All Courses</option>
-            </select>
-            <select style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none;">
-                <option value="">All Semesters</option>
-            </select>
+    <div class="panel-header" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+        <h3 class="panel-title" style="min-width: 150px;">Task List <span id="taskShownCount" style="color:#94a3b8; font-weight:500;"></span></h3>
+        <div style="display: flex; gap: 8px; flex: 1; justify-content: flex-end; flex-wrap: wrap;">
+            <button type="button" class="task-filter-btn active" data-filter="ALL"        onclick="filterTasks('ALL', this)">All</button>
+            <button type="button" class="task-filter-btn"        data-filter="PENDING"    onclick="filterTasks('PENDING', this)">Pending</button>
+            <button type="button" class="task-filter-btn"        data-filter="INPROGRESS" onclick="filterTasks('INPROGRESS', this)">In Progress</button>
+            <button type="button" class="task-filter-btn"        data-filter="COMPLETED"  onclick="filterTasks('COMPLETED', this)">Completed</button>
+            <button type="button" class="task-filter-btn"        data-filter="CLOSED"     onclick="filterTasks('CLOSED', this)">Closed</button>
         </div>
     </div>
+    <style>
+        .task-filter-btn { padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; color: #475569; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all .15s; }
+        .task-filter-btn:hover { border-color: #f26f21; color: #f26f21; }
+        .task-filter-btn.active { background: #f26f21; color: #fff; border-color: #f26f21; }
+    </style>
     <div class="panel-body">
         <c:choose>
             <c:when test="${not empty requestScope.tasks}">
@@ -74,23 +70,25 @@
                     <tbody>
                         <c:forEach var="task" items="${requestScope.tasks}" varStatus="loop">
                             
-                            <c:set var="roleName" value="" />
-                            <c:set var="workspaceUrl" value="#" />
-                            <c:if test="${task.designerId == sessionScope.user.userId}">
-                                <c:set var="roleName" value="Designer" />
-                                <c:set var="workspaceUrl" value="${pageContext.request.contextPath}/designer/tasks" />
-                            </c:if>
-                            <c:if test="${task.reviewerId == sessionScope.user.userId}">
-                                <c:set var="roleName" value="Reviewer" />
-                                <c:set var="workspaceUrl" value="${pageContext.request.contextPath}/review?action=pending" />
-                            </c:if>
+                            <c:set var="roleName" value="${task.taskRole == 'DESIGNER' ? 'Designer' : 'Reviewer'}" />
+                            <c:choose>
+                                <c:when test="${task.taskRole == 'DESIGNER'}">
+                                    <c:set var="workspaceUrl" value="${pageContext.request.contextPath}/designer/tasks" />
+                                </c:when>
+                                <c:otherwise>
+                                    <c:set var="workspaceUrl" value="${pageContext.request.contextPath}/review?action=pending" />
+                                </c:otherwise>
+                            </c:choose>
                             
                             <%-- Priority Mocked for now since DB lacks priority column --%>
                             <c:set var="priority" value="Normal" />
                             <c:set var="priorityColor" value="#3498db" />
                             <c:set var="taskName" value="${roleName == 'Designer' ? 'Design Syllabus' : 'Review Syllabus'}" />
-                            
-                            <tr style="border-bottom: 1px solid #f1f5f9; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
+
+                            <c:set var="filterKey" value="${task.taskStatusGroup}" />
+                            <c:set var="statusLabel" value="${task.taskStatusLabel}" />
+
+                            <tr class="task-row" data-status="${filterKey}" style="border-bottom: 1px solid #f1f5f9; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
                                 <td style="padding: 1rem; font-weight: 600; color: #1e293b;">
                                     <c:out value="${taskName}" /> for <c:out value="${task.courseCode}" />
                                 </td>
@@ -113,24 +111,26 @@
                                     <span style="color: ${priorityColor}; font-weight: 600; font-size: 0.875rem;"><c:out value="${priority}" /></span>
                                 </td>
                                 <td style="padding: 1rem;">
-                                    <c:set var="status" value="${task.assignmentStatus}" />
                                     <c:set var="statusBg" value="#f1f5f9" />
                                     <c:set var="statusColor" value="#475569" />
                                     
-                                    <c:if test="${status == 'PENDING'}"> <c:set var="statusBg" value="#fef08a" /><c:set var="statusColor" value="#854d0e" /> </c:if>
-                                    <c:if test="${status == 'ACTIVE' || status == 'IN_PROGRESS'}"> <c:set var="statusBg" value="#bfdbfe" /><c:set var="statusColor" value="#1e40af" /> </c:if>
-                                    <c:if test="${status == 'COMPLETED'}"> <c:set var="statusBg" value="#bbf7d0" /><c:set var="statusColor" value="#166534" /> </c:if>
+                                    <c:if test="${filterKey == 'PENDING'}"> <c:set var="statusBg" value="#fef08a" /><c:set var="statusColor" value="#854d0e" /> </c:if>
+                                    <c:if test="${filterKey == 'INPROGRESS'}"> <c:set var="statusBg" value="#bfdbfe" /><c:set var="statusColor" value="#1e40af" /> </c:if>
+                                    <c:if test="${filterKey == 'COMPLETED'}"> <c:set var="statusBg" value="#bbf7d0" /><c:set var="statusColor" value="#166534" /> </c:if>
+                                    <c:if test="${filterKey == 'CLOSED'}"> <c:set var="statusBg" value="#fee2e2" /><c:set var="statusColor" value="#991b1b" /> </c:if>
                                     
                                     <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background-color: ${statusBg}; color: ${statusColor};">
-                                        <c:out value="${status}" />
+                                        <c:out value="${statusLabel}" />
                                     </span>
                                 </td>
-                                <td style="padding: 1rem; color: #64748b;">1.0</td>
+                                <td style="padding: 1rem; color: #64748b;">
+                                    <c:out value="${task.versionNumber}" default="-" />
+                                </td>
                                 <td style="padding: 1rem; text-align: right;">
                                     <%-- Pass real DB fields to JS modal --%>
                                     <c:set var="jsDueDate"><fmt:formatDate value="${task.dueDate}" pattern="dd-MMM-yyyy"/></c:set>
                                     <c:set var="jsAssignedAt"><fmt:formatDate value="${task.assignedAt}" pattern="dd-MMM-yyyy HH:mm"/></c:set>
-                                    <button class="action-button" onclick="openTaskModal('${taskName} for ${task.courseCode}', '${task.courseCode}', '${task.courseName}', '${roleName}', '${workspaceUrl}', '${status}', '${task.assignedByName}', '${jsDueDate}', '${jsAssignedAt}')" style="padding: 6px 12px; font-size: 0.75rem; margin-right: 5px;">
+                                    <button class="action-button" onclick="openTaskModal('${taskName} for ${task.courseCode}', '${task.courseCode}', '${task.courseName}', '${roleName}', '${workspaceUrl}', '${statusLabel}', '${task.assignedByName}', '${jsDueDate}', '${jsAssignedAt}')" style="padding: 6px 12px; font-size: 0.75rem; margin-right: 5px;">
                                         Details
                                     </button>
                                     <a href="${workspaceUrl}" class="action-button" style="background-color: #f26f21; color: white; padding: 6px 12px; font-size: 0.75rem; border: none; text-decoration: none;">
@@ -141,6 +141,9 @@
                         </c:forEach>
                     </tbody>
                 </table>
+                <div id="taskFilterEmpty" style="display: none; text-align: center; padding: 2.5rem 2rem; color: #94a3b8;">
+                    Không có task nào ở trạng thái này.
+                </div>
             </c:when>
             <c:otherwise>
                 <div style="text-align: center; padding: 4rem 2rem;">
@@ -240,5 +243,34 @@
     // Đóng modal khi click ra ngoài
     document.getElementById('taskModalOverlay').addEventListener('click', function(e) {
         if(e.target === this) closeTaskModal();
+    });
+
+    // ===== Filter task list by status (client-side, không đổi dữ liệu) =====
+    function filterTasks(status, btn) {
+        var rows = document.querySelectorAll('.task-row');
+        var shown = 0;
+        rows.forEach(function (row) {
+            var match = (status === 'ALL') || (row.getAttribute('data-status') === status);
+            row.style.display = match ? '' : 'none';
+            if (match) shown++;
+        });
+
+        // Đồng bộ trạng thái active của các nút filter
+        document.querySelectorAll('.task-filter-btn').forEach(function (b) {
+            b.classList.toggle('active', b.getAttribute('data-filter') === status);
+        });
+
+        // Cập nhật số task đang hiển thị
+        var counter = document.getElementById('taskShownCount');
+        if (counter) counter.textContent = '(' + shown + ')';
+
+        // Hiện/ẩn dòng "không có task khớp bộ lọc"
+        var emptyRow = document.getElementById('taskFilterEmpty');
+        if (emptyRow) emptyRow.style.display = (shown === 0) ? '' : 'none';
+    }
+
+    // Khởi tạo: hiển thị tất cả + đếm số
+    document.addEventListener('DOMContentLoaded', function () {
+        filterTasks('ALL');
     });
 </script>

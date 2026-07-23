@@ -10,10 +10,27 @@
 
 <div class="panel">
     <div class="panel-header" style="display: flex; gap: 1rem; flex-wrap: wrap;">
-        <h3 class="panel-title" style="min-width: 150px;">Syllabus List</h3>
-        <div style="display: flex; gap: 10px; flex: 1; justify-content: flex-end;">
-            <input type="text" placeholder="Search Syllabus..." style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none; width: 250px;">
-        </div>
+        <h3 class="panel-title" style="min-width: 150px;">
+            Syllabus List
+            <span style="color: #94a3b8; font-size: 0.8rem; font-weight: 500;">
+                (<c:out value="${totalRecords}" default="0"/>)
+            </span>
+        </h3>
+        <form method="GET"
+              action="${pageContext.request.contextPath}/lecturer/syllabus"
+              style="display: flex; gap: 10px; flex: 1; justify-content: flex-end; flex-wrap: wrap;">
+            <input type="text"
+                   name="search"
+                   value="<c:out value="${search}"/>"
+                   placeholder="Search by subject code or name..."
+                   style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none; width: 280px;">
+            <button type="submit" class="action-button" style="padding: 8px 16px;">Search</button>
+            <c:if test="${not empty search}">
+                <a href="${pageContext.request.contextPath}/lecturer/syllabus"
+                   class="action-button"
+                   style="padding: 8px 16px; text-decoration: none;">Reset</a>
+            </c:if>
+        </form>
     </div>
     <div class="panel-body">
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
@@ -51,5 +68,37 @@
                 </c:choose>
             </tbody>
         </table>
+
+        <c:if test="${totalPages > 1}">
+            <div style="display: flex; justify-content: center; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 1.5rem;">
+                <c:if test="${currentPage > 1}">
+                    <c:url var="previousPageUrl" value="/lecturer/syllabus">
+                        <c:param name="search" value="${search}"/>
+                        <c:param name="page" value="${currentPage - 1}"/>
+                    </c:url>
+                    <a href="${previousPageUrl}" class="action-button" style="padding: 6px 12px; text-decoration: none;">Previous</a>
+                </c:if>
+
+                <c:forEach var="pageNumber" begin="1" end="${totalPages}">
+                    <c:url var="pageUrl" value="/lecturer/syllabus">
+                        <c:param name="search" value="${search}"/>
+                        <c:param name="page" value="${pageNumber}"/>
+                    </c:url>
+                    <a href="${pageUrl}"
+                       class="action-button"
+                       style="padding: 6px 11px; text-decoration: none; ${pageNumber == currentPage ? 'background-color: #f26f21; color: white; border-color: #f26f21;' : ''}">
+                        <c:out value="${pageNumber}"/>
+                    </a>
+                </c:forEach>
+
+                <c:if test="${currentPage < totalPages}">
+                    <c:url var="nextPageUrl" value="/lecturer/syllabus">
+                        <c:param name="search" value="${search}"/>
+                        <c:param name="page" value="${currentPage + 1}"/>
+                    </c:url>
+                    <a href="${nextPageUrl}" class="action-button" style="padding: 6px 12px; text-decoration: none;">Next</a>
+                </c:if>
+            </div>
+        </c:if>
     </div>
 </div>

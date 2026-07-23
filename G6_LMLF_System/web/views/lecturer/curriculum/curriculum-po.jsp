@@ -26,12 +26,6 @@
             <h1>FPT University Learning Materials</h1>
         </div>
         <div class="curr-header-right">
-            <div class="lang-selector">
-                <select>
-                    <option value="en">English</option>
-                    <option value="vi">Tiếng Việt</option>
-                </select>
-            </div>
             <div class="user-avatar">AD</div>
         </div>
     </header>

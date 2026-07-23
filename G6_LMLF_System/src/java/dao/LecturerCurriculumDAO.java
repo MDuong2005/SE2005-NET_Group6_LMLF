@@ -12,10 +12,14 @@ import context.DBContext;
 public class LecturerCurriculumDAO extends DBContext {
 
     public List<Map<String, Object>> getActiveCurriculums() {
-        return getActiveCurriculums("", 1, 1000); // Default fallback
+        return getActiveCurriculums("", 0L, 1, 1000); // Default fallback
     }
 
     public int getTotalActiveCurriculums(String search) {
+        return getTotalActiveCurriculums(search, 0L);
+    }
+
+    public int getTotalActiveCurriculums(String search, long majorId) {
         String sql = """
             SELECT COUNT(*)
             FROM curriculums c
@@ -26,12 +30,20 @@ public class LecturerCurriculumDAO extends DBContext {
         if (search != null && !search.trim().isEmpty()) {
             sql += " AND (c.name LIKE ? OR c.curriculum_code LIKE ?) ";
         }
+
+        if (majorId > 0) {
+            sql += " AND c.major_id = ? ";
+        }
         
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            int paramIndex = 1;
             if (search != null && !search.trim().isEmpty()) {
                 String likeSearch = "%" + search.trim() + "%";
-                ps.setString(1, likeSearch);
-                ps.setString(2, likeSearch);
+                ps.setString(paramIndex++, likeSearch);
+                ps.setString(paramIndex++, likeSearch);
+            }
+            if (majorId > 0) {
+                ps.setLong(paramIndex, majorId);
             }
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
@@ -43,6 +55,14 @@ public class LecturerCurriculumDAO extends DBContext {
     }
 
     public List<Map<String, Object>> getActiveCurriculums(String search, int page, int pageSize) {
+        return getActiveCurriculums(search, 0L, page, pageSize);
+    }
+
+    public List<Map<String, Object>> getActiveCurriculums(
+            String search,
+            long majorId,
+            int page,
+            int pageSize) {
         List<Map<String, Object>> list = new ArrayList<>();
         String sql = """
             SELECT 
@@ -66,6 +86,10 @@ public class LecturerCurriculumDAO extends DBContext {
         if (search != null && !search.trim().isEmpty()) {
             sql += " AND (c.name LIKE ? OR c.curriculum_code LIKE ?) ";
         }
+
+        if (majorId > 0) {
+            sql += " AND c.major_id = ? ";
+        }
         
         sql += " ORDER BY c.created_at DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY ";
 
@@ -75,6 +99,9 @@ public class LecturerCurriculumDAO extends DBContext {
                 String likeSearch = "%" + search.trim() + "%";
                 ps.setString(paramIndex++, likeSearch);
                 ps.setString(paramIndex++, likeSearch);
+            }
+            if (majorId > 0) {
+                ps.setLong(paramIndex++, majorId);
             }
             ps.setInt(paramIndex++, (page - 1) * pageSize);
             ps.setInt(paramIndex++, pageSize);
@@ -97,6 +124,36 @@ public class LecturerCurriculumDAO extends DBContext {
                 map.put("issuedDate", rs.getTimestamp("issued_date"));
                 list.add(map);
             }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public List<Map<String, Object>> getActiveCurriculumMajors() {
+        List<Map<String, Object>> list = new ArrayList<>();
+        String sql = """
+            SELECT DISTINCT
+                m.major_id,
+                m.code,
+                m.name
+            FROM majors m
+            JOIN curriculums c ON c.major_id = m.major_id
+            WHERE m.deleted_at IS NULL
+              AND c.deleted_at IS NULL
+              AND c.is_active = 1
+            ORDER BY m.code ASC
+        """;
+
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("majorId", rs.getLong("major_id"));
+                map.put("majorCode", rs.getString("code"));
+                map.put("majorName", rs.getString("name"));
+                list.add(map);
             }
         } catch (SQLException e) {
             e.printStackTrace();

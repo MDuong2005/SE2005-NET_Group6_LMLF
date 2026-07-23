@@ -1,7 +1,7 @@
 package controller;
 
 import dao.LecturerSyllabusDAO;
-import dao.AcademicSyllabusDAO;
+import dao.LecturerSyllabusDetailDAO;
 import model.SyllabusEditorData;
 import utils.SessionUtil;
 
@@ -19,12 +19,12 @@ import java.util.Map;
 public class LecturerSyllabusServlet extends HttpServlet {
 
     private LecturerSyllabusDAO syllabusDAO;
-    private AcademicSyllabusDAO academicSyllabusDAO;
+    private LecturerSyllabusDetailDAO syllabusDetailDAO;
 
     @Override
     public void init() throws ServletException {
         syllabusDAO = new LecturerSyllabusDAO();
-        academicSyllabusDAO = new AcademicSyllabusDAO();
+        syllabusDetailDAO = new LecturerSyllabusDetailDAO();
     }
 
     @Override
@@ -67,7 +67,11 @@ public class LecturerSyllabusServlet extends HttpServlet {
             throws ServletException, IOException {
             
         String search = request.getParameter("search");
-        if (search == null) search = "";
+        if (search == null) {
+            search = "";
+        } else {
+            search = search.trim();
+        }
         
         int page = 1;
         int pageSize = 10;
@@ -91,6 +95,7 @@ public class LecturerSyllabusServlet extends HttpServlet {
         request.setAttribute("syllabuses", syllabuses);
         request.setAttribute("currentPage", page);
         request.setAttribute("totalPages", totalPages);
+        request.setAttribute("totalRecords", totalRecords);
         request.setAttribute("search", search);
         
         // Use the user's custom layout
@@ -122,7 +127,10 @@ public class LecturerSyllabusServlet extends HttpServlet {
                 List<Map<String, Object>> studentTasks = syllabusDAO.getSyllabusStudentTasks(versionId);
                 request.setAttribute("studentTasks", studentTasks);
                 try {
-                    SyllabusEditorData syllabusData = academicSyllabusDAO.getCompleteSyllabusData(versionId);
+                    SyllabusEditorData syllabusData
+                            = syllabusDetailDAO.getCompleteSyllabusData(
+                                    versionId
+                            );
                     request.setAttribute("syllabusData", syllabusData);
                 } catch (SQLException e) {
                     throw new ServletException("Unable to load complete syllabus details.", e);
@@ -154,7 +162,9 @@ public class LecturerSyllabusServlet extends HttpServlet {
             request.setAttribute("syllabus", syllabus);
 
             // Forward directly to the standalone custom detail page
-            request.getRequestDispatcher("/views/academic/syllabus-detail.jsp").forward(request, response);
+            request.getRequestDispatcher(
+                    "/views/lecturer/syllabus/syllabus-detail.jsp"
+            ).forward(request, response);
 
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/lecturer/syllabus?error=InvalidID");
@@ -188,7 +198,10 @@ public class LecturerSyllabusServlet extends HttpServlet {
             if (syllabus.get("versionId") != null) {
                 long versionId = (Long) syllabus.get("versionId");
                 try {
-                    SyllabusEditorData syllabusData = academicSyllabusDAO.getCompleteSyllabusData(versionId);
+                    SyllabusEditorData syllabusData
+                            = syllabusDetailDAO.getCompleteSyllabusData(
+                                    versionId
+                            );
                     request.setAttribute("syllabusData", syllabusData);
                 } catch (SQLException e) {
                     throw new ServletException("Unable to load CLO-PLO mapping details.", e);

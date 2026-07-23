@@ -15,7 +15,6 @@ public class RoleConstants {
     public static final String DESIGNER = "DESIGNER";
     public static final String REVIEWER = "REVIEWER";
     public static final String STUDENT = "STUDENT";
-    public static final String ALUMNI = "ALUMNI";
 
     private RoleConstants() {
     }

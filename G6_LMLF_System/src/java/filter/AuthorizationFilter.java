@@ -22,11 +22,11 @@ public class AuthorizationFilter implements Filter {
 
     // Paths that don't require any authentication
     private static final String[] WHITELIST_PREFIXES = {
-        "/css/", "/js/", "/images/", "/assets/", "/views/auth/"
+        "/css/", "/js/", "/images/", "/assets/", "/views/auth/", "/guest/"
     };
 
     private static final String[] WHITELIST_EXACT = {
-        "/", "/login", "/Logingoogle", "/logout", "/forgot-password"
+        "/", "/login", "/Logingoogle", "/logout", "/forgot-password", "/guest"
     };
 
     @Override
@@ -46,16 +46,6 @@ public class AuthorizationFilter implements Filter {
         // 1. Check Whitelist
         if (isWhitelisted(path)) {
             chain.doFilter(request, response);
-            return;
-        }
-
-        // 1b. Block DIRECT access to internal JSP views. These are only meant to
-        // be reached via server-side forward from a servlet (which does not pass
-        // through this filter), so any direct client request to /views/* is an
-        // attempt to bypass the controller's role checks. (/views/auth/* is
-        // whitelisted above for the login/forgot pages.)
-        if (path.startsWith("/views/")) {
-            sendAccessDenied(httpRequest, httpResponse);
             return;
         }
 
@@ -102,6 +92,8 @@ public class AuthorizationFilter implements Filter {
         }
 
         // Lecturer module: only lecturers may reach /lecturer/* routes.
+        // (Several lecturer servlets only check "logged in", so the role gate
+        // must live here, otherwise a Student could open Lecturer Materials.)
         if (path.startsWith("/lecturer/")
                 && !hasAnyRole(user, RoleConstants.LECTURER)) {
             sendAccessDenied(httpRequest, httpResponse);

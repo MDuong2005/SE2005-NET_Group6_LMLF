@@ -26,12 +26,6 @@
             <h1>FPT University Learning Materials</h1>
         </div>
         <div class="curr-header-right">
-            <div class="lang-selector">
-                <select>
-                    <option value="en">EN</option>
-                    <option value="vi">VI</option>
-                </select>
-            </div>
             <div class="user-avatar">AD</div>
         </div>
     </header>
@@ -84,9 +78,16 @@
                                     <td class="matrix-block-row" colspan="${ploList.size() + 1}">${blockEntry.key}</td>
                                 </tr>
                                 <c:forEach var="subject" items="${blockEntry.value}">
+                                    <c:url var="subjectSyllabusUrl" value="/lecturer/syllabus">
+                                        <c:param name="search" value="${subject.code}"/>
+                                    </c:url>
                                     <tr>
                                         <td class="matrix-subject-cell">
-                                            <a href="#" class="subject-link">${subject.code}</a>
+                                            <a href="${subjectSyllabusUrl}"
+                                               class="subject-link"
+                                               title="View published syllabus">
+                                                <c:out value="${subject.code}"/>
+                                            </a>
                                         </td>
                                         <c:forEach var="plo" items="${ploList}">
                                             <td class="matrix-check-cell">

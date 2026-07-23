@@ -19,7 +19,7 @@ import utils.SessionUtil;
 public class WaitingRoomServlet extends HttpServlet {
 
     private static final String[] BUSINESS_ROLES = {
-        "ADMIN", "ACADEMIC_OFFICE", "LECTURER", "STUDENT", "ALUMNI"
+        "ADMIN", "ACADEMIC_OFFICE", "LECTURER", "STUDENT"
     };
 
     @Override

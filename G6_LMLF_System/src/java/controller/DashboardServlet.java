@@ -49,12 +49,30 @@ public class DashboardServlet extends HttpServlet {
         } else if (user.hasRole("STUDENT")) {
             contentPage = "student/dashboard.jsp";
             cssFile = "student/student.css";
-        } else if (user.hasRole("ALUMNI")) {
-            contentPage = "alumni/dashboard.jsp";
-            cssFile = "alumni/alumni.css";
         } else if (user.hasRole("LECTURER")) {
             contentPage = "lecturer/dashboard.jsp";
             cssFile = "lecturer/lecturer.css";
+
+            dao.LecturerMaterialDAO materialDAO
+                    = new dao.LecturerMaterialDAO();
+            dao.NotificationDAO notificationDAO
+                    = new dao.NotificationDAO();
+
+            request.setAttribute(
+                    "recentMaterials",
+                    materialDAO.getRecentMaterials(user.getUserId(), 5)
+            );
+            request.setAttribute(
+                    "recentNotifications",
+                    notificationDAO.getRecentNotifications(
+                            user.getUserId(),
+                            5
+                    )
+            );
+            request.setAttribute(
+                    "unreadNotificationCount",
+                    notificationDAO.countUnread(user.getUserId())
+            );
         } else if (user.hasRole("ACADEMIC_OFFICE")) {
             contentPage = "academic/dashboard.jsp";
             cssFile = "academic/academic.css";
