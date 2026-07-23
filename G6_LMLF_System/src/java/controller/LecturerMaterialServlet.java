@@ -164,14 +164,17 @@ public class LecturerMaterialServlet extends HttpServlet {
             return;
         }
         
-        boolean success = dao.shareMaterial(materialId, shareEmail);
+        // Ownership is enforced inside the DAO: the share only succeeds when the
+        // material belongs to the current lecturer, so another lecturer's
+        // materialId cannot be shared by tampering with the request.
+        boolean success = dao.shareMaterial(materialId, shareEmail, user.getUserId());
         if (success) {
             String materialTitle = request.getParameter("materialTitle");
             String materialType = request.getParameter("materialType");
             EmailUtil.sendMaterialShareNotification(shareEmail, user.getEmail(), materialTitle, materialType);
             request.getSession().setAttribute("successMsg", "Material shared successfully with " + shareEmail);
         } else {
-            request.getSession().setAttribute("errorMsg", "Failed to share material or it was already shared.");
+            request.getSession().setAttribute("errorMsg", "Cannot share this material. It may not belong to you or it was already shared.");
         }
     }
     

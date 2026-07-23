@@ -123,12 +123,25 @@ public class LecturerMaterialDAO extends DBContext {
         return list;
     }
 
-    public boolean shareMaterial(long materialId, String email) {
-        String sql = "INSERT INTO shared_materials (material_id, shared_with_email) VALUES (?, ?)";
+    /**
+     * Share a material with another lecturer.
+     *
+     * Ownership is enforced in the same statement: the row is only inserted when
+     * the material actually belongs to {@code ownerId}. This closes the IDOR where
+     * a lecturer could share another lecturer's material by changing materialId.
+     * Returns false if the material is not owned by the caller (nothing inserted).
+     */
+    public boolean shareMaterial(long materialId, String email, long ownerId) {
+        String sql = "INSERT INTO shared_materials (material_id, shared_with_email) "
+                   + "SELECT ?, ? WHERE EXISTS ("
+                   + "  SELECT 1 FROM lecturer_materials "
+                   + "  WHERE lecturer_material_id = ? AND lecturer_id = ?)";
         if (connection != null) {
             try (PreparedStatement ps = connection.prepareStatement(sql)) {
                 ps.setLong(1, materialId);
                 ps.setString(2, email);
+                ps.setLong(3, materialId);
+                ps.setLong(4, ownerId);
                 int rows = ps.executeUpdate();
                 return rows > 0;
             } catch (SQLException e) {
