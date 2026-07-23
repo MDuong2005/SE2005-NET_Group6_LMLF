@@ -1,6 +1,7 @@
 package dao;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import context.DBContext;
 import model.SyllabusEditorData;
 
@@ -9,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -400,7 +402,9 @@ private void remapCopiedCloPloMappings(
         }
 
         loadGeneral(versionId, data);
+        loadCourseObjectives(versionId, data);
         loadClos(versionId, data);
+        loadCloCoMappings(versionId, data);
         loadTasks(versionId, data);
         loadResources(versionId, data);
 loadSchedule(versionId, data);
@@ -1091,6 +1095,8 @@ throw new SQLException("Duplicate CLO code: " + code);
             clo.setCode(code);
         }
 
+        validateCourseObjectivesAndMappings(data, codes);
+
         double totalWeight = 0.0d;
 
         for (SyllabusEditorData.AssessmentItem item
@@ -1418,34 +1424,46 @@ if (outcomeId == null) {
                 "1"
             },
             {
+                "COURSE_OBJECTIVES",
+                "Course Objectives (CO)",
+                gson.toJson(data.getCourseObjectives()),
+                "2"
+            },
+            {
                 "COURSE_LEARNING_OUTCOMES",
                 "Course Learning Outcomes",
                 gson.toJson(data.getClos()),
-                "2"
+                "3"
+            },
+            {
+                "CLO_CO_MAPPING",
+                "Mapping CLOs to Course Objectives",
+                gson.toJson(data.getCloCoMappings()),
+                "4"
             },
             {
                 "STUDENT_TASKS",
                 "Student Tasks",
                 gson.toJson(data.getStudentTasks()),
-                "3"
+                "5"
             },
             {
                 "LEARNING_MATERIALS",
                 "Learning Materials",
                 gson.toJson(data.getLearningResources()),
-                "4"
+                "6"
             },
             {
                 "COURSE_SCHEDULE",
                 "Course Schedule",
                 gson.toJson(data.getScheduleItems()),
-                "5"
+                "7"
             },
             {
                 "COURSE_ASSESSMENT",
                 "Course Assessment",
                 gson.toJson(data.getAssessments()),
-                "6"
+                "8"
             },
             {
                 "CLO_PLO_MAPPING",
@@ -1453,7 +1471,7 @@ if (outcomeId == null) {
                 gson.toJson(
                         buildReviewerCloPloSnapshot(versionId)
                 ),
-                "7"
+                "9"
             }
         };
 
@@ -1763,6 +1781,67 @@ if (outcomeId == null) {
         } catch (RuntimeException exception) {
             throw new SQLException(
                     "Stored Academic Information JSON is invalid.",
+                    exception
+            );
+        }
+    }
+
+private void loadCourseObjectives(
+            long versionId,
+            SyllabusEditorData data
+    ) throws SQLException {
+
+        List<SyllabusEditorData.CoItem> items = new ArrayList<>();
+        String json = loadSectionJson(versionId, "COURSE_OBJECTIVES");
+
+        if (!blank(json)) {
+            try {
+                SyllabusEditorData.CoItem[] values = gson.fromJson(
+                        json,
+                        SyllabusEditorData.CoItem[].class
+                );
+
+                if (values != null) {
+                    Collections.addAll(items, values);
+                }
+            } catch (RuntimeException exception) {
+                throw new SQLException(
+                        "Stored Course Objectives JSON is invalid.",
+                        exception
+                );
+            }
+        }
+
+        data.setCourseObjectives(items);
+    }
+
+    private void loadCloCoMappings(
+            long versionId,
+            SyllabusEditorData data
+    ) throws SQLException {
+
+        String json = loadSectionJson(versionId, "CLO_CO_MAPPING");
+
+        if (blank(json)) {
+            data.setCloCoMappings(new LinkedHashMap<>());
+            return;
+        }
+
+        try {
+            Type mappingType = new TypeToken<
+                    Map<String, List<String>>
+                    >() {
+            }.getType();
+
+            Map<String, List<String>> mappings = gson.fromJson(
+                    json,
+                    mappingType
+            );
+
+            data.setCloCoMappings(mappings);
+        } catch (RuntimeException exception) {
+            throw new SQLException(
+                    "Stored CLO-CO Mapping JSON is invalid.",
                     exception
             );
         }
@@ -2402,22 +2481,117 @@ private void loadMappings(
         return values;
     }
 
+private void validateCourseObjectivesAndMappings(
+            SyllabusEditorData data,
+            Set<String> cloCodes
+    ) throws SQLException {
+
+        if (data.getCourseObjectives() == null
+                || data.getCourseObjectives().isEmpty()) {
+            throw new SQLException(
+                    "At least one Course Objective (CO) is required."
+            );
+        }
+
+        Set<String> coCodes = new LinkedHashSet<>();
+
+        for (SyllabusEditorData.CoItem co
+                : safe(data.getCourseObjectives())) {
+
+            if (co == null) {
+                continue;
+            }
+
+            String code = normalizeCo(co.getCode());
+
+            if (code == null || blank(co.getDescription())) {
+                throw new SQLException(
+                        "Every CO requires a valid code and description."
+                );
+            }
+
+            if (!coCodes.add(code)) {
+                throw new SQLException("Duplicate CO code: " + code);
+            }
+
+            co.setCode(code);
+        }
+
+        Map<String, List<String>> normalizedMappings
+                = new LinkedHashMap<>();
+        Set<String> coveredCoCodes = new LinkedHashSet<>();
+
+        for (String cloCode : cloCodes) {
+            List<String> rawTargets = data.getCloCoMappings() == null
+                    ? null
+                    : data.getCloCoMappings().get(cloCode);
+
+            Set<String> targets = new LinkedHashSet<>();
+
+            for (String rawTarget : safe(rawTargets)) {
+                String coCode = normalizeCo(rawTarget);
+
+                if (coCode == null || !coCodes.contains(coCode)) {
+                    throw new SQLException(
+                            "CLO-CO mapping contains an unknown CO for "
+                            + cloCode + ": " + rawTarget
+                    );
+                }
+
+                targets.add(coCode);
+                coveredCoCodes.add(coCode);
+            }
+
+            if (targets.isEmpty()) {
+                throw new SQLException(
+                        cloCode
+                        + " must contribute to at least one Course Objective."
+                );
+            }
+
+            normalizedMappings.put(
+                    cloCode,
+                    new ArrayList<>(targets)
+            );
+        }
+
+        if (data.getCloCoMappings() != null) {
+            for (String rawCloCode : data.getCloCoMappings().keySet()) {
+                String cloCode = normalizeClo(rawCloCode);
+
+                if (cloCode == null || !cloCodes.contains(cloCode)) {
+                    throw new SQLException(
+                            "CLO-CO mapping contains an unknown CLO: "
+                            + rawCloCode
+                    );
+                }
+            }
+        }
+
+        List<String> uncoveredCos = new ArrayList<>();
+
+        for (String coCode : coCodes) {
+            if (!coveredCoCodes.contains(coCode)) {
+                uncoveredCos.add(coCode);
+            }
+        }
+
+        if (!uncoveredCos.isEmpty()) {
+            throw new SQLException(
+                    "Every Course Objective must be covered by at least one "
+                    + "CLO. Missing mapping(s): "
+                    + String.join(", ", uncoveredCos)
+            );
+        }
+
+        data.setCloCoMappings(normalizedMappings);
+    }
+
 private void validateCurriculumCloPloMappings(
             long versionId,
             Map<String, List<Long>> mappings,
             Set<String> cloCodes
     ) throws SQLException {
-
-        List<String> curriculaWithoutPlo
-                = findCurriculaWithoutAllowedPlo(versionId);
-
-        if (!curriculaWithoutPlo.isEmpty()) {
-            throw new SQLException(
-                    "Academic Office has not assigned a PLO to this course "
-                    + "in the following curriculum(s): "
-                    + String.join(", ", curriculaWithoutPlo)
-            );
-        }
 
         Map<Long, AllowedPloScope> allowed
                 = loadAllowedPloScope(versionId);
@@ -2429,19 +2603,39 @@ private void validateCurriculumCloPloMappings(
             );
         }
 
+        Map<Long, Set<Long>> allowedIdsByCurriculum
+                = new LinkedHashMap<>();
+
+        for (AllowedPloScope item : allowed.values()) {
+            allowedIdsByCurriculum
+                    .computeIfAbsent(
+                            item.curriculumId,
+                            ignored -> new LinkedHashSet<>()
+                    )
+                    .add(item.ploId);
+        }
+
         Set<Long> selectedOptionIds = new LinkedHashSet<>();
+        Map<String, Set<Long>> selectedByClo = new LinkedHashMap<>();
 
         if (mappings != null) {
             for (Map.Entry<String, List<Long>> entry
                     : mappings.entrySet()) {
 
                 String cloCode = normalizeClo(entry.getKey());
-if (cloCode == null || !cloCodes.contains(cloCode)) {
+
+                if (cloCode == null || !cloCodes.contains(cloCode)) {
                     throw new SQLException(
                             "CLO-PLO mapping contains an unknown CLO: "
                             + entry.getKey()
                     );
                 }
+
+                Set<Long> selectedForClo = selectedByClo
+                        .computeIfAbsent(
+                                cloCode,
+                                ignored -> new LinkedHashSet<>()
+                        );
 
                 for (Long optionId : safe(entry.getValue())) {
                     if (optionId == null) {
@@ -2457,9 +2651,55 @@ if (cloCode == null || !cloCodes.contains(cloCode)) {
                         );
                     }
 
+                    selectedForClo.add(optionId);
                     selectedOptionIds.add(optionId);
                 }
             }
+        }
+
+        List<String> cloCoverageErrors = new ArrayList<>();
+
+        for (String cloCode : cloCodes) {
+            Set<Long> selectedForClo = selectedByClo.getOrDefault(
+                    cloCode,
+                    Collections.emptySet()
+            );
+
+            for (Map.Entry<Long, Set<Long>> curriculumEntry
+                    : allowedIdsByCurriculum.entrySet()) {
+
+                boolean coveredInCurriculum = false;
+
+                for (Long optionId : selectedForClo) {
+                    if (curriculumEntry.getValue().contains(optionId)) {
+                        coveredInCurriculum = true;
+                        break;
+                    }
+                }
+
+                if (!coveredInCurriculum) {
+                    String curriculumCode = allowed.values().stream()
+                            .filter(item -> item.curriculumId
+                                    == curriculumEntry.getKey())
+                            .map(item -> item.curriculumCode)
+                            .findFirst()
+                            .orElse(String.valueOf(
+                                    curriculumEntry.getKey()
+                            ));
+
+                    cloCoverageErrors.add(
+                            cloCode + " / " + curriculumCode
+                    );
+                }
+            }
+        }
+
+        if (!cloCoverageErrors.isEmpty()) {
+            throw new SQLException(
+                    "Every CLO must map to at least one PLO in each "
+                    + "curriculum. Missing mapping(s): "
+                    + String.join(", ", cloCoverageErrors)
+            );
         }
 
         List<String> uncovered = new ArrayList<>();
@@ -2951,6 +3191,22 @@ statement.setLong(3, versionId);
         if (connection == null || connection.isClosed()) {
             throw new SQLException("Database connection is unavailable.");
         }
+    }
+
+    private String normalizeCo(String rawCode) {
+        if (blank(rawCode)) {
+            return null;
+        }
+
+        Matcher matcher = Pattern.compile(
+                "(?i)CO\\s*0*(\\d+)"
+        ).matcher(rawCode);
+
+        if (!matcher.find()) {
+            return null;
+        }
+
+        return "CO" + Integer.parseInt(matcher.group(1));
     }
 
     private String normalizeClo(String rawCode) {

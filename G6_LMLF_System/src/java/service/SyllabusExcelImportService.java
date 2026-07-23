@@ -12,12 +12,18 @@ import java.util.regex.Pattern;
 
 public class SyllabusExcelImportService {
     private static final Pattern OUTCOME_PATTERN = Pattern.compile("(?i)(?:C?LO|L)\\s*0*(\\d+)");
+    private static final Pattern CO_PATTERN = Pattern.compile("(?i)CO\\s*0*(\\d+)");
     private final DataFormatter formatter = new DataFormatter(Locale.ENGLISH);
 
     public SyllabusEditorData parse(InputStream inputStream) throws Exception {
         SyllabusEditorData data = new SyllabusEditorData();
         try (Workbook workbook = WorkbookFactory.create(inputStream)) {
             parseGeneral(findSheet(workbook, "01_ACADEMIC_INFO"), data);
+            parseCos(findSheet(workbook,
+                    "02_COURSE_OBJECTIVES",
+                    "COURSE_OBJECTIVES",
+                    "COURSE OBJECTIVES",
+                    "COS"), data);
             parseClos(findSheet(workbook, "02_COURSE_LEARNING_OUTCOMES", "02_LEARNING_OUTCOMES", "02_CLOS"), data);
             parseStudentTasks(findSheet(workbook, "03_STUDENT_TASKS"), data);
             parseResources(findSheet(workbook, "04_LEARNING_MATERIALS"), data);
@@ -52,6 +58,25 @@ public class SyllabusExcelImportService {
         info.setPrerequisiteText(value(sheet, 10, 2));
         info.setCourseDescription(value(sheet, 11, 2));
         data.setGeneralInformation(info);
+    }
+
+    private void parseCos(Sheet sheet, SyllabusEditorData data) {
+        if (sheet == null) return;
+        List<SyllabusEditorData.CoItem> list = new ArrayList<>();
+        for (int r = sheet.getFirstRowNum() + 1; r <= sheet.getLastRowNum(); r++) {
+            String rawCode = value(sheet, r, 0);
+            String description = value(sheet, r, 1);
+            Matcher matcher = CO_PATTERN.matcher(rawCode == null ? "" : rawCode);
+            String code = matcher.find()
+                    ? "CO" + Integer.parseInt(matcher.group(1))
+                    : null;
+            if (code == null && blank(description)) continue;
+            SyllabusEditorData.CoItem item = new SyllabusEditorData.CoItem();
+            item.setCode(code == null ? "CO" + (list.size() + 1) : code);
+            item.setDescription(description);
+            list.add(item);
+        }
+        data.setCourseObjectives(list);
     }
 
     private void parseClos(Sheet sheet, SyllabusEditorData data) {
