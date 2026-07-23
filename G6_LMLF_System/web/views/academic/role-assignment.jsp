@@ -33,6 +33,8 @@
                                             String tempSemester = (String) request.getAttribute("tempSemester");
                                             String tempYear = (String) request.getAttribute("tempYear");
                                             String tempStatus = (String) request.getAttribute("tempStatus");
+                                            List<SyllabusAssignment> duplicateCheckAssignments
+                                                    = (List<SyllabusAssignment>) request.getAttribute("duplicateCheckAssignments");
                                             if (tempYear == null || tempYear.isEmpty()) {
                                             tempYear = "2026";
                                             }
@@ -962,11 +964,14 @@
                                                         position: absolute;
                                                         top: 18px;
                                                         left: 50px;
-                                                        width: 0%;
+                                                        right: 50px;
+                                                        width: auto;
                                                         height: 3px;
                                                         background-color: var(--primary);
                                                         z-index: 2;
-                                                        transition: width 0.3s ease;
+                                                        transform: scaleX(0);
+                                                        transform-origin: left center;
+                                                        transition: transform 0.3s ease;
                                                     }
 
                                                     .step-item {
@@ -1008,6 +1013,20 @@
                                                     .step-item.active .step-title {
                                                         color: var(--text-dark);
                                                         font-weight: 700;
+                                                    }
+
+                                                    .assignment-validation-error {
+                                                        display: block;
+                                                        margin-top: 6px;
+                                                        color: #DC2626;
+                                                        font-size: 12px;
+                                                        font-weight: 600;
+                                                        line-height: 1.4;
+                                                    }
+
+                                                    .assignment-invalid-field {
+                                                        border-color: #DC2626 !important;
+                                                        box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12) !important;
                                                     }
 
                                                     .step-content {
@@ -1487,13 +1506,13 @@
                                                             action="${pageContext.request.contextPath}/role-assignment?action=create"
                                                             method="post" enctype="multipart/form-data"
                                                             class="modal-form" onsubmit="return validateCreateForm()">
-                                                            <input type="hidden" name="syllabusId" value="<%= tempSyllabusId == null ? "" : tempSyllabusId %>">
+                                                            <input type="hidden" id="createSyllabusId" name="syllabusId" value="<%= tempSyllabusId == null ? "" : tempSyllabusId %>">
                                                             <div class="modal-body"
                                                                 style="padding: 24px; max-height: 520px; overflow-y: auto;">
 
                                                                 <!-- Wizard Progress Header -->
                                                                 <div class="step-progress">
-                                                                    <div class="step-progress-line"></div>
+                                                                    <div id="stepProgressLine" class="step-progress-line"></div>
                                                                     <div id="stepProgressActiveLine"
                                                                         class="step-progress-active-line"></div>
 
@@ -1529,7 +1548,8 @@
                                                                         style="margin-bottom: 16px;">
                                                                         <label for="createCourseId">Course *</label>
                                                                         <select id="createCourseId" name="courseId"
-                                                                            class="form-select" required>
+                                                                            class="form-select" required
+                                                                            onchange="clearAssignmentFieldError('createCourseId')">
                                                                             <option value="">-- Choose Course --
                                                                             </option>
                                                                             <% if(courses !=null) { for(Course c :
@@ -1585,7 +1605,7 @@
                                                                             (Select one) *</label>
                                                                         <select id="createDesignerId" name="designerId"
                                                                             class="form-select"
-                                                                            onchange="handleDesignerChange(this.value)"
+                                                                            onchange="clearAssignmentFieldError('createDesignerId'); handleDesignerChange(this.value)"
                                                                             required>
                                                                             <option value="">-- Choose Lecturer --
                                                                             </option>
@@ -1744,7 +1764,8 @@
                                                                         style="margin-bottom: 16px;">
                                                                         <label for="createDueDate">Deadline (Due Date) *</label>
                                                                         <input type="datetime-local" id="createDueDate"
-                                                                            name="dueDate" class="form-input" required />
+                                                                            name="dueDate" class="form-input" required
+                                                                            onchange="clearAssignmentFieldError('createDueDate')" />
                                                                     </div>
                                                                 </div>
 
@@ -2307,6 +2328,9 @@
                                                     });
 
                                                     function handleReviewerCheckboxChange(checkbox, fullName) {
+                                                        clearAssignmentFieldError('reviewerSelectBox');
+                                                        clearAssignmentFieldError('extReviewerSelectBox');
+                                                        clearAssignmentFieldError('createDesignerId');
                                                         const id = checkbox.value;
                                                         if (checkbox.checked) {
                                                             if (!selectedReviewers.some(r => r.id === id)) {
@@ -2389,6 +2413,9 @@
                                                     }
 
                                                     function handleExtReviewerCheckboxChange(checkbox, fullName) {
+                                                        clearAssignmentFieldError('reviewerSelectBox');
+                                                        clearAssignmentFieldError('extReviewerSelectBox');
+                                                        clearAssignmentFieldError('createDesignerId');
                                                         const id = checkbox.value;
                                                         if (checkbox.checked) {
                                                             if (!selectedExtReviewers.some(r => r.id === id)) {
@@ -2488,6 +2515,38 @@
                                                     }
 
                                                     let currentStep = 1;
+                                                    const existingAssignmentKeys = [
+                                                        <% if (duplicateCheckAssignments != null) {
+                                                            for (int i = 0; i < duplicateCheckAssignments.size(); i++) {
+                                                                SyllabusAssignment existingAssignment = duplicateCheckAssignments.get(i);
+                                                        %>
+                                                        {
+                                                            courseId: '<%= existingAssignment.getCourseId() %>',
+                                                            semester: '<%= existingAssignment.getSemester() == null ? "" : existingAssignment.getSemester().replace("\\", "\\\\").replace("'", "\\'") %>',
+                                                            academicYear: '<%= existingAssignment.getAcademicYear() %>'
+                                                        }<%= i < duplicateCheckAssignments.size() - 1 ? "," : "" %>
+                                                        <% }} %>
+                                                    ];
+
+                                                    function updateStepProgressGeometry() {
+                                                        const progress = document.querySelector('.step-progress');
+                                                        const firstIndicator = document.getElementById('stepIndicator1');
+                                                        const lastIndicator = document.getElementById('stepIndicator4');
+                                                        const baseLine = document.getElementById('stepProgressLine');
+                                                        const activeLine = document.getElementById('stepProgressActiveLine');
+                                                        if (!progress || !firstIndicator || !lastIndicator || !baseLine || !activeLine) {
+                                                            return;
+                                                        }
+
+                                                        const firstCenter = firstIndicator.offsetLeft + (firstIndicator.offsetWidth / 2);
+                                                        const lastCenter = lastIndicator.offsetLeft + (lastIndicator.offsetWidth / 2);
+                                                        const rightInset = progress.clientWidth - lastCenter;
+
+                                                        [baseLine, activeLine].forEach(line => {
+                                                            line.style.left = firstCenter + 'px';
+                                                            line.style.right = rightInset + 'px';
+                                                        });
+                                                    }
 
                                                     function goToStep(step) {
                                                         if (step < 1 || step > 4) return;
@@ -2501,12 +2560,11 @@
                                                         // Show current step content
                                                         document.getElementById('stepContent' + step).style.display = 'block';
 
-                                                        // Update active line width
+                                                        // Keep the active line between the centers of step 1 and step 4.
+                                                        updateStepProgressGeometry();
                                                         const line = document.getElementById('stepProgressActiveLine');
-                                                        if (step === 1) line.style.width = '0%';
-                                                        else if (step === 2) line.style.width = '33.33%';
-                                                        else if (step === 3) line.style.width = '66.67%';
-                                                        else if (step === 4) line.style.width = '100%';
+                                                        const progressRatio = (step - 1) / 3;
+                                                        line.style.transform = 'scaleX(' + progressRatio + ')';
 
                                                         // Update step Indicators css
                                                         for (let i = 1; i <= 4; i++) {
@@ -2563,46 +2621,153 @@
                                                         }
                                                     }
 
-                                                    function handleStepNext() {
-                                                        if (currentStep === 1) {
-                                                            // Validate Step 1
-                                                            const course = document.getElementById('createCourseId').value;
-                                                            if (!course) {
-                                                                showToast("Please select a subject course.", false);
-                                                                return;
+                                                    function clearAssignmentFieldError(elementId) {
+                                                        const element = document.getElementById(elementId);
+                                                        const visualElement = elementId === 'templateFileInput'
+                                                            ? document.getElementById('dropZone')
+                                                            : element;
+                                                        if (visualElement) {
+                                                            visualElement.classList.remove('assignment-invalid-field');
+                                                        }
+                                                        const error = document.getElementById('assignmentError-' + elementId);
+                                                        if (error) {
+                                                            error.remove();
+                                                        }
+                                                    }
+
+                                                    function clearAllAssignmentErrors() {
+                                                        document.querySelectorAll('#createModal .assignment-validation-error')
+                                                            .forEach(error => error.remove());
+                                                        document.querySelectorAll('#createModal .assignment-invalid-field')
+                                                            .forEach(element => element.classList.remove('assignment-invalid-field'));
+                                                    }
+
+                                                    function showStepValidationError(step, message, elementId) {
+                                                        if (currentStep !== step) {
+                                                            goToStep(step);
+                                                        }
+                                                        clearAssignmentFieldError(elementId);
+
+                                                        const element = document.getElementById(elementId);
+                                                        const visualElement = elementId === 'templateFileInput'
+                                                            ? document.getElementById('dropZone')
+                                                            : element;
+                                                        if (visualElement) {
+                                                            visualElement.classList.add('assignment-invalid-field');
+                                                        }
+
+                                                        const error = document.createElement('span');
+                                                        error.id = 'assignmentError-' + elementId;
+                                                        error.className = 'assignment-validation-error';
+                                                        error.textContent = message;
+
+                                                        let errorContainer = element ? element.closest('.form-group') : null;
+                                                        if (elementId === 'templateFileInput') {
+                                                            errorContainer = document.getElementById('dropZone');
+                                                        }
+                                                        if (errorContainer) {
+                                                            errorContainer.insertAdjacentElement('afterend', error);
+                                                        } else if (visualElement) {
+                                                            visualElement.insertAdjacentElement('afterend', error);
+                                                        }
+
+                                                        if (elementId) {
+                                                            if (element) {
+                                                                setTimeout(() => element.focus(), 0);
                                                             }
-                                                            const semester = document.getElementById('createSemester').value;
-                                                            if (!semester) {
-                                                                showToast("Please select a semester.", false);
-                                                                return;
-                                                            }
-                                                            const year = document.getElementById('createYear').value;
-                                                            if (!year || year < 2020 || year > 2035) {
-                                                                showToast("Please enter a valid academic year between 2020 and 2035.", false);
-                                                                return;
-                                                            }
-                                                            goToStep(2);
-                                                        } else if (currentStep === 2) {
-                                                            // Validate Step 2
+                                                        }
+                                                        return false;
+                                                    }
+
+                                                    function validateAssignmentStep(step) {
+                                                        if (step === 1) {
+                                                            // Course/Semester/Academic Year field validation is intentionally
+                                                            // skipped here. Step 1 only checks the assignment business rule.
+                                                        } else if (step === 2) {
                                                             const designer = document.getElementById('createDesignerId').value;
                                                             if (!designer) {
-                                                                showToast("Please select a syllabus designer.", false);
-                                                                return;
+                                                                return showStepValidationError(2, "Please select a syllabus designer.", "createDesignerId");
                                                             }
-                                                            const totalSelected = selectedReviewers.length + selectedExtReviewers.length;
-                                                            if (totalSelected === 0) {
-                                                                showToast("Please select at least one syllabus reviewer.", false);
-                                                                return;
+
+                                                            const reviewerIds = Array.from(new Set(
+                                                                selectedReviewers
+                                                                    .concat(selectedExtReviewers)
+                                                                    .map(reviewer => String(reviewer.id))
+                                                            ));
+                                                            if (reviewerIds.length < 2) {
+                                                                const reviewerFieldId = reviewerType === 'external'
+                                                                    ? 'extReviewerSelectBox'
+                                                                    : 'reviewerSelectBox';
+                                                                return showStepValidationError(
+                                                                    2,
+                                                                    "Please select at least two reviewers in total",
+                                                                    reviewerFieldId
+                                                                );
                                                             }
-                                                            goToStep(3);
-                                                        } else if (currentStep === 3) {
-                                                            // Validate Step 3
-                                                            const dueDate = document.getElementById('createDueDate').value;
-                                                            if (!dueDate) {
-                                                                showToast("Please select a deadline.", false);
-                                                                return;
+                                                            if (reviewerIds.includes(String(designer))) {
+                                                                return showStepValidationError(2, "Syllabus Designer and Reviewer must be different lecturers.", "createDesignerId");
                                                             }
-                                                            goToStep(4);
+                                                        } else if (step === 3) {
+                                                            const dueDateInput = document.getElementById('createDueDate');
+                                                            if (!dueDateInput.value) {
+                                                                return showStepValidationError(3, "Please select a deadline.", "createDueDate");
+                                                            }
+
+                                                            const dueDate = new Date(dueDateInput.value);
+                                                            if (Number.isNaN(dueDate.getTime()) || dueDate.getTime() <= Date.now()) {
+                                                                return showStepValidationError(3, "Deadline must be a future date and time.", "createDueDate");
+                                                            }
+                                                        } else if (step === 4) {
+                                                            const fileInput = document.getElementById('templateFileInput');
+                                                            if (!fileInput.files || fileInput.files.length === 0) {
+                                                                return showStepValidationError(4, "Please select/upload an Excel template file to proceed.", "templateFileInput");
+                                                            }
+
+                                                            const extension = fileInput.files[0].name.split('.').pop().toLowerCase();
+                                                            if (extension !== 'xlsx' && extension !== 'xls') {
+                                                                return showStepValidationError(4, "Invalid file format. Please upload .xlsx or .xls file.", "templateFileInput");
+                                                            }
+                                                        }
+                                                        return true;
+                                                    }
+
+                                                    async function validateUniqueAssignmentAtStepOne() {
+                                                        const syllabusId = document.getElementById('createSyllabusId').value.trim();
+                                                        if (syllabusId) {
+                                                            return true;
+                                                        }
+
+                                                        const courseId = document.getElementById('createCourseId').value;
+                                                        const semester = document.getElementById('createSemester').value;
+                                                        const academicYear = document.getElementById('createYear').value;
+                                                        if (!courseId || !semester || !academicYear) {
+                                                            return true;
+                                                        }
+
+                                                        const duplicate = existingAssignmentKeys.some(assignment =>
+                                                            assignment.courseId === String(courseId)
+                                                            && assignment.semester.trim().toLowerCase() === semester.trim().toLowerCase()
+                                                            && assignment.academicYear === String(academicYear)
+                                                        );
+                                                        if (duplicate) {
+                                                            return showStepValidationError(
+                                                                1,
+                                                                "An assignment already exists with the same Course, Semester, and Academic Year. To create another version, use Request New Version from the syllabus detail page.",
+                                                                "createCourseId"
+                                                            );
+                                                        }
+                                                        return true;
+                                                    }
+
+                                                    async function handleStepNext() {
+                                                        if (!validateAssignmentStep(currentStep)) {
+                                                            return;
+                                                        }
+                                                        if (currentStep === 1 && !(await validateUniqueAssignmentAtStepOne())) {
+                                                            return;
+                                                        }
+                                                        if (currentStep < 4) {
+                                                            goToStep(currentStep + 1);
                                                         }
                                                     }
 
@@ -2612,13 +2777,18 @@
                                                         if (file) {
                                                             const extension = file.name.split('.').pop().toLowerCase();
                                                             if (extension !== 'xlsx' && extension !== 'xls') {
-                                                                showToast("Invalid file format. Please upload .xlsx or .xls file.", false);
                                                                 input.value = '';
                                                                 document.getElementById('uploadTitle').innerText = 'Click to choose Excel file';
                                                                 document.getElementById('uploadSub').innerText = 'Supports .xlsx, .xls templates';
                                                                 dropZone.className = 'dropzone-container';
+                                                                showStepValidationError(
+                                                                    4,
+                                                                    "Invalid file format. Please upload .xlsx or .xls file.",
+                                                                    "templateFileInput"
+                                                                );
                                                                 return;
                                                             }
+                                                            clearAssignmentFieldError('templateFileInput');
                                                             document.getElementById('uploadTitle').innerText = file.name;
                                                             document.getElementById('uploadSub').innerText = (file.size / 1024).toFixed(1) + ' KB';
                                                             dropZone.className = 'dropzone-container success';
@@ -2626,30 +2796,10 @@
                                                     }
 
                                                     function validateCreateForm() {
-                                                        const course = document.getElementById('createCourseId').value;
-                                                        const designer = document.getElementById('createDesignerId').value;
-                                                        const fileInput = document.getElementById('templateFileInput');
-
-                                                        if (!course) {
-                                                            showToast("Please select a subject course.", false);
-                                                            goToStep(1);
-                                                            return false;
-                                                        }
-                                                        if (!designer) {
-                                                            showToast("Please select a syllabus designer.", false);
-                                                            goToStep(2);
-                                                            return false;
-                                                        }
-                                                        const totalSelected = selectedReviewers.length + selectedExtReviewers.length;
-                                                        if (totalSelected === 0) {
-                                                            showToast("Please select at least one syllabus reviewer.", false);
-                                                            goToStep(2);
-                                                            return false;
-                                                        }
-                                                        if (!fileInput.files || fileInput.files.length === 0) {
-                                                            showToast("Please select/upload an Excel template file to proceed.", false);
-                                                            goToStep(3);
-                                                            return false;
+                                                        for (let step = 1; step <= 4; step++) {
+                                                            if (!validateAssignmentStep(step)) {
+                                                                return false;
+                                                            }
                                                         }
                                                         return true;
                                                     }
@@ -2682,6 +2832,8 @@
                                                     function openCreateModal() {
                                                          clearAllReviewers();
                                                          clearAllExtReviewers();
+                                                         clearAllAssignmentErrors();
+                                                         document.getElementById('createSyllabusId').value = '';
                                                          document.getElementById('createCourseId').value = '';
                                                          document.getElementById('createDesignerId').value = '';
                                                          document.getElementById('templateFileInput').value = '';

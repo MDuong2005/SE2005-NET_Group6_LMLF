@@ -64,6 +64,10 @@ public class RoleAssignmentServlet extends HttpServlet {
             checkExternalReviewer(req, resp);
             return;
         }
+        if ("checkAssignmentDuplicate".equals(action)) {
+            checkAssignmentDuplicate(req, resp);
+            return;
+        }
         if ("create".equals(action)) {
             req.setAttribute("action", "create");
             req.setAttribute("tempCourseId", req.getParameter("courseId"));
@@ -129,6 +133,8 @@ public class RoleAssignmentServlet extends HttpServlet {
 
         List<SyllabusAssignment> assignmentList = assignmentDAO.filter(
                 keyword, filterCourseId, filterSemester, filterYear);
+        List<SyllabusAssignment> duplicateCheckAssignments = assignmentDAO.filter(
+                null, null, null, null);
         req.setAttribute("keyword", keyword == null ? "" : keyword);
         req.setAttribute("filterCourseId", filterCourseIdStr == null ? "" : filterCourseIdStr);
         req.setAttribute("filterSemester", filterSemester == null ? "" : filterSemester);
@@ -140,6 +146,7 @@ public class RoleAssignmentServlet extends HttpServlet {
         List<User> externalReviewers = userDAO.getActiveUsersByRole("EXTERNAL_EXPERT");
 
         req.setAttribute("assignmentList", assignmentList);
+        req.setAttribute("duplicateCheckAssignments", duplicateCheckAssignments);
         req.setAttribute("courses", courses);
         req.setAttribute("lecturers", lecturers);
         req.setAttribute("externalReviewers", externalReviewers);
@@ -197,13 +204,13 @@ public class RoleAssignmentServlet extends HttpServlet {
         if (isBlank(courseIdStr)
                 || isBlank(designerIdStr)
                 || reviewerIdValues == null
-                || reviewerIdValues.length == 0
+                || reviewerIdValues.length < 2
                 || isBlank(semester)
                 || isBlank(yearStr)) {
 
             req.setAttribute(
                     "errorMessage",
-                    "All fields are required."
+                    "All fields are required and at least two Reviewers must be selected in total."
             );
             forwardToList(req, resp);
             return;
@@ -217,10 +224,10 @@ public class RoleAssignmentServlet extends HttpServlet {
             List<Long> reviewerIds
                     = parseReviewerIds(reviewerIdValues);
 
-            if (reviewerIds.isEmpty()) {
+            if (reviewerIds.size() < 2) {
                 req.setAttribute(
                         "errorMessage",
-                        "Select at least one reviewer."
+                        "Select at least two Internal and/or External Reviewers in total."
                 );
                 forwardToList(req, resp);
                 return;
@@ -280,7 +287,7 @@ public class RoleAssignmentServlet extends HttpServlet {
             if (assignmentId <= 0) {
                 req.setAttribute(
                         "errorMessage",
-                        "An assignment for this course, semester and academic year already exists, or the assignment could not be saved."
+                        "An assignment already exists with the same Course, Semester, and Academic Year, or the assignment could not be saved."
                 );
                 forwardToList(req, resp);
                 return;
@@ -336,6 +343,31 @@ public class RoleAssignmentServlet extends HttpServlet {
                     "Invalid numeric parameters."
             );
             forwardToList(req, resp);
+        }
+    }
+
+    private void checkAssignmentDuplicate(
+            HttpServletRequest req,
+            HttpServletResponse resp
+    ) throws IOException {
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
+
+        // A syllabusId is supplied only by Request New Version from syllabus detail.
+        if (!isBlank(req.getParameter("syllabusId"))) {
+            resp.getWriter().write("{\"duplicate\":false,\"newVersionRequest\":true}");
+            return;
+        }
+
+        try {
+            long courseId = Long.parseLong(req.getParameter("courseId"));
+            int academicYear = Integer.parseInt(req.getParameter("academicYear"));
+            String semester = req.getParameter("semester");
+            boolean duplicate = !isBlank(semester)
+                    && assignmentDAO.isDuplicate(courseId, semester.trim(), academicYear);
+            resp.getWriter().write("{\"duplicate\":" + duplicate + "}");
+        } catch (NumberFormatException exception) {
+            resp.getWriter().write("{\"duplicate\":false}");
         }
     }
 

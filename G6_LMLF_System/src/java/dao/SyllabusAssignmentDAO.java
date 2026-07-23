@@ -721,7 +721,7 @@ public class SyllabusAssignmentDAO extends DBContext {
         List<Long> normalizedReviewerIds
                 = normalizeReviewerIds(reviewerIds);
 
-        if (normalizedReviewerIds.isEmpty()) {
+        if (normalizedReviewerIds.size() < 2) {
             return 0L;
         }
 
@@ -738,7 +738,7 @@ public class SyllabusAssignmentDAO extends DBContext {
             String duplicateSql = """
                     SELECT assignment_id
                     FROM syllabus_assignments WITH (UPDLOCK, HOLDLOCK)
-                    WHERE ((? IS NULL AND syllabus_id IS NULL
+                    WHERE ((? IS NULL
                             AND course_id = ? AND semester = ? AND academic_year = ?)
                         OR (? IS NOT NULL AND syllabus_id = ?
                             AND assignment_status NOT IN ('COMPLETED','CANCELLED','REJECTED')))
