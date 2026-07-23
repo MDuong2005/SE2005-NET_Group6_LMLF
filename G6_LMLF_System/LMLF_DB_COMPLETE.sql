@@ -10,7 +10,7 @@ GO
 -- =======================================================
 CREATE TABLE users (
     user_id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    username NVARCHAR(50) NULL,
+    username NVARCHAR(50) NULL, 
     first_name NVARCHAR(100) NOT NULL,
     last_name NVARCHAR(100) NOT NULL,
     email NVARCHAR(255) NOT NULL,
