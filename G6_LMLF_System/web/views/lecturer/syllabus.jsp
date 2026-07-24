@@ -39,7 +39,6 @@
                     <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Subject Code</th>
                     <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Subject Name</th>
                     <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Version</th>
-                    <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Status</th>
                     <th style="padding: 1rem; color: #64748b; font-size: 0.875rem; text-align: right;">Action</th>
                 </tr>
             </thead>
@@ -51,9 +50,6 @@
                                 <td style="padding: 1rem; font-weight: 600; color: #1e293b;">${s.courseCode}</td>
                                 <td style="padding: 1rem;">${s.courseName}</td>
                                 <td style="padding: 1rem;">${s.currentVersion}</td>
-                                <td style="padding: 1rem;">
-                                    <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background-color: #bfdbfe; color: #1e40af;">${s.status}</span>
-                                </td>
                                 <td style="padding: 1rem; text-align: right;">
                                     <a href="${pageContext.request.contextPath}/lecturer/syllabus?action=detail&id=${s.syllabusId}" class="action-button" style="padding: 6px 12px; font-size: 0.75rem; text-decoration: none; display: inline-block;">View Detail</a>
                                 </td>
@@ -62,7 +58,7 @@
                     </c:when>
                     <c:otherwise>
                         <tr>
-                            <td colspan="5" style="padding: 2rem; text-align: center; color: #94a3b8;">No syllabuses found.</td>
+                            <td colspan="4" style="padding: 2rem; text-align: center; color: #94a3b8;">No syllabuses found.</td>
                         </tr>
                     </c:otherwise>
                 </c:choose>

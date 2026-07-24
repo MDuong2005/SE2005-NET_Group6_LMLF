@@ -101,10 +101,6 @@
                     <td><c:out value="${syllabus.courseName}"/></td>
                 </tr>
                 <tr>
-                    <th>Syllabus English</th>
-                    <td><c:out value="${syllabus.courseName}"/></td>
-                </tr>
-                <tr>
                     <th>Subject Code</th>
                     <td><c:out value="${syllabus.courseCode}"/></td>
                 </tr>
@@ -129,47 +125,8 @@
                     <td><c:out value="${empty syllabusData.generalInformation.courseDescription ? 'N/A' : syllabusData.generalInformation.courseDescription}"/></td>
                 </tr>
                 <tr>
-                    <th>StudentTasks</th>
-                    <td>
-                        <c:forEach var="task"
-                                   items="${syllabusData.studentTasks}"
-                                   varStatus="loop">
-                            - <c:out value="${task.content}"/>
-                            <c:if test="${!loop.last}">&#10;</c:if>
-                        </c:forEach>
-                        <c:if test="${empty syllabusData.studentTasks}">
-                            N/A
-                        </c:if>
-                    </td>
-                </tr>
-                <tr>
-                    <th>Tools</th>
-                    <td><c:out value="${empty syllabus.tools ? 'N/A' : syllabus.tools}"/></td>
-                </tr>
-                <tr>
                     <th>Version</th>
                     <td><c:out value="${empty syllabusData.versionNumber ? 'N/A' : syllabusData.versionNumber}"/></td>
-                </tr>
-                <tr>
-                    <th>Status</th>
-                    <td>
-                        <c:choose>
-                            <c:when test="${syllabus.status == 'PUBLISHED'}">
-                                <span class="status-badge status-published">
-                                    PUBLISHED
-                                </span>
-                            </c:when>
-                            <c:otherwise>
-                                <span class="status-badge status-default">
-                                    <c:out value="${syllabus.status}"/>
-                                </span>
-                            </c:otherwise>
-                        </c:choose>
-                    </td>
-                </tr>
-                <tr>
-                    <th>Note</th>
-                    <td><c:out value="${empty syllabus.note ? 'N/A' : syllabus.note}"/></td>
                 </tr>
                 <tr>
                     <th>Last Updated</th>

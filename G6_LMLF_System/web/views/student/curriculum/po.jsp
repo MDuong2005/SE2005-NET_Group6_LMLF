@@ -1,5 +1,6 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,7 +16,7 @@
             <a href="${detailUrl}" class="btn-back">Back</a>
         </div>
         <div class="curr-header-center"><h1>FPT University Learning Materials</h1></div>
-        <div class="curr-header-right"><div class="user-avatar">ST</div></div>
+        <div class="curr-header-right"><div class="user-avatar"><c:out value="${not empty sessionScope.user.firstName ? fn:toUpperCase(fn:substring(sessionScope.user.firstName, 0, 1)) : 'S'}"/></div></div>
     </header>
 
     <main class="curr-container">

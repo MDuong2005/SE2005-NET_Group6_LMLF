@@ -3,13 +3,10 @@
 
 <!-- THANH ĐẦU TRANG HEADER -->
 <header class="top-header">
-    <!-- Bộ Tìm Kiếm -->
-    <div class="header-search">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-        </svg>
-        <input type="text" placeholder="Search course, syllabus, curriculum...">
-    </div>
+    <!-- Bộ Tìm Kiếm: đã ẩn. Ô này trước đây là input trơ (không form/action) nên
+         không tìm kiếm được. Mỗi trang danh sách (Curriculum, Syllabus, ...) đã có
+         ô tìm kiếm riêng hoạt động qua ?search=, nên bỏ ô global gây hiểu nhầm. -->
+    <div class="header-search" style="visibility: hidden;"></div>
 
     <!-- Các nút tiện ích góc phải -->
     <div class="header-actions">

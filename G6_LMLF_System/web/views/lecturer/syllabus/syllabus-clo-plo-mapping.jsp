@@ -39,7 +39,6 @@
             <tbody>
                 <tr><th>Subject Code</th><td><c:out value="${syllabus.courseCode}"/></td></tr>
                 <tr><th>Syllabus Name</th><td><c:out value="${syllabus.courseName}"/></td></tr>
-                <tr><th>Syllabus English Name</th><td><c:out value="${syllabus.courseName}"/></td></tr>
             </tbody>
         </table>
 

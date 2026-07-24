@@ -37,10 +37,7 @@
             <tr><th>Time Allocation</th><td><c:out value="${syllabusData.generalInformation.timeAllocation}" default="N/A"/></td></tr>
             <tr><th>Pre-Requisite</th><td><c:out value="${syllabusData.generalInformation.prerequisiteText}" default="N/A"/></td></tr>
             <tr><th>Description</th><td><c:out value="${syllabusData.generalInformation.courseDescription}" default="N/A"/></td></tr>
-            <tr><th>Tools</th><td><c:out value="${syllabus.tools}" default="N/A"/></td></tr>
             <tr><th>Version</th><td><c:out value="${syllabus.currentVersion}" default="N/A"/></td></tr>
-            <tr><th>Status</th><td><span class="status-published">PUBLISHED</span></td></tr>
-            <tr><th>Note</th><td><c:out value="${syllabus.note}" default="N/A"/></td></tr>
             <tr><th>Last Updated</th><td><fmt:formatDate value="${syllabus.updatedAt}" pattern="MM/dd/yyyy HH:mm"/></td></tr>
         </tbody></table>
 

@@ -61,7 +61,6 @@
                             <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Role</th>
                             <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Assigned By</th>
                             <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Due Date</th>
-                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Priority</th>
                             <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Status</th>
                             <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Ver</th>
                             <th style="padding: 1rem; color: #64748b; font-size: 0.875rem; text-align: right;">Action</th>
@@ -80,9 +79,6 @@
                                 </c:otherwise>
                             </c:choose>
                             
-                            <%-- Priority Mocked for now since DB lacks priority column --%>
-                            <c:set var="priority" value="Normal" />
-                            <c:set var="priorityColor" value="#3498db" />
                             <c:set var="taskName" value="${roleName == 'Designer' ? 'Design Syllabus' : 'Review Syllabus'}" />
 
                             <c:set var="filterKey" value="${task.taskStatusGroup}" />
@@ -106,9 +102,6 @@
                                 <td style="padding: 1rem; color: #64748b; font-size: 0.875rem;"><c:out value="${task.assignedByName}" /></td>
                                 <td style="padding: 1rem; color: #64748b; font-size: 0.875rem;">
                                     <fmt:formatDate value="${task.dueDate}" pattern="dd-MMM-yyyy"/>
-                                </td>
-                                <td style="padding: 1rem;">
-                                    <span style="color: ${priorityColor}; font-weight: 600; font-size: 0.875rem;"><c:out value="${priority}" /></span>
                                 </td>
                                 <td style="padding: 1rem;">
                                     <c:set var="statusBg" value="#f1f5f9" />
