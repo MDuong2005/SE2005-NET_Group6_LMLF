@@ -28,7 +28,7 @@
         <a href="${pageContext.request.contextPath}/designer/tasks"
            class="nav-item
            ${currentURI.contains('/designer/tasks')
-           || currentURI.contains('/designer/design')
+           || currentURI.contains('/designer/editor')
            || currentURI.contains('/designer/review-result')
            ? 'active' : ''}">
 

@@ -438,9 +438,10 @@ public class NotificationDAO extends DBContext {
         }
 
         for (Long reviewerId : distinctReviewerIds) {
-            if (!recipientHasRole(reviewerId, "LECTURER")) {
-                continue;
-            }
+            // A reviewer may be an internal lecturer OR an external expert, so
+            // do NOT gate on the LECTURER role here (that silently dropped the
+            // notification for external-expert reviewers, leaving them unaware
+            // of the task). The reviewer ids were already validated upstream.
 
             String body = "Academic Office assigned you to review the "
                     + assignment.courseLabel()

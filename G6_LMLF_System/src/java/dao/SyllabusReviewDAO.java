@@ -775,11 +775,13 @@ public class SyllabusReviewDAO extends DBContext {
 
             statement.setLong(1, versionId);
 
-            if (statement.executeUpdate() < 1) {
-                throw new SQLException(
-                        "Unable to complete the syllabus assignment."
-                );
-            }
+            /*
+             * Best-effort sync: the academic assignment may already have moved
+             * out of the expected states, or the reviewer was assigned directly
+             * on the version. Recording the reviewer's own decision must NOT be
+             * rolled back just because this bookkeeping UPDATE matched no row.
+             */
+            statement.executeUpdate();
         }
     }
 
@@ -809,11 +811,11 @@ public class SyllabusReviewDAO extends DBContext {
 
             statement.setLong(1, versionId);
 
-            if (statement.executeUpdate() < 1) {
-                throw new SQLException(
-                        "Unable to reject the syllabus assignment."
-                );
-            }
+            /*
+             * Best-effort sync (see markAcademicAssignmentCompletedInternal):
+             * a 0-row update here must not roll back the reviewer's decision.
+             */
+            statement.executeUpdate();
         }
     }
 

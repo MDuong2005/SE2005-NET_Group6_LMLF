@@ -1,8 +1,12 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="jakarta.tags.core"%>
 <%@taglib prefix="fmt" uri="jakarta.tags.fmt"%>
-
-
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assigned Tasks - Designer</title>
 
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
@@ -271,7 +275,19 @@
             }
         }
     </style>
+</head>
+<body>
+<div class="dashboard-wrapper">
 
+    <jsp:include page="../layout_designer/sidebar_designer.jsp"/>
+
+    <main class="dashboard-main">
+
+        <jsp:include page="../layout_designer/header_designer.jsp">
+            <jsp:param name="headerSubtitle" value="Assigned Tasks"/>
+        </jsp:include>
+
+        <section class="dashboard-content">
 
             <div class="task-page-header">
 
@@ -541,5 +557,13 @@
 
             </div>
 
+        </section>
+
+    </main>
+
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
 </script>
+</body>
+</html>

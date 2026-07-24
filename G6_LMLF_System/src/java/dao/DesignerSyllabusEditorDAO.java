@@ -681,6 +681,7 @@ public void submit(
                         completed_at = NULL
                     WHERE assignment_id = ?
                       AND designer_id = ?
+                      AND assignment_status NOT IN ('CANCELLED', 'COMPLETED')
                     """;
 
             try (PreparedStatement statement
@@ -691,7 +692,10 @@ public void submit(
                 statement.setLong(3, designerId);
 
                 if (statement.executeUpdate() != 1) {
-                    throw new SQLException("Unable to update assignment.");
+                    throw new SQLException(
+                            "This assignment can no longer be submitted "
+                            + "(it may have been cancelled or already completed)."
+                    );
                 }
             }
 

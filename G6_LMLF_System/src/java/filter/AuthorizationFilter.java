@@ -56,6 +56,17 @@ public class AuthorizationFilter implements Filter {
             return;
         }
 
+        // 2b. Block direct access to internal JSP views. Controllers reach these
+        // via server-side forward (which does NOT pass through this filter), so
+        // any direct client request to /views/* is an attempt to bypass the
+        // controller's role checks and view another role's page. (/views/auth/*
+        // is whitelisted above for the login/forgot pages; error pages are shown
+        // via <error-page> internal forwards, not direct requests.)
+        if (path.startsWith("/views/")) {
+            sendAccessDenied(httpRequest, httpResponse);
+            return;
+        }
+
         User user = SessionUtil.getCurrentUser(httpRequest);
 
         // 3. Force Password Change (Only for LOCAL auth provider)

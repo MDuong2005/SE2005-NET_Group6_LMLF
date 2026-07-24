@@ -28,6 +28,7 @@ public class ReviewServlet extends HttpServlet {
     private ReviewAssignmentDAO assignmentDAO;
     private ReviewerSectionDAO sectionDAO;
     private NotificationDAO notificationDAO;
+    private dao.RoleDAO roleDAO;
 
     @Override
     public void init() {
@@ -37,6 +38,7 @@ public class ReviewServlet extends HttpServlet {
         assignmentDAO = new ReviewAssignmentDAO();
         sectionDAO = new ReviewerSectionDAO();
         notificationDAO = new NotificationDAO();
+        roleDAO = new dao.RoleDAO();
     }
 
     @Override
@@ -445,7 +447,14 @@ public class ReviewServlet extends HttpServlet {
             redirectToLogin(request, response);
             return false;
         }
-        if (!assignmentDAO.isReviewer(userId)) {
+        /*
+         * Gate by the REVIEWER role, NOT by "still has an open assignment".
+         * A lecturer assigned as reviewer keeps the REVIEWER role, so they can
+         * return to the review workspace even after finishing every assignment
+         * (the pending list simply shows empty). A user without the REVIEWER
+         * role (e.g. a plain student) is still blocked.
+         */
+        if (!roleDAO.hasRole(userId, "REVIEWER")) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("text/html;charset=UTF-8");
             response.getWriter().write("<h1>403 Forbidden</h1><p>You are not assigned as a reviewer.</p>");

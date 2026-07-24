@@ -9,13 +9,11 @@
     </div>
 
     <div class="designer-header-actions">
-        <c:if test="${sessionScope.user.hasRole('LECTURER')}">
-            <a class="designer-lecturer-return-link"
-               href="${pageContext.request.contextPath}/lecturer-ui?page=dashboard">
-                <i class="bi bi-arrow-left-circle"></i>
-                <span>Back to Lecturer Portal</span>
-            </a>
-        </c:if>
+        <a class="designer-lecturer-return-link"
+           href="${pageContext.request.contextPath}/dashboard">
+            <i class="bi bi-arrow-left-circle"></i>
+            <span>Back to Dashboard</span>
+        </a>
 
         <div class="designer-user-dropdown">
             <button class="designer-profile-button" type="button" aria-label="Open account menu">

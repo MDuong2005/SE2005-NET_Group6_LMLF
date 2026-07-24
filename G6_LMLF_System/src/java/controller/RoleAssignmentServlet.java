@@ -242,6 +242,13 @@ public class RoleAssignmentServlet extends HttpServlet {
                 return;
             }
 
+            String actorError = validateAssignmentActors(designerId, reviewerIds);
+            if (actorError != null) {
+                req.setAttribute("errorMessage", actorError);
+                forwardToList(req, resp);
+                return;
+            }
+
             HttpSession session = req.getSession();
             User loggedInUser
                     = (User) session.getAttribute("user");
@@ -392,13 +399,13 @@ public class RoleAssignmentServlet extends HttpServlet {
                 || isBlank(courseIdStr)
                 || isBlank(designerIdStr)
                 || reviewerIdValues == null
-                || reviewerIdValues.length == 0
+                || reviewerIdValues.length < 2
                 || isBlank(semester)
                 || isBlank(yearStr)) {
 
             req.setAttribute(
                     "errorMessage",
-                    "All fields are required."
+                    "All fields are required and at least two Reviewers must be selected in total."
             );
             forwardToList(req, resp);
             return;
@@ -434,10 +441,10 @@ public class RoleAssignmentServlet extends HttpServlet {
 
             req.setAttribute("assignment", existing);
 
-            if (reviewerIds.isEmpty()) {
+            if (reviewerIds.size() < 2) {
                 req.setAttribute(
                         "errorMessage",
-                        "Select at least one reviewer."
+                        "Select at least two Internal and/or External Reviewers in total."
                 );
                 forwardToList(req, resp);
                 return;
@@ -448,6 +455,13 @@ public class RoleAssignmentServlet extends HttpServlet {
                         "errorMessage",
                         "Syllabus Designer and Reviewer must be different lecturers."
                 );
+                forwardToList(req, resp);
+                return;
+            }
+
+            String actorError = validateAssignmentActors(designerId, reviewerIds);
+            if (actorError != null) {
+                req.setAttribute("errorMessage", actorError);
                 forwardToList(req, resp);
                 return;
             }
@@ -524,6 +538,35 @@ public class RoleAssignmentServlet extends HttpServlet {
             );
             forwardToList(req, resp);
         }
+    }
+
+    /**
+     * Verifies that the submitted designer/reviewer ids are legitimate
+     * candidates: a Designer must be an ACTIVE lecturer, and every Reviewer
+     * must be an ACTIVE lecturer or external expert. This blocks a crafted
+     * request from assigning a DESIGNER/REVIEWER role to an arbitrary account
+     * (e.g. a student or admin) whose id is not offered by the form.
+     * Returns null when everything is valid, or an error message otherwise.
+     */
+    private String validateAssignmentActors(long designerId, List<Long> reviewerIds) {
+        Set<Long> lecturerIds = new java.util.HashSet<>();
+        for (User u : userDAO.getActiveUsersByRole("LECTURER")) {
+            lecturerIds.add(u.getUserId());
+        }
+        Set<Long> reviewerCandidateIds = new java.util.HashSet<>(lecturerIds);
+        for (User u : userDAO.getActiveUsersByRole("EXTERNAL_EXPERT")) {
+            reviewerCandidateIds.add(u.getUserId());
+        }
+
+        if (!lecturerIds.contains(designerId)) {
+            return "The selected Designer is not an active lecturer.";
+        }
+        for (Long reviewerId : reviewerIds) {
+            if (!reviewerCandidateIds.contains(reviewerId)) {
+                return "One of the selected Reviewers is not an active lecturer or external expert.";
+            }
+        }
+        return null;
     }
 
     private List<Long> parseReviewerIds(
@@ -847,24 +890,12 @@ public class RoleAssignmentServlet extends HttpServlet {
     }
 
     private boolean checkAccess(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        HttpSession session = req.getSession();
-        User loggedInUser = (User) session.getAttribute("user");
+        HttpSession session = req.getSession(false);
+        User loggedInUser = session == null ? null : (User) session.getAttribute("user");
+
         if (loggedInUser == null) {
-            loggedInUser = new User();
-            loggedInUser.setUserId(1L);
-            loggedInUser.setFirstName("Academic");
-            loggedInUser.setLastName("Office");
-            loggedInUser.setEmail("academic@fpt.edu.vn");
-            
-            // Add academic office role for testing
-            model.Role r = new model.Role();
-            r.setRoleId(2L);
-            r.setRoleName("ACADEMIC_OFFICE");
-            List<model.Role> rolesList = new java.util.ArrayList<>();
-            rolesList.add(r);
-            loggedInUser.setRoles(rolesList);
-            
-            session.setAttribute("user", loggedInUser);
+            resp.sendRedirect(req.getContextPath() + "/login");
+            return false;
         }
 
         if (!loggedInUser.hasRole("ACADEMIC_OFFICE") && !loggedInUser.hasRole("ADMIN")) {

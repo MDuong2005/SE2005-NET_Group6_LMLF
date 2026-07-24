@@ -738,10 +738,10 @@ public class SyllabusAssignmentDAO extends DBContext {
             String duplicateSql = """
                     SELECT assignment_id
                     FROM syllabus_assignments WITH (UPDLOCK, HOLDLOCK)
-                    WHERE ((? IS NULL
+                    WHERE assignment_status NOT IN ('COMPLETED','CANCELLED','REJECTED')
+                      AND ((? IS NULL
                             AND course_id = ? AND semester = ? AND academic_year = ?)
-                        OR (? IS NOT NULL AND syllabus_id = ?
-                            AND assignment_status NOT IN ('COMPLETED','CANCELLED','REJECTED')))
+                        OR (? IS NOT NULL AND syllabus_id = ?))
                     """;
 
             try (PreparedStatement duplicateStatement
@@ -1020,7 +1020,7 @@ public class SyllabusAssignmentDAO extends DBContext {
         List<Long> normalizedReviewerIds
                 = normalizeReviewerIds(reviewerIds);
 
-        if (normalizedReviewerIds.isEmpty()) {
+        if (normalizedReviewerIds.size() < 2) {
             return false;
         }
 
@@ -1041,6 +1041,7 @@ public class SyllabusAssignmentDAO extends DBContext {
                       AND semester = ?
                       AND academic_year = ?
                       AND assignment_id <> ?
+                      AND assignment_status NOT IN ('COMPLETED','CANCELLED','REJECTED')
                     """;
 
             try (PreparedStatement duplicateStatement
@@ -1142,6 +1143,14 @@ public class SyllabusAssignmentDAO extends DBContext {
             }
 
             replaceAssignmentReviewers(
+                    assignment.getAssignmentId(),
+                    normalizedReviewerIds,
+                    updatedBy
+            );
+
+            // Keep the real review queue in sync when the version is already
+            // submitted, so re-assignment actually takes effect.
+            syncVersionReviewAssignments(
                     assignment.getAssignmentId(),
                     normalizedReviewerIds,
                     updatedBy
@@ -1372,6 +1381,143 @@ public class SyllabusAssignmentDAO extends DBContext {
         }
     }
 
+    /**
+     * When Academic re-assigns reviewers AFTER the Designer has already
+     * submitted, the real review queue (syllabus_version_review_assignments)
+     * must be kept in sync, otherwise a removed reviewer keeps seeing the task
+     * and a newly added reviewer never receives it. Only runs while the
+     * submitted version is still under review (status = 'SUBMITTED').
+     *
+     * - Reviewers dropped from the new list are CANCELLED, but only if they
+     *   have not COMPLETED their review yet (a completed review is preserved).
+     * - Reviewers added in the new list get a fresh PENDING row (idempotent via
+     *   NOT EXISTS, respecting the UNIQUE(version_id, reviewer_id) constraint).
+     *
+     * Must be called inside the update transaction.
+     */
+    private void syncVersionReviewAssignments(
+            long assignmentId,
+            List<Long> newReviewerIds,
+            long assignedBy
+    ) throws SQLException {
+
+        // Find the submitted version currently under review for this assignment.
+        Long versionId = null;
+        String versionSql = """
+                SELECT sa.submitted_version_id
+                FROM syllabus_assignments sa
+                INNER JOIN syllabus_versions sv
+                    ON sv.version_id = sa.submitted_version_id
+                WHERE sa.assignment_id = ?
+                  AND sa.submitted_version_id IS NOT NULL
+                  AND sv.status = 'SUBMITTED'
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(versionSql)) {
+            statement.setLong(1, assignmentId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    versionId = resultSet.getLong(1);
+                }
+            }
+        }
+
+        // Nothing under review -> the queue will be built at submit time.
+        if (versionId == null) {
+            return;
+        }
+
+        // 1. Cancel reviewers no longer selected (skip COMPLETED ones).
+        String cancelSql = """
+                UPDATE syllabus_version_review_assignments
+                SET status = 'CANCELLED',
+                    completed_at = NULL
+                WHERE version_id = ?
+                  AND status IN ('PENDING', 'IN_PROGRESS')
+                """
+                + notInClause("reviewer_id", newReviewerIds.size());
+
+        try (PreparedStatement statement = connection.prepareStatement(cancelSql)) {
+            int index = 1;
+            statement.setLong(index++, versionId);
+            for (Long reviewerId : newReviewerIds) {
+                statement.setLong(index++, reviewerId);
+            }
+            statement.executeUpdate();
+        }
+
+        // 2. Insert newly added reviewers as PENDING (idempotent).
+        String insertSql = """
+                INSERT INTO syllabus_version_review_assignments (
+                    version_id, reviewer_id, assigned_by,
+                    status, assigned_at, completed_at
+                )
+                SELECT ?, ?, ?, 'PENDING', SYSDATETIME(), NULL
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM syllabus_version_review_assignments existingRow
+                    WHERE existingRow.version_id = ?
+                      AND existingRow.reviewer_id = ?
+                )
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(insertSql)) {
+            for (Long reviewerId : newReviewerIds) {
+                statement.setLong(1, versionId);
+                statement.setLong(2, reviewerId);
+                if (assignedBy > 0) {
+                    statement.setLong(3, assignedBy);
+                } else {
+                    statement.setNull(3, java.sql.Types.BIGINT);
+                }
+                statement.setLong(4, versionId);
+                statement.setLong(5, reviewerId);
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        }
+
+        // 3. A previously CANCELLED reviewer that was re-added would be blocked
+        //    by the NOT EXISTS above, so reactivate those rows too.
+        String reactivateSql = """
+                UPDATE syllabus_version_review_assignments
+                SET status = 'PENDING',
+                    completed_at = NULL
+                WHERE version_id = ?
+                  AND status = 'CANCELLED'
+                """
+                + inClause("reviewer_id", newReviewerIds.size());
+        try (PreparedStatement statement = connection.prepareStatement(reactivateSql)) {
+            int index = 1;
+            statement.setLong(index++, versionId);
+            for (Long reviewerId : newReviewerIds) {
+                statement.setLong(index++, reviewerId);
+            }
+            statement.executeUpdate();
+        }
+    }
+
+    /** Builds " AND col NOT IN (?, ?, ...)" or "" when the list is empty. */
+    private String notInClause(String column, int count) {
+        if (count <= 0) {
+            return "";
+        }
+        return " AND " + column + " NOT IN (" + placeholders(count) + ")";
+    }
+
+    /** Builds " AND col IN (?, ?, ...)"; when empty, a clause that matches nothing. */
+    private String inClause(String column, int count) {
+        if (count <= 0) {
+            return " AND 1 = 0";
+        }
+        return " AND " + column + " IN (" + placeholders(count) + ")";
+    }
+
+    private String placeholders(int count) {
+        StringJoiner joiner = new StringJoiner(", ");
+        for (int i = 0; i < count; i++) {
+            joiner.add("?");
+        }
+        return joiner.toString();
+    }
+
     private List<Long> normalizeReviewerIds(
             List<Long> reviewerIds
     ) {
@@ -1426,7 +1572,7 @@ public class SyllabusAssignmentDAO extends DBContext {
      * Check if mapping already exists
      */
     public boolean isDuplicate(long courseId, String semester, int academicYear) {
-        String sql = "SELECT 1 FROM syllabus_assignments WHERE course_id = ? AND semester = ? AND academic_year = ?";
+        String sql = "SELECT 1 FROM syllabus_assignments WHERE course_id = ? AND semester = ? AND academic_year = ? AND assignment_status NOT IN ('COMPLETED','CANCELLED','REJECTED')";
         try {
             if (connection != null) {
                 PreparedStatement ps = connection.prepareStatement(sql);
@@ -1446,7 +1592,7 @@ public class SyllabusAssignmentDAO extends DBContext {
      * Check duplicate mapping excluding current id (for editing)
      */
     public boolean isDuplicate(long courseId, String semester, int academicYear, long excludeId) {
-        String sql = "SELECT 1 FROM syllabus_assignments WHERE course_id = ? AND semester = ? AND academic_year = ? AND assignment_id <> ?";
+        String sql = "SELECT 1 FROM syllabus_assignments WHERE course_id = ? AND semester = ? AND academic_year = ? AND assignment_id <> ? AND assignment_status NOT IN ('COMPLETED','CANCELLED','REJECTED')";
         try {
             if (connection != null) {
                 PreparedStatement ps = connection.prepareStatement(sql);
@@ -1467,7 +1613,7 @@ public class SyllabusAssignmentDAO extends DBContext {
      * Check duplicate mapping including reviewer_id
      */
     public boolean isDuplicateForReviewer(long courseId, String semester, int academicYear, long reviewerId) {
-        String sql = "SELECT 1 FROM syllabus_assignments WHERE course_id = ? AND semester = ? AND academic_year = ? AND reviewer_id = ?";
+        String sql = "SELECT 1 FROM syllabus_assignments WHERE course_id = ? AND semester = ? AND academic_year = ? AND reviewer_id = ? AND assignment_status NOT IN ('COMPLETED','CANCELLED','REJECTED')";
         try {
             if (connection != null) {
                 PreparedStatement ps = connection.prepareStatement(sql);
@@ -1488,7 +1634,7 @@ public class SyllabusAssignmentDAO extends DBContext {
      * Check duplicate mapping including reviewer_id excluding current id (for editing)
      */
     public boolean isDuplicateForReviewer(long courseId, String semester, int academicYear, long reviewerId, long excludeId) {
-        String sql = "SELECT 1 FROM syllabus_assignments WHERE course_id = ? AND semester = ? AND academic_year = ? AND reviewer_id = ? AND assignment_id <> ?";
+        String sql = "SELECT 1 FROM syllabus_assignments WHERE course_id = ? AND semester = ? AND academic_year = ? AND reviewer_id = ? AND assignment_id <> ? AND assignment_status NOT IN ('COMPLETED','CANCELLED','REJECTED')";
         try {
             if (connection != null) {
                 PreparedStatement ps = connection.prepareStatement(sql);

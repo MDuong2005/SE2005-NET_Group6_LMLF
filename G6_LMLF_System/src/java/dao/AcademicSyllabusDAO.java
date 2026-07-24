@@ -505,11 +505,12 @@ public class AcademicSyllabusDAO extends DBContext {
             }
 
             long targetVersionId;
+            // Bumping the major number (x.0) => this is a MAJOR change.
             String insertVersionSql = """
                     INSERT INTO syllabus_versions
                         (syllabus_id, version_number, change_type, description_of_changes,
                          status, created_by, updated_by)
-                    VALUES (?, ?, 'MINOR', 'Academic Office update request', 'DRAFT', ?, ?)
+                    VALUES (?, ?, 'MAJOR', 'Academic Office update request', 'DRAFT', ?, ?)
                     """;
             try (PreparedStatement statement = connection.prepareStatement(
                     insertVersionSql, Statement.RETURN_GENERATED_KEYS)) {

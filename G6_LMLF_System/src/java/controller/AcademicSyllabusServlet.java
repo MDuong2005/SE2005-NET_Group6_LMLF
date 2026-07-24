@@ -32,9 +32,12 @@ public class AcademicSyllabusServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        if (!SessionUtil.isLoggedIn(request)
-                || !SessionUtil.getCurrentUser(request).hasRole("ACADEMIC_OFFICE")) {
+        if (!SessionUtil.isLoggedIn(request)) {
             response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+        if (!SessionUtil.getCurrentUser(request).hasRole("ACADEMIC_OFFICE")) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
             return;
         }
 

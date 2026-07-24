@@ -288,6 +288,12 @@ String archivePublishedSql = """
                   AND deleted_at IS NULL
                 """;
 
+        /*
+         * Only complete assignments actually tied to THIS syllabus/version.
+         * The former "syllabus_id IS NULL AND course_id = ..." branch wrongly
+         * completed unrelated PENDING assignments of the same course in other
+         * semesters/years, so it has been removed.
+         */
         String completeAssignmentSql = """
                 UPDATE syllabus_assignments
                 SET assignment_status = 'COMPLETED',
@@ -297,7 +303,6 @@ String archivePublishedSql = """
                     OR submitted_version_id IN (
                         SELECT version_id FROM syllabus_versions WHERE syllabus_id = ?
                     )
-                    OR (syllabus_id IS NULL AND course_id = (SELECT course_id FROM syllabuses WHERE syllabus_id = ?))
                 )
                   AND assignment_status NOT IN ('COMPLETED', 'CANCELLED', 'REJECTED')
                 """;
@@ -354,7 +359,6 @@ try (PreparedStatement updateSyllabusPs = connection.prepareStatement(updateSyll
             try (PreparedStatement completeAssignmentPs = connection.prepareStatement(completeAssignmentSql)) {
                 completeAssignmentPs.setLong(1, syllabusId);
                 completeAssignmentPs.setLong(2, syllabusId);
-                completeAssignmentPs.setLong(3, syllabusId);
                 completeAssignmentPs.executeUpdate();
             }
 
