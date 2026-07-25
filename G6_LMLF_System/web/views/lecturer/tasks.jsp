@@ -27,10 +27,6 @@
         <p style="font-weight: 600; color: #7f8c8d; margin-bottom: 5px; font-size: 0.9rem; text-transform: uppercase;">Completed</p>
         <div class="stat-value" style="margin-top: 0; font-size: 2rem; color: #2ecc71;"><c:out value="${completedCount}" default="0"/></div>
     </div>
-    <div class="stat-card" style="cursor: pointer;" onclick="filterTasks('CLOSED')" title="Show rejected or cancelled tasks">
-        <p style="font-weight: 600; color: #7f8c8d; margin-bottom: 5px; font-size: 0.9rem; text-transform: uppercase;">Closed</p>
-        <div class="stat-value" style="margin-top: 0; font-size: 2rem; color: #ef4444;"><c:out value="${closedCount}" default="0"/></div>
-    </div>
 </div>
 
 <!-- FILTERS & TASK LIST PANEL -->
@@ -42,7 +38,6 @@
             <button type="button" class="task-filter-btn"        data-filter="PENDING"    onclick="filterTasks('PENDING', this)">Pending</button>
             <button type="button" class="task-filter-btn"        data-filter="INPROGRESS" onclick="filterTasks('INPROGRESS', this)">In Progress</button>
             <button type="button" class="task-filter-btn"        data-filter="COMPLETED"  onclick="filterTasks('COMPLETED', this)">Completed</button>
-            <button type="button" class="task-filter-btn"        data-filter="CLOSED"     onclick="filterTasks('CLOSED', this)">Closed</button>
         </div>
     </div>
     <style>
@@ -56,7 +51,6 @@
                 <table style="width: 100%; border-collapse: collapse; text-align: left;">
                     <thead>
                         <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-                            <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Task Name</th>
                             <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Course</th>
                             <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Role</th>
                             <th style="padding: 1rem; color: #64748b; font-size: 0.875rem;">Assigned By</th>
@@ -85,9 +79,6 @@
                             <c:set var="statusLabel" value="${task.taskStatusLabel}" />
 
                             <tr class="task-row" data-status="${filterKey}" style="border-bottom: 1px solid #f1f5f9; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
-                                <td style="padding: 1rem; font-weight: 600; color: #1e293b;">
-                                    <c:out value="${taskName}" /> for <c:out value="${task.courseCode}" />
-                                </td>
                                 <td style="padding: 1rem;">
                                     <div style="font-weight: 600;"><c:out value="${task.courseCode}" /></div>
                                     <div style="font-size: 0.75rem; color: #64748b; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${task.courseName}">
