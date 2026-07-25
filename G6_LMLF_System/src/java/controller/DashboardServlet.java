@@ -1,11 +1,10 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package controller;
 
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -13,77 +12,97 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- *
- * @author maid8
+ * Servlet for Role-Based Dashboard
+ * Serves dynamic content to the dashboard layout.
  */
 @WebServlet(name = "DashboardServlet", urlPatterns = {"/dashboard"})
 public class DashboardServlet extends HttpServlet {
 
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet DashboardServlet</title>");
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet DashboardServlet at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
-        }
-    }
-
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.getRequestDispatcher(
-                "/views/dashboard.jsp")
-                .forward(request, response);
+        
+        // 1. Get current user
+        model.User user = utils.SessionUtil.getCurrentUser(request);
+        if (user == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        // Cấu hình Ngày
+        request.setAttribute("currentLocalDate", java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy")));
+
+
+        // 2. Route to correct fragment based on role
+        String contentPage = "student/dashboard.jsp"; // Default fallback
+        String cssFile = "student/student.css";
+        
+        if (user.hasRole("ADMIN")) {
+            contentPage = "admin/dashboard.jsp";
+            cssFile = "admin/dashboard.css";
+            
+            dao.UserDAO userDAO = new dao.UserDAO();
+            request.setAttribute("internalUsers", userDAO.getInternalUsersCount());
+            request.setAttribute("externalUsersCount", userDAO.getExternalUsersCount());
+            request.setAttribute("activeUsers", userDAO.getActiveUsersCount());
+            request.setAttribute("bannedUsers", userDAO.getBannedUsersCount());
+        } else if (user.hasRole("STUDENT")) {
+            contentPage = "student/dashboard.jsp";
+            cssFile = "student/student.css";
+        } else if (user.hasRole("LECTURER")) {
+            contentPage = "lecturer/dashboard.jsp";
+            cssFile = "lecturer/lecturer.css";
+
+            dao.LecturerMaterialDAO materialDAO
+                    = new dao.LecturerMaterialDAO();
+            dao.NotificationDAO notificationDAO
+                    = new dao.NotificationDAO();
+
+            request.setAttribute(
+                    "recentMaterials",
+                    materialDAO.getRecentMaterials(user.getUserId(), 5)
+            );
+            request.setAttribute(
+                    "recentNotifications",
+                    notificationDAO.getRecentNotifications(
+                            user.getUserId(),
+                            5
+                    )
+            );
+            request.setAttribute(
+                    "unreadNotificationCount",
+                    notificationDAO.countUnread(user.getUserId())
+            );
+        } else if (user.hasRole("ACADEMIC_OFFICE")) {
+            contentPage = "academic/dashboard.jsp";
+            cssFile = "academic/academic.css";
+            
+            dao.CourseDAO courseDAO = new dao.CourseDAO();
+            dao.CurriculumDAO curriculumDAO = new dao.CurriculumDAO();
+            dao.MajorDAO majorDAO = new dao.MajorDAO();
+            dao.SyllabusAssignmentDAO assignmentDAO = new dao.SyllabusAssignmentDAO();
+            
+            request.setAttribute("totalCourses", courseDAO.listAll().size());
+            request.setAttribute("totalCurriculums", curriculumDAO.getAll().size());
+            request.setAttribute("totalMajors", majorDAO.getAllMajors().size());
+            request.setAttribute("totalAssignments", assignmentDAO.listAll().size());
+            request.setAttribute("recentAssignments", assignmentDAO.listRecent(5));
+        } else if (user.hasRole("EXTERNAL_EXPERT")) {
+            dao.SyllabusAssignmentDAO assignDAO = new dao.SyllabusAssignmentDAO();
+            if (!assignDAO.hasAssignments(user.getUserId())) {
+                // Chưa được Academic Office phân công -> vào phòng chờ
+                request.getRequestDispatcher("/views/expert/waiting_standalone.jsp").forward(request, response);
+            } else {
+                // External chỉ đóng vai reviewer -> vào thẳng màn hình review
+                response.sendRedirect(request.getContextPath() + "/review?action=pending");
+            }
+            return;
+        }
+
+        request.setAttribute("contentPage", contentPage);
+        request.setAttribute("cssFile", cssFile);
+
+        // Forward tới file master layout (dashboard.jsp)
+        request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
     }
-
-    /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        processRequest(request, response);
-    }
-
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
-
 }

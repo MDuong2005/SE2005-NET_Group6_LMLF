@@ -1,87 +1,539 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package controller;
 
-import java.io.IOException;
-import java.io.PrintWriter;
+import dao.ReviewAssignmentDAO;
+import dao.ReviewCriteriaDAO;
+import dao.NotificationDAO;
+import dao.ReviewerSectionDAO;
+import dao.ReviewerVersionDAO;
+import dao.SyllabusReviewDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import model.User;
 
-/**
- *
- * @author maid8
- */
 @WebServlet(name = "ReviewServlet", urlPatterns = {"/review"})
 public class ReviewServlet extends HttpServlet {
 
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet ReviewServlet</title>");            
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet ReviewServlet at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
+    private ReviewerVersionDAO versionDAO;
+    private SyllabusReviewDAO reviewDAO;
+    private ReviewCriteriaDAO criteriaDAO;
+    private ReviewAssignmentDAO assignmentDAO;
+    private ReviewerSectionDAO sectionDAO;
+    private NotificationDAO notificationDAO;
+    private dao.RoleDAO roleDAO;
+
+    @Override
+    public void init() {
+        versionDAO = new ReviewerVersionDAO();
+        reviewDAO = new SyllabusReviewDAO();
+        criteriaDAO = new ReviewCriteriaDAO();
+        assignmentDAO = new ReviewAssignmentDAO();
+        sectionDAO = new ReviewerSectionDAO();
+        notificationDAO = new NotificationDAO();
+        roleDAO = new dao.RoleDAO();
+    }
+
+    @Override
+    protected void doGet(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws ServletException, IOException {
+
+        if (!requireReviewer(request, response)) {
+            return;
+        }
+
+        String action = request.getParameter("action");
+
+        if (action == null || action.trim().isEmpty()) {
+            action = "pending";
+        }
+
+        switch (action) {
+            case "evaluate":
+                showEvaluationScreen(request, response);
+                break;
+
+            case "pending":
+            default:
+                showPendingReviews(request, response);
+                break;
         }
     }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        processRequest(request, response);
+    protected void doPost(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws ServletException, IOException {
+
+        if (!requireReviewer(request, response)) {
+            return;
+        }
+
+        String action = request.getParameter("action");
+
+        if ("submitEvaluation".equals(action)) {
+            submitEvaluation(request, response);
+            return;
+        }
+
+        response.sendRedirect(
+                request.getContextPath()
+                + "/review?action=pending"
+        );
+    }
+
+    private void showPendingReviews(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws ServletException, IOException {
+
+        Long reviewerId = getCurrentUserId(request);
+
+        if (reviewerId == null) {
+            redirectToLogin(request, response);
+            return;
+        }
+
+        List<Map<String, Object>> pendingReviews
+                = versionDAO.getPendingReviewsByAssignedReviewer(
+                        reviewerId
+                );
+
+        request.setAttribute("pendingReviews", pendingReviews);
+
+        request.getRequestDispatcher(
+                "/views/review/pending-reviews.jsp"
+        ).forward(request, response);
+    }
+
+    private void showEvaluationScreen(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws ServletException, IOException {
+
+        Long reviewerId = getCurrentUserId(request);
+
+        if (reviewerId == null) {
+            redirectToLogin(request, response);
+            return;
+        }
+
+        Long versionId = parsePositiveLong(
+                request.getParameter("versionId")
+        );
+
+        if (versionId == null) {
+            redirectPending(
+                    request,
+                    response,
+                    "invalid_version"
+            );
+            return;
+        }
+
+        if (reviewDAO.hasReviewerReviewed(versionId, reviewerId)) {
+            response.sendRedirect(
+                    request.getContextPath()
+                    + "/review-history"
+            );
+            return;
+        }
+
+        if (!assignmentDAO.isReviewerAssigned(
+                versionId,
+                reviewerId
+        )) {
+            redirectPending(
+                    request,
+                    response,
+                    "not_assigned_or_closed"
+            );
+            return;
+        }
+
+        if (!assignmentDAO.markInProgress(
+                versionId,
+                reviewerId
+        )) {
+            redirectPending(
+                    request,
+                    response,
+                    "cannot_start_review"
+            );
+            return;
+        }
+
+        Map<String, Object> versionDetail
+                = versionDAO.getReviewDetailByVersionId(versionId);
+
+        if (versionDetail == null) {
+            redirectPending(
+                    request,
+                    response,
+                    "version_not_found"
+            );
+            return;
+        }
+
+        List<Map<String, Object>> criteriaList
+                = criteriaDAO.getActiveCriteria();
+
+        Map<String, String> sectionContentMap
+                = sectionDAO.getSectionContentMap(versionId);
+
+        List<Map<String, Object>> allImportedSections
+                = sectionDAO.getAllSectionsByVersionId(versionId);
+
+        request.setAttribute("versionDetail", versionDetail);
+        request.setAttribute("criteriaList", criteriaList);
+        request.setAttribute("sectionContentMap", sectionContentMap);
+        request.setAttribute(
+                "allImportedSections",
+                allImportedSections
+        );
+
+        request.getRequestDispatcher(
+                "/views/review/evaluation.jsp"
+        ).forward(request, response);
+    }
+
+    private void submitEvaluation(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws IOException {
+
+        Long reviewerId = getCurrentUserId(request);
+
+        if (reviewerId == null) {
+            redirectToLogin(request, response);
+            return;
+        }
+
+        Long versionId = parsePositiveLong(
+                request.getParameter("versionId")
+        );
+
+        if (versionId == null) {
+            redirectPending(
+                    request,
+                    response,
+                    "invalid_version"
+            );
+            return;
+        }
+
+        if (reviewDAO.hasReviewerReviewed(versionId, reviewerId)) {
+            response.sendRedirect(
+                    request.getContextPath()
+                    + "/review-history"
+            );
+            return;
+        }
+
+        if (!assignmentDAO.isReviewerAssigned(
+                versionId,
+                reviewerId
+        )) {
+            redirectPending(
+                    request,
+                    response,
+                    "not_assigned_or_closed"
+            );
+            return;
+        }
+
+        List<Map<String, Object>> criteriaList
+                = criteriaDAO.getActiveCriteria();
+
+        if (criteriaList == null || criteriaList.isEmpty()) {
+            redirectEvaluation(
+                    request,
+                    response,
+                    versionId,
+                    "criteria_not_found"
+            );
+            return;
+        }
+
+        List<SyllabusReviewDAO.SectionDecision> sectionDecisions
+                = new ArrayList<>();
+
+        for (Map<String, Object> criteria : criteriaList) {
+            /*
+             * Academic Information is controlled by Academic Office and is
+             * shown to Reviewer only as reference material.
+             */
+            if (isAcademicInformationCriterion(criteria)) {
+                continue;
+            }
+
+            Object criteriaIdObject = criteria.get("criteria_id");
+
+            if (!(criteriaIdObject instanceof Number)) {
+                redirectEvaluation(
+                        request,
+                        response,
+                        versionId,
+                        "invalid_criteria"
+                );
+                return;
+            }
+
+            long criteriaId
+                    = ((Number) criteriaIdObject).longValue();
+
+            String decision = trimToNull(
+                    request.getParameter(
+                            "decision_" + criteriaId
+                    )
+            );
+
+            String comment = trimToNull(
+                    request.getParameter(
+                            "comment_" + criteriaId
+                    )
+            );
+
+            if (!"APPROVED".equalsIgnoreCase(decision)
+                    && !"REJECTED".equalsIgnoreCase(decision)) {
+                redirectEvaluation(
+                        request,
+                        response,
+                        versionId,
+                        "missing_decision"
+                );
+                return;
+            }
+
+            if ("REJECTED".equalsIgnoreCase(decision)
+                    && comment == null) {
+                redirectEvaluation(
+                        request,
+                        response,
+                        versionId,
+                        "reject_comment_required"
+                );
+                return;
+            }
+
+            sectionDecisions.add(
+                    new SyllabusReviewDAO.SectionDecision(
+                            criteriaId,
+                            decision.toUpperCase(),
+                            comment
+                    )
+            );
+        }
+
+        if (sectionDecisions.isEmpty()) {
+            redirectEvaluation(
+                    request,
+                    response,
+                    versionId,
+                    "criteria_not_found"
+            );
+            return;
+        }
+
+        String summaryComment = trimToNull(
+                request.getParameter("summaryComment")
+        );
+
+        try {
+            SyllabusReviewDAO.ReviewSubmissionResult result
+                    = reviewDAO.submitEvaluation(
+                            versionId,
+                            reviewerId,
+                            summaryComment,
+                            sectionDecisions
+                    );
+
+            /*
+             * Designer and Reviewer do not receive in-app notifications.
+             * Their tasks and review results are already visible in their
+             * own work screens.
+             */
+            if (result.isAllApproved()) {
+                notificationDAO
+                        .notifyAcademicWhenAllReviewersApproved(
+                                versionId,
+                                reviewerId
+                        );
+            }
+
+            response.sendRedirect(
+                    request.getContextPath()
+                    + "/review-history"
+                    + "?submitted=1"
+                    + "&decision="
+                    + result.getReviewerDecision()
+                    + "&workflow="
+                    + result.getWorkflowStatus()
+            );
+
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+
+            String message = exception.getMessage();
+            String errorCode = "save_failed";
+
+            if (message != null
+                    && message.toLowerCase().contains(
+                            "already closed"
+                    )) {
+                errorCode = "review_closed";
+            }
+
+            redirectEvaluation(
+                    request,
+                    response,
+                    versionId,
+                    errorCode
+            );
+        }
+    }
+
+    private boolean isAcademicInformationCriterion(
+            Map<String, Object> criteria
+    ) {
+
+        if (criteria == null) {
+            return false;
+        }
+
+        String code = criteria.get("criteria_code") == null
+                ? ""
+                : String.valueOf(
+                        criteria.get("criteria_code")
+                ).trim().toUpperCase();
+
+        String name = criteria.get("criteria_name") == null
+                ? ""
+                : String.valueOf(
+                        criteria.get("criteria_name")
+                ).trim().toUpperCase();
+
+        return "GENERAL_INFORMATION".equals(code)
+                || "ACADEMIC_INFORMATION".equals(code)
+                || "ACADEMIC_INFO".equals(code)
+                || "01_ACADEMIC_INFO".equals(code)
+                || name.contains("ACADEMIC INFORMATION")
+                || name.contains("GENERAL INFORMATION");
     }
 
     /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
+     * Gate the review workspace: must be logged in AND actually be a reviewer
+     * (has at least one review assignment). A reviewer may be an internal
+     * lecturer or an external expert, so we authorize by assignment, not by a
+     * fixed role. Returns false (and writes the response) if access is denied.
      */
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        processRequest(request, response);
+    private boolean requireReviewer(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws ServletException, IOException {
+
+        Long userId = getCurrentUserId(request);
+        if (userId == null) {
+            redirectToLogin(request, response);
+            return false;
+        }
+        /*
+         * Gate by the REVIEWER role, NOT by "still has an open assignment".
+         * A lecturer assigned as reviewer keeps the REVIEWER role, so they can
+         * return to the review workspace even after finishing every assignment
+         * (the pending list simply shows empty). A user without the REVIEWER
+         * role (e.g. a plain student) is still blocked.
+         */
+        if (!roleDAO.hasRole(userId, "REVIEWER")) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("text/html;charset=UTF-8");
+            response.getWriter().write("<h1>403 Forbidden</h1><p>You are not assigned as a reviewer.</p>");
+            return false;
+        }
+        return true;
     }
 
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
+    private Long getCurrentUserId(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
 
+        if (session == null) {
+            return null;
+        }
+
+        Object userObject = session.getAttribute("user");
+
+        if (!(userObject instanceof User)) {
+            return null;
+        }
+
+        User user = (User) userObject;
+        return user.getUserId();
+    }
+
+    private Long parsePositiveLong(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+
+        try {
+            long parsed = Long.parseLong(value.trim());
+            return parsed > 0 ? parsed : null;
+
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+    private String trimToNull(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+
+        return value.trim();
+    }
+
+    private void redirectToLogin(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws IOException {
+        response.sendRedirect(
+                request.getContextPath() + "/login"
+        );
+    }
+
+    private void redirectPending(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            String errorCode
+    ) throws IOException {
+        response.sendRedirect(
+                request.getContextPath()
+                + "/review?action=pending&error="
+                + errorCode
+        );
+    }
+
+    private void redirectEvaluation(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long versionId,
+            String errorCode
+    ) throws IOException {
+        response.sendRedirect(
+                request.getContextPath()
+                + "/review?action=evaluate"
+                + "&versionId=" + versionId
+                + "&error=" + errorCode
+        );
+    }
 }
