@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class MajorServlet extends HttpServlet {
 
 private final MajorDAO majorDAO = new MajorDAO();
+private static final String JSP_PATH = "/views/academic/major.jsp";
 
 @Override
 protected void doGet(HttpServletRequest request,
@@ -35,7 +36,7 @@ protected void doGet(HttpServletRequest request,
             request.setAttribute("action", "create");
             request.setAttribute("majorList", majorDAO.getAllMajors());
             request.getRequestDispatcher(
-                    "/views/curriculum/major.jsp")
+                    JSP_PATH)
                     .forward(request, response);
             break;
 
@@ -48,7 +49,7 @@ protected void doGet(HttpServletRequest request,
             break;
 
         case "search":
-            searchMajor(request, response);
+            listMajors(request, response);
             break;
 
         default:
@@ -78,6 +79,10 @@ protected void doPost(HttpServletRequest request,
             updateMajor(request, response);
             break;
 
+        case "delete":
+            deleteMajor(request, response);
+            break;
+
         default:
             response.sendRedirect(
                     request.getContextPath() + "/major");
@@ -89,29 +94,14 @@ private void listMajors(HttpServletRequest request,
         HttpServletResponse response)
         throws ServletException, IOException {
 
-    List<Major> majorList = majorDAO.getAllMajors();
-
-    request.setAttribute("majorList", majorList);
-
-    request.getRequestDispatcher(
-            "/views/curriculum/major.jsp")
-            .forward(request, response);
-}
-
-private void searchMajor(HttpServletRequest request,
-        HttpServletResponse response)
-        throws ServletException, IOException {
-
     String keyword = request.getParameter("keyword");
-
-    List<Major> majorList =
-            majorDAO.searchMajor(keyword);
+    List<Major> majorList = majorDAO.searchMajor(keyword);
 
     request.setAttribute("majorList", majorList);
-    request.setAttribute("keyword", keyword);
+    request.setAttribute("keyword", keyword == null ? "" : keyword.trim());
 
     request.getRequestDispatcher(
-            "/views/curriculum/major.jsp")
+            JSP_PATH)
             .forward(request, response);
 }
 
@@ -134,7 +124,7 @@ private void createMajor(HttpServletRequest request,
         request.setAttribute("description", description);
 
         request.getRequestDispatcher(
-                "/views/curriculum/major.jsp")
+                JSP_PATH)
                 .forward(request, response);
 
         return;
@@ -150,7 +140,7 @@ private void createMajor(HttpServletRequest request,
         request.setAttribute("description", description);
 
         request.getRequestDispatcher(
-                "/views/curriculum/major.jsp")
+                JSP_PATH)
                 .forward(request, response);
 
         return;
@@ -190,7 +180,7 @@ private void createMajor(HttpServletRequest request,
         request.setAttribute("description", description);
 
         request.getRequestDispatcher(
-                "/views/curriculum/major.jsp")
+                JSP_PATH)
                 .forward(request, response);
     }
 }
@@ -210,7 +200,7 @@ private void showEditForm(HttpServletRequest request,
     request.setAttribute("majorList", majorDAO.getAllMajors());
 
     request.getRequestDispatcher(
-            "/views/curriculum/major.jsp")
+            JSP_PATH)
             .forward(request, response);
 }
 
@@ -222,41 +212,14 @@ private void updateMajor(HttpServletRequest request,
             Long.parseLong(
                     request.getParameter("majorId"));
 
-    String code =
-            request.getParameter("code");
-
-    String name =
-            request.getParameter("name");
-
     String description =
             request.getParameter("description");
 
-    if (majorDAO.isCodeExists(code, majorId)) {
-
-        request.setAttribute("errorMessage", "Major code already exists.");
-        request.setAttribute("action", "edit");
-
-        Major major = new Major();
-        major.setMajorId(majorId);
-        major.setCode(code);
-        major.setName(name);
-        major.setDescription(description);
-
-        request.setAttribute("major", major);
-        request.setAttribute("majorList", majorDAO.getAllMajors());
-
-        request.getRequestDispatcher(
-                "/views/curriculum/major.jsp")
-                .forward(request, response);
-
+    Major major = majorDAO.getMajorById(majorId);
+    if (major == null) {
+        response.sendError(HttpServletResponse.SC_NOT_FOUND, "Major not found");
         return;
     }
-
-    Major major = new Major();
-
-    major.setMajorId(majorId);
-    major.setCode(code);
-    major.setName(name);
     major.setDescription(description);
 
     boolean success =
@@ -276,7 +239,7 @@ private void updateMajor(HttpServletRequest request,
         request.setAttribute("majorList", majorDAO.getAllMajors());
 
         request.getRequestDispatcher(
-                "/views/curriculum/major.jsp")
+                JSP_PATH)
                 .forward(request, response);
     }
 }
@@ -288,15 +251,6 @@ private void deleteMajor(HttpServletRequest request,
     long majorId =
             Long.parseLong(
                     request.getParameter("id"));
-
-    if (majorDAO.isUsedByCurriculum(majorId)) {
-
-        response.sendRedirect(
-                request.getContextPath()
-                + "/major");
-
-        return;
-    }
 
     majorDAO.deleteMajor(majorId);
 

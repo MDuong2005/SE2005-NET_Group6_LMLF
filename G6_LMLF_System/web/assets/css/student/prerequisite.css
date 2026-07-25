@@ -1,0 +1,145 @@
+@import url("student.css");
+
+.prerequisite-card {
+    padding: 1.75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .06);
+}
+
+.prerequisite-form {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin: .5rem 0 1.75rem;
+    flex-wrap: wrap;
+}
+
+.prerequisite-form label {
+    color: #1f2937;
+    font-weight: 600;
+}
+
+.prerequisite-input {
+    width: 190px;
+    padding: .65rem .8rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 5px;
+    background: #fff;
+    color: #0f172a;
+    font-size: .95rem;
+    text-transform: uppercase;
+}
+
+.prerequisite-input:focus {
+    border-color: #10b981;
+    outline: 2px solid rgba(16, 185, 129, .2);
+}
+
+.prerequisite-search {
+    padding: .68rem 1.3rem;
+    border: 0;
+    border-radius: 5px;
+    background: #10b981;
+    color: #fff;
+    font-weight: 700;
+}
+
+.prerequisite-search:hover {
+    background: #059669;
+}
+
+.prerequisite-count {
+    margin-bottom: .35rem;
+    color: #059669;
+    font-weight: 600;
+}
+
+.prerequisite-table-wrap {
+    overflow-x: auto;
+    border: 1px solid #e5e7eb;
+}
+
+.prerequisite-table {
+    width: 100%;
+    min-width: 1050px;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.prerequisite-table th {
+    padding: .8rem .65rem;
+    border-right: 1px solid rgba(255, 255, 255, .3);
+    background: #f59a45;
+    color: #fff;
+    text-align: left;
+    font-size: .9rem;
+}
+
+.prerequisite-table td {
+    padding: .75rem .65rem;
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: top;
+    color: #111827;
+    line-height: 1.5;
+}
+
+.prerequisite-table .row-number { width: 42px; text-align: center; }
+.prerequisite-table .syllabus-id { width: 120px; }
+.prerequisite-table .subject-code { width: 150px; }
+.prerequisite-table .syllabus-name { width: 310px; }
+.prerequisite-table .decision-number { width: 260px; }
+
+.syllabus-detail-link {
+    color: #0284c7;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.syllabus-detail-link:hover {
+    text-decoration: underline;
+}
+
+.dependent-summary {
+    margin-bottom: .65rem;
+    font-weight: 700;
+}
+
+.dependent-list {
+    margin: 0;
+    padding-left: 1.35rem;
+}
+
+.dependent-list li {
+    margin: .25rem 0;
+}
+
+.dependent-code {
+    font-weight: 600;
+}
+
+.no-dependent {
+    margin: 0;
+    color: #64748b;
+}
+
+.prerequisite-message {
+    padding: 1rem;
+    border-radius: 7px;
+    background: #f8fafc;
+    color: #64748b;
+}
+
+.prerequisite-message.error {
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+@media (max-width: 720px) {
+    .prerequisite-card { padding: 1rem; }
+    .prerequisite-form { align-items: stretch; flex-direction: column; }
+    .prerequisite-input { width: 100%; }
+}

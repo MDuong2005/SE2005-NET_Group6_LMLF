@@ -1,6 +1,6 @@
 package controller;
 
-import dao.SystemLogDAO;
+import dao.AuditLogDAO;
 import java.io.IOException;
 import java.util.List;
 import jakarta.servlet.ServletException;
@@ -26,10 +26,12 @@ public class SystemLogServlet extends HttpServlet {
             return;
         }
 
-        SystemLogDAO logDAO = new SystemLogDAO();
+        AuditLogDAO logDAO = new AuditLogDAO();
         List<SystemLog> logs = logDAO.getAllLogs();
         
         request.setAttribute("logs", logs);
-        request.getRequestDispatcher("/views/admin/system_logs.jsp").forward(request, response);
+        request.setAttribute("contentPage", "admin/system_logs.jsp");
+        request.setAttribute("cssFile", "admin/admin.css");
+        request.getRequestDispatcher("/views/dashboard.jsp").forward(request, response);
     }
 }

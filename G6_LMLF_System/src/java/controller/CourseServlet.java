@@ -45,6 +45,11 @@ public class CourseServlet extends HttpServlet {
         }
         
         // Lấy danh sách courses
+        String creditsFilter = req.getParameter("creditsFilter");
+        if (creditsFilter == null) {
+            creditsFilter = "all";
+        }
+        
         List<Course> courseList;
         if (keyword != null && !keyword.trim().isEmpty()) {
             courseList = courseDAO.search(keyword.trim());
@@ -53,8 +58,33 @@ public class CourseServlet extends HttpServlet {
             courseList = courseDAO.listAll();
         }
         
+        // Áp dụng bộ lọc credits trong Java memory
+        if (!"all".equals(creditsFilter)) {
+            List<Course> filteredList = new java.util.ArrayList<>();
+            try {
+                int targetCredits = Integer.parseInt(creditsFilter);
+                if (targetCredits == 5) {
+                    for (Course c : courseList) {
+                        if (c.getCredits() != null && c.getCredits() >= 5) {
+                            filteredList.add(c);
+                        }
+                    }
+                } else {
+                    for (Course c : courseList) {
+                        if (c.getCredits() != null && c.getCredits() == targetCredits) {
+                            filteredList.add(c);
+                        }
+                    }
+                }
+                courseList = filteredList;
+            } catch (NumberFormatException e) {
+                // Bỏ qua lọc nếu không hợp lệ
+            }
+        }
+        
+        req.setAttribute("creditsFilter", creditsFilter);
         req.setAttribute("courseList", courseList);
-        req.getRequestDispatcher("/views/curriculum/course.jsp").forward(req, resp);
+        req.getRequestDispatcher("/views/academic/course.jsp").forward(req, resp);
     }
     
     @Override
@@ -131,7 +161,7 @@ public class CourseServlet extends HttpServlet {
             
             if (result) {
                 // Thành công -> quay về danh sách với thông báo thành công
-                req.getSession().setAttribute("successMessage", "Thêm môn học '" + code.trim() + "' thành công!");
+                req.getSession().setAttribute("successMessage", "Course '" + code.trim().toUpperCase() + "' created successfully!");
                 resp.sendRedirect(req.getContextPath() + "/course");
             } else {
                 req.setAttribute("errorMessage", "Lỗi khi thêm môn học. Vui lòng thử lại!");
@@ -244,6 +274,15 @@ public class CourseServlet extends HttpServlet {
                 forwardToCourseList(req, resp);
                 return;
             }
+
+            if (courseDAO.isUsedInActiveCurriculum(id)) {
+                req.setAttribute("errorMessage",
+                        "Course '" + existing.getCode()
+                        + "' cannot be deleted because it belongs to an Active curriculum. "
+                        + "Please set all related curriculums to UnActive first.");
+                forwardToCourseList(req, resp);
+                return;
+            }
             
             boolean result = courseDAO.delete(id);
             
@@ -267,6 +306,6 @@ public class CourseServlet extends HttpServlet {
         // Lấy lại danh sách courses
         List<Course> courseList = courseDAO.listAll();
         req.setAttribute("courseList", courseList);
-        req.getRequestDispatcher("/views/curriculum/course.jsp").forward(req, resp);
+        req.getRequestDispatcher("/views/academic/course.jsp").forward(req, resp);
     }
 }

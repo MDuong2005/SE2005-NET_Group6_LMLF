@@ -56,7 +56,7 @@ public class LoginGoogleServlet extends HttpServlet {
                 if (user != null) {
                     // 1. Check auth_provider
                     if (!"GOOGLE".equalsIgnoreCase(user.getAuthProvider())) {
-                        request.setAttribute("errorMessage", "This account is registered as a Guest. Please log in using the username and password sent to your email.");
+                        request.setAttribute("errorMessage", "This account is registered as an External User. Please log in using the username and password sent to your email.");
                         request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
                         return;
                     }
@@ -84,8 +84,10 @@ public class LoginGoogleServlet extends HttpServlet {
                         return;
                     }
                     
-                    // Login successful, set session
+                    // Login successful, set session.
+                    // Rotate session id to prevent session fixation.
                     HttpSession session = request.getSession();
+                    request.changeSessionId();
                     session.setAttribute("user", user);
                     
                     // Update last login

@@ -1,738 +1,1890 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page import="java.util.List"%>
 <%@page import="java.util.Map"%>
+<%@page import="java.text.SimpleDateFormat"%>
+
+<%!
+    private String h(Object value) {
+        if (value == null) {
+            return "";
+        }
+
+        return String.valueOf(value)
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
+
+    private String text(Object value, String fallback) {
+        if (value == null || String.valueOf(value).trim().isEmpty()) {
+            return fallback;
+        }
+
+        return String.valueOf(value);
+    }
+
+    private boolean isAcademicInformation(
+            String criteriaCode,
+            String criteriaName
+    ) {
+        String code = criteriaCode == null
+                ? ""
+                : criteriaCode.trim().toUpperCase();
+
+        String name = criteriaName == null
+                ? ""
+                : criteriaName.trim().toUpperCase();
+
+        return "GENERAL_INFORMATION".equals(code)
+                || "ACADEMIC_INFORMATION".equals(code)
+                || "ACADEMIC_INFO".equals(code)
+                || "01_ACADEMIC_INFO".equals(code)
+                || name.contains("ACADEMIC INFORMATION")
+                || name.contains("GENERAL INFORMATION");
+    }
+%>
 
 <%
-Map<String, Object> versionDetail =
-(Map<String, Object>) request.getAttribute("versionDetail");
+    Map<String, Object> versionDetail =
+            (Map<String, Object>) request.getAttribute("versionDetail");
 
-String error = request.getParameter("error");
+    List<Map<String, Object>> criteriaList =
+            (List<Map<String, Object>>) request.getAttribute("criteriaList");
 
-String userInitials = "RV";
-String userEmail = "";
-model.User user = (model.User) session.getAttribute("user");
+    Map<String, String> sectionContentMap =
+            (Map<String, String>) request.getAttribute("sectionContentMap");
 
-if (user != null && user.getEmail() != null) {
-    userEmail = user.getEmail();
+    model.User currentUser =
+            (model.User) session.getAttribute("user");
 
-    if (userEmail.length() >= 2) {
-        userInitials = userEmail.substring(0, 2).toUpperCase();
-    } else {
-        userInitials = userEmail.toUpperCase();
-    }
-}
+    String userEmail = currentUser == null
+            || currentUser.getEmail() == null
+            ? "reviewer"
+            : currentUser.getEmail();
 
+    String userInitials = userEmail.length() >= 2
+            ? userEmail.substring(0, 2).toUpperCase()
+            : userEmail.toUpperCase();
+
+    String error = request.getParameter("error");
+    SimpleDateFormat dateFormat =
+            new SimpleDateFormat("dd/MM/yyyy HH:mm");
 %>
 
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Syllabus Evaluation - LMLF</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Section Evaluation - LMLF</title>
 
-<style>
-    :root {
-        --primary: #FF6B00;
-        --primary-hover: #E05E00;
-        --primary-light: #FFF0E6;
-        --bg-main: #F8FAFC;
-        --bg-card: #FFFFFF;
-        --border-color: #E2E8F0;
-        --text-dark: #1E293B;
-        --text-muted: #64748B;
-        --success: #16A34A;
-        --success-hover: #15803D;
-        --danger: #EF4444;
-        --danger-hover: #DC2626;
-        --warning-bg: #FEF3C7;
-        --warning-text: #92400E;
-        --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-    }
+    <style>
+        :root {
+            --primary: #f97316;
+            --primary-soft: #fff7ed;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --muted: #64748b;
+            --success: #15803d;
+            --success-soft: #dcfce7;
+            --danger: #b91c1c;
+            --danger-soft: #fee2e2;
+            --blue: #1d4ed8;
+            --blue-soft: #dbeafe;
+        }
 
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-    }
+        * {
+            box-sizing: border-box;
+        }
 
-    body {
-        font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-        background-color: var(--bg-main);
-        color: var(--text-dark);
-        min-height: 100vh;
-    }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: var(--background);
+            color: var(--text);
+        }
 
-    a {
-        text-decoration: none;
-    }
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
 
-    button {
-        cursor: pointer;
-        border: none;
-    }
-
-    .layout {
-        display: flex;
-        min-height: 100vh;
-    }
-
-    .sidebar {
-        width: 280px;
-        background-color: #FFFFFF;
-        border-right: 1px solid var(--border-color);
-        display: flex;
-        flex-direction: column;
-        flex-shrink: 0;
-    }
-
-    .sidebar-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid #F1F5F9;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .sidebar-logo {
-        width: 42px;
-        height: 42px;
-        background-color: var(--primary);
-        color: #FFFFFF;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        font-size: 16px;
-    }
-
-    .sidebar-title h1 {
-        font-size: 1.25rem;
-        font-weight: 800;
-        color: var(--primary);
-        margin: 0;
-    }
-
-    .sidebar-title p {
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: #94A3B8;
-        text-transform: uppercase;
-        margin-top: 2px;
-    }
-
-    .sidebar-nav {
-        flex: 1;
-        padding: 1.5rem;
-    }
-
-    .nav-section-title {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 0.75rem;
-    }
-
-    .nav-menu {
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .nav-item {
-        display: flex;
-        align-items: center;
-        padding: 0.85rem 1rem;
-        border-radius: 0.75rem;
-        color: var(--text-muted);
-        font-weight: 700;
-        font-size: 0.95rem;
-        transition: all 0.2s;
-    }
-
-    .nav-item:hover {
-        background-color: #F8FAFC;
-        color: var(--text-dark);
-    }
-
-    .nav-item.active {
-        background-color: var(--primary-light);
-        color: var(--primary);
-        border: 1px solid #FBD6C4;
-    }
-
-    .sidebar-footer {
-        padding: 1.5rem;
-        border-top: 1px solid #F1F5F9;
-    }
-
-    .logout-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: var(--danger);
-        font-size: 0.9rem;
-        font-weight: 700;
-        padding: 0.85rem 1rem;
-        border-radius: 0.75rem;
-        transition: all 0.2s;
-    }
-
-    .logout-btn svg {
-        width: 20px;
-        height: 20px;
-    }
-
-    .logout-btn:hover {
-        color: var(--danger-hover);
-        background-color: #FEF2F2;
-    }
-
-    .main-wrapper {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-    }
-
-    .top-header {
-        height: 70px;
-        background-color: #FFFFFF;
-        border-bottom: 1px solid var(--border-color);
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        padding: 0 2.5rem;
-        flex-shrink: 0;
-    }
-
-    .profile-menu {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .avatar {
-        width: 42px;
-        height: 42px;
-        background-color: var(--primary);
-        color: #FFFFFF;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        font-size: 14px;
-    }
-
-    .profile-info {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .profile-email {
-        font-size: 0.9rem;
-        font-weight: 800;
-        color: var(--text-dark);
-    }
-
-    .profile-role {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        margin-top: 2px;
-    }
-
-    main {
-        flex: 1;
-        padding: 2.5rem;
-        overflow-y: auto;
-    }
-
-    .content-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-
-    .content-header h2 {
-        font-size: 1.9rem;
-        font-weight: 800;
-        color: var(--text-dark);
-        margin: 0;
-    }
-
-    .content-header p {
-        font-size: 0.95rem;
-        color: var(--text-muted);
-        margin-top: 0.35rem;
-    }
-
-    .header-actions {
-        display: flex;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-    }
-
-    .btn-secondary {
-        background-color: #FFFFFF;
-        color: var(--text-muted);
-        border: 1px solid var(--border-color);
-        min-height: 42px;
-        padding: 0 1rem;
-        border-radius: 0.75rem;
-        font-weight: 700;
-        font-size: 0.9rem;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-    }
-
-    .btn-secondary:hover {
-        background-color: #F8FAFC;
-        color: var(--text-dark);
-    }
-
-    .panel {
-        background-color: #FFFFFF;
-        border: 1px solid var(--border-color);
-        border-radius: 1.5rem;
-        overflow: hidden;
-        box-shadow: var(--shadow-sm);
-        margin-bottom: 1.5rem;
-    }
-
-    .panel-header {
-        padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #F1F5F9;
-    }
-
-    .panel-title {
-        font-size: 1.1rem;
-        font-weight: 800;
-        color: var(--text-dark);
-    }
-
-    .panel-body {
-        padding: 1.5rem;
-    }
-
-    .alert-error {
-        background-color: #FEF2F2;
-        border: 1px solid #FCA5A5;
-        color: var(--danger);
-        padding: 1rem;
-        border-radius: 0.75rem;
-        margin-bottom: 1.5rem;
-        font-weight: 700;
-    }
-
-    .detail-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 1.25rem 2rem;
-    }
-
-    .detail-item {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-    }
-
-    .detail-label {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .detail-value {
-        font-size: 0.95rem;
-        color: var(--text-dark);
-        font-weight: 600;
-        line-height: 1.5;
-    }
-
-    .description-box {
-        margin-top: 1.5rem;
-        background-color: #F8FAFC;
-        border: 1px solid var(--border-color);
-        border-radius: 1rem;
-        padding: 1rem;
-    }
-
-    .badge-orange {
-        display: inline-flex;
-        width: fit-content;
-        align-items: center;
-        padding: 0.35rem 0.65rem;
-        border-radius: 0.5rem;
-        background-color: var(--primary-light);
-        color: var(--primary);
-        border: 1px solid #FBD6C4;
-        font-size: 0.75rem;
-        font-weight: 800;
-    }
-
-    .badge-status {
-        display: inline-flex;
-        width: fit-content;
-        align-items: center;
-        padding: 0.35rem 0.65rem;
-        border-radius: 999px;
-        background-color: var(--warning-bg);
-        color: var(--warning-text);
-        font-size: 0.75rem;
-        font-weight: 800;
-    }
-
-    .decision-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.5rem;
-    }
-
-    .decision-card {
-        border: 1px solid var(--border-color);
-        border-radius: 1rem;
-        padding: 1.25rem;
-        background-color: #FFFFFF;
-    }
-
-    .decision-card h4 {
-        font-size: 1rem;
-        margin-bottom: 0.5rem;
-        color: var(--text-dark);
-    }
-
-    .decision-card p {
-        color: var(--text-muted);
-        font-size: 0.875rem;
-        line-height: 1.6;
-        margin-bottom: 1rem;
-    }
-
-    .review-textarea {
-        width: 100%;
-        min-height: 120px;
-        border: 1px solid #CBD5E1;
-        border-radius: 0.75rem;
-        padding: 0.85rem;
-        font-family: inherit;
-        resize: vertical;
-        outline: none;
-    }
-
-    .review-textarea:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 4px var(--primary-light);
-    }
-
-    .btn-approve {
-        margin-top: 1rem;
-        width: 100%;
-        background-color: var(--success);
-        color: #FFFFFF;
-        border: none;
-        padding: 0.75rem 1rem;
-        border-radius: 0.75rem;
-        font-weight: 800;
-    }
-
-    .btn-approve:hover {
-        background-color: var(--success-hover);
-    }
-
-    .btn-reject {
-        margin-top: 1rem;
-        width: 100%;
-        background-color: var(--danger);
-        color: #FFFFFF;
-        border: none;
-        padding: 0.75rem 1rem;
-        border-radius: 0.75rem;
-        font-weight: 800;
-    }
-
-    .btn-reject:hover {
-        background-color: var(--danger-hover);
-    }
-
-    .empty-state {
-        padding: 4rem 1rem;
-        text-align: center;
-        color: var(--text-muted);
-    }
-
-    .empty-state h3 {
-        color: var(--text-dark);
-        font-size: 1.25rem;
-        margin-bottom: 0.5rem;
-    }
-
-    @media (max-width: 900px) {
         .layout {
-            flex-direction: column;
+            display: flex;
+            min-height: 100vh;
         }
 
         .sidebar {
-            width: 100%;
-        }
-
-        main {
-            padding: 1.5rem;
-        }
-
-        .content-header,
-        .decision-grid,
-        .detail-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .content-header {
+            width: 270px;
+            flex: 0 0 270px;
+            display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
         }
-    }
-</style>
+
+        .brand {
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand-logo {
+            width: 48px;
+            height: 48px;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
+            background: var(--primary);
+            color: white;
+            font-weight: 900;
+        }
+
+        .brand h1 {
+            margin: 0;
+            color: var(--primary);
+            font-size: 24px;
+        }
+
+        .brand p {
+            margin: 2px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .navigation {
+            flex: 1;
+            padding: 22px;
+        }
+
+        .navigation-title {
+            margin-bottom: 10px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .nav-link {
+            display: block;
+            margin-bottom: 8px;
+            padding: 13px 14px;
+            border-radius: 12px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .nav-link.active {
+            color: var(--primary);
+            background: var(--primary-soft);
+            border: 1px solid #fed7aa;
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .lecturer-return-link {
+            min-height: 42px;
+            padding: 0 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid #fed7aa;
+            border-radius: 10px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            font-size: 14px;
+            font-weight: 800;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .lecturer-return-link:hover {
+            background: #ffedd5;
+            border-color: #fdba74;
+        }
+
+        .lecturer-return-link svg {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 auto;
+        }
+
+        .user-dropdown {
+            position: relative;
+        }
+
+        .profile-button {
+            padding: 5px 8px;
+            border: 0;
+            border-radius: 10px;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+            font: inherit;
+            text-align: left;
+        }
+
+        .profile-button:hover,
+        .profile-button:focus-visible {
+            background: #f8fafc;
+            outline: none;
+        }
+
+        .user-dropdown-menu {
+            width: 190px;
+            padding-top: 9px;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            display: none;
+            z-index: 1000;
+        }
+
+        .user-dropdown:hover .user-dropdown-menu,
+        .user-dropdown:focus-within .user-dropdown-menu {
+            display: block;
+        }
+
+        .user-dropdown-content {
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+        }
+
+        .header-logout-link {
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--danger);
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .header-logout-link:hover {
+            background: var(--danger-soft);
+        }
+
+        .header-logout-link svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .main {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .topbar {
+            height: 72px;
+            padding: 0 34px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+
+        .avatar {
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            font-weight: 900;
+        }
+
+        .profile-email {
+            max-width: 260px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .profile-role {
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .content {
+            padding: 34px;
+        }
+
+        .page-header {
+            margin-bottom: 22px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .page-header h2 {
+            margin: 0;
+            font-size: 30px;
+        }
+
+        .page-header p {
+            margin: 7px 0 0;
+            color: var(--muted);
+        }
+
+        .back-button {
+            padding: 11px 15px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface);
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        .alert {
+            margin-bottom: 18px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            color: var(--danger);
+            background: var(--danger-soft);
+            border: 1px solid #fecaca;
+            font-weight: 700;
+        }
+
+        .version-panel,
+        .review-card,
+        .submit-panel {
+            margin-bottom: 18px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        }
+
+        .panel-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border);
+            background: #fcfcfd;
+        }
+
+        .panel-header h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .panel-header p {
+            margin: 6px 0 0;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .panel-body {
+            padding: 22px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(145px, 1fr));
+            gap: 13px;
+        }
+
+        .detail {
+            padding: 13px;
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+        }
+
+        .detail-label {
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .detail-value {
+            margin-top: 5px;
+            font-weight: 800;
+        }
+
+        .change-description {
+            margin-top: 14px;
+            padding: 14px;
+            color: #334155;
+            background: #f8fafc;
+            border-radius: 12px;
+            line-height: 1.6;
+        }
+
+        .section-content {
+            overflow-x: auto;
+        }
+
+        .section-content table {
+            width: 100%;
+            min-width: 720px;
+            border-collapse: collapse;
+        }
+
+        .section-content th,
+        .section-content td {
+            padding: 11px 12px;
+            border: 1px solid var(--border);
+            text-align: left;
+            vertical-align: top;
+            line-height: 1.45;
+        }
+
+        .section-content th {
+            background: #f8fafc;
+            color: #475569;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .section-content .key-value-table {
+            min-width: 0;
+        }
+
+        .section-content .key-value-table th {
+            width: 230px;
+        }
+
+        .empty-content {
+            padding: 22px;
+            color: var(--muted);
+            text-align: center;
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+        }
+
+        .render-error {
+            padding: 13px;
+            color: var(--danger);
+            background: var(--danger-soft);
+            border-radius: 10px;
+        }
+
+        .reference-only-panel {
+            padding: 13px 15px;
+            margin-top: 16px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            background: #eff6ff;
+            color: #1e3a8a;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .reference-only-panel strong {
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .decision-area {
+            margin-top: 20px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
+        }
+
+        .decision-title {
+            margin-bottom: 10px;
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .decision-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .decision-option {
+            min-width: 150px;
+            padding: 13px 15px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            border: 1px solid var(--border);
+            border-radius: 11px;
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .decision-option.approve {
+            color: var(--success);
+            background: var(--success-soft);
+        }
+
+        .decision-option.reject {
+            color: var(--danger);
+            background: var(--danger-soft);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 96px;
+            margin-top: 13px;
+            padding: 12px 13px;
+            resize: vertical;
+            border: 1px solid #cbd5e1;
+            border-radius: 11px;
+            font: inherit;
+        }
+
+        textarea:focus {
+            outline: 2px solid #fed7aa;
+            border-color: var(--primary);
+        }
+
+        .comment-hint {
+            margin-top: 7px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .submit-panel .panel-body {
+            display: grid;
+            gap: 13px;
+        }
+
+        .submit-button {
+            justify-self: end;
+            min-width: 210px;
+            padding: 13px 18px;
+            border: 0;
+            border-radius: 11px;
+            color: white;
+            background: var(--primary);
+            font-size: 15px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .submit-button:disabled {
+            opacity: 0.65;
+            cursor: wait;
+        }
 
 
+        .section-json-fallback {
+            margin: 0;
+            padding: 16px;
+            max-height: 420px;
+            overflow: auto;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+            color: #334155;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+
+        /* ============================================================
+           Reviewer CLO-PLO matrix
+           ============================================================ */
+        .clo-plo-review-list {
+            display: grid;
+            gap: 18px;
+        }
+
+        .clo-plo-curriculum-card {
+            overflow: hidden;
+            border: 1px solid #fed7aa;
+            border-radius: 16px;
+            background: #ffffff;
+        }
+
+        .clo-plo-curriculum-header {
+            padding: 16px 18px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            background: #fff7ed;
+            border-bottom: 1px solid #fed7aa;
+        }
+
+        .clo-plo-curriculum-title {
+            margin: 0;
+            color: #9a3412;
+            font-size: 16px;
+            font-weight: 900;
+            line-height: 1.45;
+        }
+
+        .clo-plo-course-line {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .clo-plo-semester-badge {
+            flex: 0 0 auto;
+            padding: 8px 12px;
+            border: 1px solid #fb923c;
+            border-radius: 999px;
+            color: #9a3412;
+            background: #ffffff;
+            font-size: 12px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .clo-plo-table-wrap {
+            padding: 14px;
+            overflow-x: auto;
+        }
+
+        .section-content .clo-plo-matrix {
+            width: 100%;
+            min-width: 680px;
+            border-collapse: collapse;
+        }
+
+        .section-content .clo-plo-matrix th,
+        .section-content .clo-plo-matrix td {
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .section-content .clo-plo-matrix th {
+            color: #ffffff;
+            background: #fb923c;
+            font-size: 12px;
+            text-transform: none;
+        }
+
+        .section-content .clo-plo-matrix .clo-column {
+            min-width: 320px;
+            text-align: left;
+        }
+
+        .clo-code {
+            color: #0f172a;
+            font-weight: 900;
+        }
+
+        .clo-description {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .plo-header-code {
+            display: block;
+            font-weight: 900;
+        }
+
+        .plo-header-description {
+            display: block;
+            max-width: 190px;
+            margin: 4px auto 0;
+            color: #fff7ed;
+            font-size: 10px;
+            font-weight: 600;
+            line-height: 1.35;
+            text-transform: none;
+        }
+
+        .mapping-check {
+            width: 26px;
+            height: 26px;
+            margin: 0 auto;
+            display: grid;
+            place-items: center;
+            border-radius: 7px;
+            color: #166534;
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            font-size: 17px;
+            font-weight: 900;
+        }
+
+        .mapping-empty {
+            color: #cbd5e1;
+            font-size: 18px;
+        }
+
+        .clo-plo-empty-group {
+            padding: 20px;
+            color: #64748b;
+            text-align: center;
+        }
+
+        @media (max-width: 1050px) {
+            .sidebar {
+                width: 220px;
+                flex-basis: 220px;
+            }
+
+            .detail-grid {
+                grid-template-columns: repeat(2, minmax(145px, 1fr));
+            }
+        }
+
+        @media (max-width: 760px) {
+
+
+            .topbar {
+                padding: 0 22px;
+            }
+
+            .lecturer-return-link span {
+                display: none;
+            }
+
+            .lecturer-return-link {
+                width: 42px;
+                padding: 0;
+                justify-content: center;
+            }
+
+            .profile-email {
+                max-width: 150px;
+            }
+            .layout {
+                display: block;
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            .content {
+                padding: 22px;
+            }
+
+            .page-header {
+                display: block;
+            }
+
+            .back-button {
+                display: inline-block;
+                margin-top: 15px;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body>
 <div class="layout">
     <aside class="sidebar">
-        <div class="sidebar-header">
-            <div class="sidebar-logo">LM</div>
-
-
-        <div class="sidebar-title">
-            <h1>LMLF</h1>
-            <p>Reviewer Portal</p>
-        </div>
-    </div>
-
-    <div class="sidebar-nav">
-        <div class="nav-section-title">Review Workflow</div>
-
-        <ul class="nav-menu">
-            <li>
-                <a class="nav-item" href="${pageContext.request.contextPath}/review?action=pending">
-                    Pending Reviews
-                </a>
-            </li>
-
-            <li>
-                <a class="nav-item active" href="#">
-                    Evaluation Screen
-                </a>
-            </li>
-
-            <li>
-                <a class="nav-item" href="${pageContext.request.contextPath}/review-history">
-                    Review History
-                </a>
-            </li>
-        </ul>
-    </div>
-
-    <div class="sidebar-footer">
-        <a class="logout-btn" href="${pageContext.request.contextPath}/logout">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
-            </svg>
-            Logout
-        </a>
-    </div>
-</aside>
-
-<div class="main-wrapper">
-    <header class="top-header">
-        <div class="profile-menu">
-            <div class="avatar"><%= userInitials %></div>
-
-            <div class="profile-info">
-                <span class="profile-email">
-                    <%= userEmail.isEmpty() ? "reviewer@test.com" : userEmail %>
-                </span>
-                <span class="profile-role">Reviewer</span>
-            </div>
-        </div>
-    </header>
-
-    <main>
-        <div class="content-header">
+        <div class="brand">
+            <div class="brand-logo">LM</div>
             <div>
-                <h2>Syllabus Evaluation</h2>
-                <p>Review the submitted syllabus version and make your decision.</p>
+                <h1>LMLF</h1>
+                <p>Reviewer Portal</p>
             </div>
+        </div>
 
-            <div class="header-actions">
-                <a href="${pageContext.request.contextPath}/review?action=pending" class="btn-secondary">
+        <nav class="navigation">
+            <div class="navigation-title">Review Workflow</div>
+
+            <a class="nav-link"
+               href="${pageContext.request.contextPath}/review?action=pending">
+                Pending Reviews
+            </a>
+
+            <a class="nav-link active" href="#">
+                Evaluation Screen
+            </a>
+
+            <a class="nav-link"
+               href="${pageContext.request.contextPath}/review-history">
+                Review History
+            </a>
+        </nav>
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <div class="topbar-actions">
+                <% if (currentUser != null && currentUser.hasRole("LECTURER")) { %>
+                    <a class="lecturer-return-link"
+                       href="${pageContext.request.contextPath}/lecturer-ui?page=dashboard"
+                       title="Return to Lecturer Portal">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                             aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        <span>Back to Lecturer Portal</span>
+                    </a>
+                <% } %>
+
+                <div class="user-dropdown">
+                    <button type="button" class="profile profile-button"
+                            aria-label="Open reviewer account menu">
+                        <div class="avatar"><%= h(userInitials) %></div>
+                        <div>
+                            <div class="profile-email"><%= h(userEmail) %></div>
+                            <div class="profile-role">Reviewer</div>
+                        </div>
+                    </button>
+
+                    <div class="user-dropdown-menu">
+                        <div class="user-dropdown-content">
+                            <a class="header-logout-link"
+                               href="${pageContext.request.contextPath}/logout">
+                                <svg fill="none" stroke="currentColor"
+                                     viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          stroke-width="2"
+                                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                                Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="content">
+            <div class="page-header">
+                <div>
+                    <h2>Section Evaluation</h2>
+                    <p>
+                        Evaluate every editable syllabus section. Academic Information
+                        is provided for reference only.
+                    </p>
+                </div>
+
+                <a class="back-button"
+                   href="${pageContext.request.contextPath}/review?action=pending">
                     Back to Pending Reviews
                 </a>
-
-                <a href="${pageContext.request.contextPath}/review-history" class="btn-secondary">
-                    Review History
-                </a>
-            </div>
-        </div>
-
-        <% if ("comment_required".equals(error)) { %>
-        <div class="alert-error">
-            Reject comment is required. Please enter a reason before rejecting this syllabus.
-        </div>
-        <% } %>
-
-        <% if (versionDetail != null && !versionDetail.isEmpty()) { %>
-
-        <div class="panel">
-            <div class="panel-header">
-                <h3 class="panel-title">Syllabus Version Information</h3>
             </div>
 
-            <div class="panel-body">
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <div class="detail-label">Course Code</div>
-                        <div class="detail-value">
-                            <span class="badge-orange">
-                                <%= versionDetail.get("course_code") == null ? "-" : versionDetail.get("course_code") %>
-                            </span>
-                        </div>
-                    </div>
+            <% if ("missing_decision".equals(error)) { %>
+                <div class="alert">
+                    Select Approve or Reject for every section.
+                </div>
+            <% } else if ("reject_comment_required".equals(error)) { %>
+                <div class="alert">
+                    A comment is required for every rejected section.
+                </div>
+            <% } else if ("criteria_not_found".equals(error)) { %>
+                <div class="alert">
+                    No active review criteria were found.
+                </div>
+            <% } else if ("save_failed".equals(error)) { %>
+                <div class="alert">
+                    The review could not be saved. Please try again.
+                </div>
+            <% } else if ("review_closed".equals(error)) { %>
+                <div class="alert">
+                    This review assignment is already closed.
+                </div>
+            <% } %>
 
-                    <div class="detail-item">
-                        <div class="detail-label">Course Name</div>
-                        <div class="detail-value">
-                            <%= versionDetail.get("course_name") == null ? "-" : versionDetail.get("course_name") %>
-                        </div>
-                    </div>
-
-                    <div class="detail-item">
-                        <div class="detail-label">Syllabus Title</div>
-                        <div class="detail-value">
-                            <%= versionDetail.get("syllabus_title") == null ? "-" : versionDetail.get("syllabus_title") %>
-                        </div>
-                    </div>
-
-                    <div class="detail-item">
-                        <div class="detail-label">Version</div>
-                        <div class="detail-value">
-                            <span class="badge-orange">
-                                v<%= versionDetail.get("version_number") == null ? "-" : versionDetail.get("version_number") %>
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="detail-item">
-                        <div class="detail-label">Change Type</div>
-                        <div class="detail-value">
-                            <span class="badge-orange">
-                                <%= versionDetail.get("change_type") == null ? "-" : versionDetail.get("change_type") %>
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="detail-item">
-                        <div class="detail-label">Status</div>
-                        <div class="detail-value">
-                            <span class="badge-status">
-                                <%= versionDetail.get("status") == null ? "-" : versionDetail.get("status") %>
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="detail-item">
-                        <div class="detail-label">Submitted At</div>
-                        <div class="detail-value">
-                            <%= versionDetail.get("submitted_at") == null ? "-" : versionDetail.get("submitted_at") %>
-                        </div>
-                    </div>
-
-                    <div class="detail-item">
-                        <div class="detail-label">Current Syllabus Version</div>
-                        <div class="detail-value">
-                            <%= versionDetail.get("current_version") == null ? "-" : versionDetail.get("current_version") %>
+            <% if (versionDetail == null) { %>
+                <div class="version-panel">
+                    <div class="panel-body">
+                        <div class="empty-content">
+                            The syllabus version could not be loaded.
                         </div>
                     </div>
                 </div>
-
-                <div class="description-box">
-                    <div class="detail-label">Description of Changes</div>
-                    <div class="detail-value" style="margin-top: 0.5rem;">
-                        <%= versionDetail.get("description_of_changes") == null ? "-" : versionDetail.get("description_of_changes") %>
+            <% } else {
+                Object submittedAtObject = versionDetail.get("submitted_at");
+                String submittedAt = submittedAtObject instanceof java.util.Date
+                        ? dateFormat.format((java.util.Date) submittedAtObject)
+                        : text(submittedAtObject, "-");
+            %>
+                <section class="version-panel">
+                    <div class="panel-header">
+                        <h3>Syllabus Version Information</h3>
                     </div>
-                </div>
-            </div>
-        </div>
 
-        <div class="panel">
-            <div class="panel-header">
-                <h3 class="panel-title">Review Decision</h3>
-            </div>
+                    <div class="panel-body">
+                        <div class="detail-grid">
+                            <div class="detail">
+                                <div class="detail-label">Course code</div>
+                                <div class="detail-value">
+                                    <%= h(text(versionDetail.get("course_code"), "-")) %>
+                                </div>
+                            </div>
 
-            <div class="panel-body">
-                <div class="decision-grid">
-                    <div class="decision-card">
-                        <h4>Approve Syllabus</h4>
-                        <p>Approve this syllabus version if its content is acceptable and ready for the next step.</p>
+                            <div class="detail">
+                                <div class="detail-label">Course name</div>
+                                <div class="detail-value">
+                                    <%= h(text(versionDetail.get("course_name"), "-")) %>
+                                </div>
+                            </div>
 
-                        <form action="${pageContext.request.contextPath}/review?action=approve" method="post">
-                            <input type="hidden" name="versionId" value="<%= versionDetail.get("version_id") %>">
+                            <div class="detail">
+                                <div class="detail-label">Version</div>
+                                <div class="detail-value">
+                                    v<%= h(text(versionDetail.get("version_number"), "-")) %>
+                                </div>
+                            </div>
 
-                            <textarea class="review-textarea" name="comment" placeholder="Enter approval comment...">Looks good</textarea>
+                            <div class="detail">
+                                <div class="detail-label">Submitted</div>
+                                <div class="detail-value"><%= h(submittedAt) %></div>
+                            </div>
 
-                            <button type="submit" class="btn-approve">
-                                Approve
+                            <div class="detail">
+                                <div class="detail-label">Reviewers</div>
+                                <div class="detail-value">
+                                    <%= h(text(
+                                            versionDetail.get("assigned_reviewer_count"),
+                                            "0"
+                                    )) %>
+                                </div>
+                            </div>
+
+                            <div class="detail">
+                                <div class="detail-label">Completed reviews</div>
+                                <div class="detail-value">
+                                    <%= h(text(
+                                            versionDetail.get("completed_reviewer_count"),
+                                            "0"
+                                    )) %>
+                                </div>
+                            </div>
+
+                            <div class="detail">
+                                <div class="detail-label">Approved reviews</div>
+                                <div class="detail-value">
+                                    <%= h(text(
+                                            versionDetail.get("approved_reviewer_count"),
+                                            "0"
+                                    )) %>
+                                </div>
+                            </div>
+
+                            <div class="detail">
+                                <div class="detail-label">Status</div>
+                                <div class="detail-value">
+                                    <%= h(text(versionDetail.get("version_status"), "-")) %>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="change-description">
+                            <strong>Description of changes:</strong>
+                            <%= h(text(
+                                    versionDetail.get("description_of_changes"),
+                                    "No description was provided."
+                            )) %>
+                        </div>
+                    </div>
+                </section>
+
+                <form id="reviewForm"
+                      action="${pageContext.request.contextPath}/review?action=submitEvaluation"
+                      method="post">
+
+                    <input type="hidden"
+                           name="versionId"
+                           value="<%= h(versionDetail.get("version_id")) %>">
+
+                    <% if (criteriaList == null || criteriaList.isEmpty()) { %>
+                        <div class="review-card">
+                            <div class="panel-body">
+                                <div class="empty-content">
+                                    No active review criteria were found.
+                                </div>
+                            </div>
+                        </div>
+                    <% } else {
+                        for (Map<String, Object> criteria : criteriaList) {
+                            long criteriaId =
+                                    ((Number) criteria.get("criteria_id")).longValue();
+
+                            String criteriaCode = text(
+                                    criteria.get("criteria_code"),
+                                    ""
+                            );
+
+                            String criteriaName = text(
+                                    criteria.get("criteria_name"),
+                                    criteriaCode
+                            );
+
+                            String criteriaDescription = text(
+                                    criteria.get("description"),
+                                    ""
+                            );
+
+                            boolean academicInformation
+                                    = isAcademicInformation(
+                                            criteriaCode,
+                                            criteriaName
+                                    );
+
+                            String sectionJson = sectionContentMap == null
+                                    ? null
+                                    : sectionContentMap.get(criteriaCode);
+                    %>
+                        <section class="review-card"
+                                 data-section-card="<%= criteriaId %>"
+                                 <%= academicInformation
+                                         ? "data-reference-only=\"true\""
+                                         : "data-review-card=\""
+                                           + criteriaId
+                                           + "\"" %>>
+                            <div class="panel-header">
+                                <h3>
+                                    <%= academicInformation
+                                            ? "Academic Information"
+                                            : h(criteriaName) %>
+                                </h3>
+                                <p>
+                                    <%= academicInformation
+                                            ? "Controlled by Academic Office and shown for reference only."
+                                            : h(criteriaDescription) %>
+                                </p>
+                            </div>
+
+                            <div class="panel-body">
+                                <textarea class="section-json-source"
+                                          style="display:none;"><%= h(sectionJson) %></textarea>
+
+                                <div class="section-content"
+                                     data-section-code="<%= h(criteriaCode) %>">
+                                    <% if (sectionJson == null
+                                            || sectionJson.trim().isEmpty()) { %>
+                                        <div class="empty-content">
+                                            No content was submitted for this section.
+                                        </div>
+                                    <% } else { %>
+                                        <pre class="section-json-fallback"><%= h(sectionJson) %></pre>
+                                    <% } %>
+                                </div>
+
+                                <% if (academicInformation) { %>
+                                    <div class="reference-only-panel">
+                                        <div>🔒</div>
+                                        <div>
+                                            <strong>Reference only</strong>
+                                            Reviewer cannot approve, reject or comment
+                                            on Academic Information. This section does
+                                            not affect the final review decision.
+                                        </div>
+                                    </div>
+                                <% } else { %>
+                                    <div class="decision-area">
+                                        <div class="decision-title">
+                                            Section decision
+                                        </div>
+
+                                        <div class="decision-options">
+                                            <label class="decision-option approve">
+                                                <input type="radio"
+                                                       name="decision_<%= criteriaId %>"
+                                                       value="APPROVED"
+                                                       required>
+                                                Approve
+                                            </label>
+
+                                            <label class="decision-option reject">
+                                                <input type="radio"
+                                                       name="decision_<%= criteriaId %>"
+                                                       value="REJECTED"
+                                                       required>
+                                                Reject
+                                            </label>
+                                        </div>
+
+                                        <textarea name="comment_<%= criteriaId %>"
+                                                  data-comment-for="<%= criteriaId %>"
+                                                  placeholder="Comment for this section. Required when rejected."></textarea>
+
+                                        <div class="comment-hint">
+                                            Comment is optional for Approve and required for Reject.
+                                        </div>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </section>
+                    <%  }
+                       } %>
+
+                    <section class="submit-panel">
+                        <div class="panel-header">
+                            <h3>Final Review</h3>
+                            <p>
+                                The system calculates the final result from evaluated sections only.
+                                Academic Information is excluded.
+                            </p>
+                        </div>
+
+                        <div class="panel-body">
+                            <textarea name="summaryComment"
+                                      placeholder="Optional overall summary comment..."></textarea>
+
+                            <button id="submitReviewButton"
+                                    class="submit-button"
+                                    type="submit"
+                                    <%= criteriaList == null
+                                            || criteriaList.isEmpty()
+                                            ? "disabled"
+                                            : "" %>>
+                                Submit Evaluation
                             </button>
-                        </form>
-                    </div>
-
-                    <div class="decision-card">
-                        <h4>Reject Syllabus</h4>
-                        <p>Reject this syllabus version if it needs revision. A reject comment is required.</p>
-
-                        <form action="${pageContext.request.contextPath}/review?action=reject" method="post">
-                            <input type="hidden" name="versionId" value="<%= versionDetail.get("version_id") %>">
-
-                            <textarea class="review-textarea" name="comment" required placeholder="Enter reason for rejection..."></textarea>
-
-                            <button type="submit" class="btn-reject">
-                                Reject
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <% } else { %>
-
-        <div class="panel">
-            <div class="empty-state">
-                <h3>No Version Detail Found</h3>
-                <p>This syllabus version does not exist or cannot be loaded.</p>
-            </div>
-        </div>
-
-        <% } %>
-    </main>
+                        </div>
+                    </section>
+                </form>
+            <% } %>
+        </main>
+    </div>
 </div>
 
+<script>
+(function () {
+    "use strict";
 
-</div>
+    function humanizeKey(key) {
+        if (key === null || key === undefined) {
+            return "";
+        }
+
+        return String(key)
+                .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, function (character) {
+                    return character.toUpperCase();
+                });
+    }
+
+    function displayValue(value) {
+        if (value === null || value === undefined || value === "") {
+            return "-";
+        }
+
+        if (Array.isArray(value)) {
+            return value.length === 0
+                    ? "-"
+                    : value.map(displayValue).join(", ");
+        }
+
+        if (typeof value === "object") {
+            return Object.keys(value).map(function (key) {
+                return humanizeKey(key) + ": " + displayValue(value[key]);
+            }).join("; ");
+        }
+
+        if (typeof value === "boolean") {
+            return value ? "Yes" : "No";
+        }
+
+        return String(value);
+    }
+
+    function createCell(tagName, value) {
+        var cell = document.createElement(tagName);
+        cell.textContent = displayValue(value);
+        return cell;
+    }
+
+    function collectColumns(rows) {
+        var columns = [];
+        var seen = {};
+
+        rows.forEach(function (row) {
+            if (row === null || typeof row !== "object" || Array.isArray(row)) {
+                return;
+            }
+
+            Object.keys(row).forEach(function (key) {
+                if (!seen[key]) {
+                    seen[key] = true;
+                    columns.push(key);
+                }
+            });
+        });
+
+        return columns;
+    }
+
+    function renderObjectTable(target, objectValue) {
+        var table = document.createElement("table");
+        table.className = "key-value-table";
+
+        var tbody = document.createElement("tbody");
+
+        Object.keys(objectValue).forEach(function (key) {
+            var row = document.createElement("tr");
+            row.appendChild(createCell("th", humanizeKey(key)));
+            row.appendChild(createCell("td", objectValue[key]));
+            tbody.appendChild(row);
+        });
+
+        table.appendChild(tbody);
+        target.appendChild(table);
+    }
+
+    function renderArrayTable(target, rows) {
+        if (rows.length === 0) {
+            renderEmpty(target);
+            return;
+        }
+
+        var objectRows = rows.every(function (row) {
+            return row !== null
+                    && typeof row === "object"
+                    && !Array.isArray(row);
+        });
+
+        if (!objectRows) {
+            var list = document.createElement("ol");
+
+            rows.forEach(function (value) {
+                var item = document.createElement("li");
+                item.textContent = displayValue(value);
+                list.appendChild(item);
+            });
+
+            target.appendChild(list);
+            return;
+        }
+
+        var columns = collectColumns(rows);
+
+        if (columns.length === 0) {
+            renderEmpty(target);
+            return;
+        }
+
+        var table = document.createElement("table");
+        var thead = document.createElement("thead");
+        var headerRow = document.createElement("tr");
+
+        columns.forEach(function (column) {
+            headerRow.appendChild(
+                    createCell("th", humanizeKey(column))
+            );
+        });
+
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        var tbody = document.createElement("tbody");
+
+        rows.forEach(function (rowValue) {
+            var row = document.createElement("tr");
+
+            columns.forEach(function (column) {
+                row.appendChild(createCell("td", rowValue[column]));
+            });
+
+            tbody.appendChild(row);
+        });
+
+        table.appendChild(tbody);
+        target.appendChild(table);
+    }
+
+    function renderEmpty(target) {
+        var empty = document.createElement("div");
+        empty.className = "empty-content";
+        empty.textContent = "No content was submitted for this section.";
+        target.appendChild(empty);
+    }
+
+    function renderError(target) {
+        var error = document.createElement("div");
+        error.className = "render-error";
+        error.textContent = "The submitted section data cannot be displayed.";
+        target.appendChild(error);
+    }
+
+    function parseJsonSource(card) {
+        var source = card
+                ? card.querySelector(".section-json-source")
+                : null;
+
+        if (!source || !source.value || !source.value.trim()) {
+            return null;
+        }
+
+        try {
+            return JSON.parse(source.value);
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function loadAllCourseObjectivesFromPage() {
+        var coTarget = document.querySelector(
+                '.section-content[data-section-code="COURSE_OBJECTIVES"]'
+        );
+
+        if (!coTarget) {
+            return [];
+        }
+
+        var card = coTarget.closest("[data-review-card]");
+        var parsed = parseJsonSource(card);
+
+        if (!Array.isArray(parsed)) {
+            return [];
+        }
+
+        return parsed.filter(function (item) {
+            return item && typeof item === "object" && item.code;
+        }).map(function (item) {
+            return {
+                code: String(item.code),
+                description: item.description ? String(item.description) : ""
+            };
+        });
+    }
+
+    function loadAllClosFromPage() {
+        var cloTarget = document.querySelector(
+                '.section-content[data-section-code="COURSE_LEARNING_OUTCOMES"]'
+        );
+
+        if (!cloTarget) {
+            return [];
+        }
+
+        var card = cloTarget.closest("[data-review-card]");
+        var parsed = parseJsonSource(card);
+
+        if (!Array.isArray(parsed)) {
+            return [];
+        }
+
+        return parsed.filter(function (item) {
+            return item
+                    && typeof item === "object"
+                    && !Array.isArray(item)
+                    && item.code;
+        }).map(function (item) {
+            return {
+                code: String(item.code),
+                description: item.description
+                        ? String(item.description)
+                        : ""
+            };
+        });
+    }
+
+    function mappingMatches(mapping, clo, plo) {
+        if (!mapping || !clo || !plo) {
+            return false;
+        }
+
+        var sameClo = String(mapping.cloCode || "")
+                .toUpperCase() === String(clo.code || "").toUpperCase();
+
+        if (!sameClo) {
+            return false;
+        }
+
+        if (mapping.ploId !== null
+                && mapping.ploId !== undefined
+                && plo.ploId !== null
+                && plo.ploId !== undefined) {
+            return String(mapping.ploId) === String(plo.ploId);
+        }
+
+        return String(mapping.ploCode || "").toUpperCase()
+                === String(plo.ploCode || "").toUpperCase();
+    }
+
+    function buildFallbackClos(group) {
+        var values = [];
+        var seen = {};
+
+        (group.mappings || []).forEach(function (mapping) {
+            if (!mapping || !mapping.cloCode) {
+                return;
+            }
+
+            var key = String(mapping.cloCode).toUpperCase();
+
+            if (seen[key]) {
+                return;
+            }
+
+            seen[key] = true;
+            values.push({
+                code: String(mapping.cloCode),
+                description: mapping.cloDescription
+                        ? String(mapping.cloDescription)
+                        : ""
+            });
+        });
+
+        return values;
+    }
+
+    function renderCurriculumMatrix(group, allClos) {
+        var card = document.createElement("section");
+        card.className = "clo-plo-curriculum-card";
+
+        var header = document.createElement("div");
+        header.className = "clo-plo-curriculum-header";
+
+        var headingBlock = document.createElement("div");
+
+        var title = document.createElement("h4");
+        title.className = "clo-plo-curriculum-title";
+        title.textContent = [
+            group.curriculumCode || "Curriculum",
+            group.curriculumName || ""
+        ].filter(Boolean).join(" - ");
+
+        var courseLine = document.createElement("div");
+        courseLine.className = "clo-plo-course-line";
+        courseLine.textContent = [
+            group.courseCode || "",
+            group.courseName || ""
+        ].filter(Boolean).join(" - ");
+
+        headingBlock.appendChild(title);
+        headingBlock.appendChild(courseLine);
+        header.appendChild(headingBlock);
+
+        if (group.semester !== null
+                && group.semester !== undefined
+                && group.semester !== "") {
+            var badge = document.createElement("div");
+            badge.className = "clo-plo-semester-badge";
+            badge.textContent = "Semester " + group.semester;
+            header.appendChild(badge);
+        }
+
+        card.appendChild(header);
+
+        var plos = Array.isArray(group.allowedPlos)
+                ? group.allowedPlos
+                : [];
+
+        var mappings = Array.isArray(group.mappings)
+                ? group.mappings
+                : [];
+
+        var clos = allClos.length > 0
+                ? allClos
+                : buildFallbackClos(group);
+
+        if (plos.length === 0) {
+            var noPlo = document.createElement("div");
+            noPlo.className = "clo-plo-empty-group";
+            noPlo.textContent =
+                    "No PLO was included in this submitted Curriculum snapshot.";
+            card.appendChild(noPlo);
+            return card;
+        }
+
+        var tableWrap = document.createElement("div");
+        tableWrap.className = "clo-plo-table-wrap";
+
+        var table = document.createElement("table");
+        table.className = "clo-plo-matrix";
+
+        var thead = document.createElement("thead");
+        var headerRow = document.createElement("tr");
+
+        var cloHeader = document.createElement("th");
+        cloHeader.className = "clo-column";
+        cloHeader.textContent = "CLO";
+        headerRow.appendChild(cloHeader);
+
+        plos.forEach(function (plo) {
+            var th = document.createElement("th");
+
+            var code = document.createElement("span");
+            code.className = "plo-header-code";
+            code.textContent = plo.ploCode || "PLO";
+
+            var description = document.createElement("span");
+            description.className = "plo-header-description";
+            description.textContent = plo.ploDescription || "";
+
+            th.appendChild(code);
+            th.appendChild(description);
+            headerRow.appendChild(th);
+        });
+
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        var tbody = document.createElement("tbody");
+
+        clos.forEach(function (clo) {
+            var row = document.createElement("tr");
+
+            var cloCell = document.createElement("td");
+            cloCell.className = "clo-column";
+
+            var cloCode = document.createElement("div");
+            cloCode.className = "clo-code";
+            cloCode.textContent = clo.code || "CLO";
+
+            var cloDescription = document.createElement("div");
+            cloDescription.className = "clo-description";
+            cloDescription.textContent = clo.description || "";
+
+            cloCell.appendChild(cloCode);
+            cloCell.appendChild(cloDescription);
+            row.appendChild(cloCell);
+
+            plos.forEach(function (plo) {
+                var cell = document.createElement("td");
+
+                var selected = mappings.some(function (mapping) {
+                    return mappingMatches(mapping, clo, plo);
+                });
+
+                var marker = document.createElement("div");
+
+                if (selected) {
+                    marker.className = "mapping-check";
+                    marker.textContent = "✓";
+                    marker.setAttribute(
+                            "aria-label",
+                            (clo.code || "CLO")
+                            + " maps to "
+                            + (plo.ploCode || "PLO")
+                    );
+                } else {
+                    marker.className = "mapping-empty";
+                    marker.textContent = "—";
+                }
+
+                cell.appendChild(marker);
+                row.appendChild(cell);
+            });
+
+            tbody.appendChild(row);
+        });
+
+        table.appendChild(tbody);
+        tableWrap.appendChild(table);
+        card.appendChild(tableWrap);
+
+        return card;
+    }
+
+    function renderCloCoMapping(target, data) {
+        if (!data || typeof data !== "object" || Array.isArray(data)) {
+            renderEmpty(target);
+            return;
+        }
+
+        var clos = loadAllClosFromPage();
+        var cos = loadAllCourseObjectivesFromPage();
+
+        if (!clos.length || !cos.length) {
+            renderEmpty(target);
+            return;
+        }
+
+        var wrap = document.createElement("div");
+        wrap.className = "clo-plo-table-wrap";
+
+        var table = document.createElement("table");
+        table.className = "clo-plo-matrix";
+
+        var thead = document.createElement("thead");
+        var headerRow = document.createElement("tr");
+        var cloHeader = document.createElement("th");
+        cloHeader.className = "clo-column";
+        cloHeader.textContent = "CLO";
+        headerRow.appendChild(cloHeader);
+
+        cos.forEach(function (co) {
+            var th = document.createElement("th");
+            var code = document.createElement("span");
+            code.className = "plo-header-code";
+            code.textContent = co.code || "CO";
+            var description = document.createElement("span");
+            description.className = "plo-header-description";
+            description.textContent = co.description || "";
+            th.appendChild(code);
+            th.appendChild(description);
+            headerRow.appendChild(th);
+        });
+
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        var tbody = document.createElement("tbody");
+        clos.forEach(function (clo) {
+            var row = document.createElement("tr");
+            var cloCell = document.createElement("td");
+            cloCell.className = "clo-column";
+            var cloCode = document.createElement("div");
+            cloCode.className = "clo-code";
+            cloCode.textContent = clo.code || "CLO";
+            var cloDescription = document.createElement("div");
+            cloDescription.className = "clo-description";
+            cloDescription.textContent = clo.description || "";
+            cloCell.appendChild(cloCode);
+            cloCell.appendChild(cloDescription);
+            row.appendChild(cloCell);
+
+            var selectedCos = Array.isArray(data[clo.code])
+                    ? data[clo.code].map(function (value) {
+                        return String(value).toUpperCase();
+                    })
+                    : [];
+
+            cos.forEach(function (co) {
+                var cell = document.createElement("td");
+                var marker = document.createElement("div");
+                var selected = selectedCos.indexOf(
+                        String(co.code || "").toUpperCase()
+                ) >= 0;
+                marker.className = selected ? "mapping-check" : "mapping-empty";
+                marker.textContent = selected ? "✓" : "—";
+                cell.appendChild(marker);
+                row.appendChild(cell);
+            });
+
+            tbody.appendChild(row);
+        });
+
+        table.appendChild(tbody);
+        wrap.appendChild(table);
+        target.appendChild(wrap);
+    }
+
+    function renderCloPloMapping(target, data) {
+        if (!Array.isArray(data) || data.length === 0) {
+            renderEmpty(target);
+            return;
+        }
+
+        var list = document.createElement("div");
+        list.className = "clo-plo-review-list";
+
+        var allClos = loadAllClosFromPage();
+
+        data.forEach(function (group) {
+            if (!group || typeof group !== "object") {
+                return;
+            }
+
+            list.appendChild(
+                    renderCurriculumMatrix(group, allClos)
+            );
+        });
+
+        if (!list.children.length) {
+            renderEmpty(target);
+            return;
+        }
+
+        target.appendChild(list);
+    }
+
+    function renderSection(target, source) {
+        target.innerHTML = "";
+
+        var rawJson = source.value;
+
+        if (!rawJson || !rawJson.trim()) {
+            renderEmpty(target);
+            return;
+        }
+
+        try {
+            var data = JSON.parse(rawJson);
+            var sectionCode = target.getAttribute("data-section-code");
+
+            if (data === null
+                    || data === undefined
+                    || data === ""
+                    || (Array.isArray(data) && data.length === 0)
+                    || (typeof data === "object"
+                        && !Array.isArray(data)
+                        && Object.keys(data).length === 0)) {
+                renderEmpty(target);
+                return;
+            }
+
+            if (sectionCode === "CLO_CO_MAPPING") {
+                renderCloCoMapping(target, data);
+                return;
+            }
+
+            if (sectionCode === "CLO_PLO_MAPPING") {
+                renderCloPloMapping(target, data);
+                return;
+            }
+
+            if (Array.isArray(data)) {
+                renderArrayTable(target, data);
+            } else if (typeof data === "object") {
+                renderObjectTable(target, data);
+            } else {
+                target.appendChild(createCell("div", data));
+            }
+
+        } catch (error) {
+            console.error("Invalid section JSON:", error);
+            renderError(target);
+        }
+    }
+
+    function updateCommentRequirement(card) {
+        var rejectInput = card.querySelector(
+                'input[type="radio"][value="REJECTED"]'
+        );
+
+        var comment = card.querySelector("[data-comment-for]");
+
+        if (!rejectInput || !comment) {
+            return;
+        }
+
+        comment.required = rejectInput.checked;
+
+        if (rejectInput.checked) {
+            comment.placeholder =
+                    "Required: explain why this section is rejected.";
+        } else {
+            comment.placeholder =
+                    "Comment for this section. Optional when approved.";
+        }
+    }
+
+    function bindDecisionInputs(card) {
+        var inputs = card.querySelectorAll(
+                'input[type="radio"][name^="decision_"]'
+        );
+
+        inputs.forEach(function (input) {
+            input.addEventListener("change", function () {
+                updateCommentRequirement(card);
+            });
+        });
+    }
+
+    function validateReviewForm(form) {
+        var cards = form.querySelectorAll("[data-review-card]");
+        var valid = true;
+
+        cards.forEach(function (card) {
+            updateCommentRequirement(card);
+
+            var checked = card.querySelector(
+                    'input[type="radio"][name^="decision_"]:checked'
+            );
+
+            var comment = card.querySelector("[data-comment-for]");
+
+            if (!checked) {
+                valid = false;
+                return;
+            }
+
+            if (checked.value === "REJECTED"
+                    && (!comment || !comment.value.trim())) {
+                valid = false;
+
+                if (comment) {
+                    comment.focus();
+                }
+            }
+        });
+
+        return valid;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var sectionCards = document.querySelectorAll(
+                "[data-section-card]"
+        );
+
+        sectionCards.forEach(function (card) {
+            var target = card.querySelector(".section-content");
+            var source = card.querySelector(".section-json-source");
+
+            if (target && source) {
+                renderSection(target, source);
+            }
+
+            if (card.hasAttribute("data-review-card")) {
+                bindDecisionInputs(card);
+                updateCommentRequirement(card);
+            }
+        });
+
+        var form = document.getElementById("reviewForm");
+        var submitButton = document.getElementById("submitReviewButton");
+
+        if (!form) {
+            return;
+        }
+
+        form.addEventListener("submit", function (event) {
+            if (!validateReviewForm(form)) {
+                event.preventDefault();
+                window.alert(
+                        "Select a decision for every evaluable section and provide "
+                        + "a comment for each rejected section."
+                );
+                return;
+            }
+
+            var confirmed = window.confirm(
+                    "Submit this evaluation? "
+                    + "You cannot edit it after submission."
+            );
+
+            if (!confirmed) {
+                event.preventDefault();
+                return;
+            }
+
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = "Submitting...";
+            }
+        });
+    });
+}());
+</script>
 </body>
 </html>

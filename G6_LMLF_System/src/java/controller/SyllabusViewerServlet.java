@@ -8,7 +8,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * SyllabusViewerServlet maps the "/syllabus-viewer" URL to "/views/syllabusViewer.jsp".
+ * The old "/syllabus-viewer" page was a static placeholder mockup (no DB data),
+ * so it has been retired. Real syllabus viewing is handled by the
+ * lecturer/student syllabus browsers. Any hit here is redirected to the
+ * role-based dashboard instead of showing the fake page.
  */
 @WebServlet(name = "SyllabusViewerServlet", urlPatterns = {"/syllabus-viewer"})
 public class SyllabusViewerServlet extends HttpServlet {
@@ -16,17 +19,12 @@ public class SyllabusViewerServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.getRequestDispatcher("/views/syllabusViewer.jsp").forward(request, response);
+        response.sendRedirect(request.getContextPath() + "/dashboard");
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         doGet(request, response);
-    }
-
-    @Override
-    public String getServletInfo() {
-        return "Syllabus Viewer Servlet";
     }
 }

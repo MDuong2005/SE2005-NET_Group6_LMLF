@@ -364,6 +364,7 @@ button { cursor: pointer; border: none; background: none; }
 .bg-green-light { background-color: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
 .bg-orange-light { background-color: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; }
 .bg-purple-light { background-color: #faf5ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+.bg-red-light { background-color: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
 
 /* Table enhancements */
 .data-table-container {

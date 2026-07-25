@@ -1,0 +1,273 @@
+/* 
+    Syllabus Detail Specific Styles 
+    Follows existing Admin/LMLF design system
+*/
+
+:root {
+    --primary-orange: #f26f21;
+    --primary-orange-fallback: #f89a42;
+    --primary-green: #2ecc71;
+    --primary-green-fallback: #17a84b;
+    --primary-blue: #008bd2;
+    --bg-color: #ffffff;
+    --text-main: #000000;
+    --text-muted: #64748b;
+    --border-color: #dddddd;
+    --table-header-bg: var(--primary-orange);
+    --table-header-text: #ffffff;
+    --table-row-alt: #f1f5f9;
+}
+
+body {
+    font-family: Arial, 'Inter', 'Segoe UI', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+    box-sizing: border-box;
+}
+
+*, *:before, *:after {
+    box-sizing: inherit;
+}
+
+/* Header Styles */
+.syl-header {
+    background-color: var(--primary-orange);
+    padding: 0 2rem;
+    height: 82px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.syl-header-left {
+    display: flex;
+    align-items: center;
+}
+
+.btn-home {
+    background-color: var(--primary-green);
+    color: white;
+    border: none;
+    width: 100px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.btn-home:hover {
+    background-color: #27ae60;
+}
+
+.syl-header-center {
+    flex: 1;
+    text-align: center;
+}
+
+.syl-header-center h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.syl-header-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.lang-selector select {
+    padding: 0.4rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    outline: none;
+    color: var(--text-main);
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-orange);
+    font-weight: bold;
+}
+
+/* Main Layout */
+.syl-container {
+    width: calc(100% - 60px);
+    margin: 30px auto;
+}
+
+.page-title {
+    font-size: 2rem;
+    color: var(--text-main);
+    margin-top: 25px;
+    margin-bottom: 45px;
+    font-weight: bold;
+}
+
+/* General Information Table */
+.info-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    margin-bottom: 2rem;
+}
+
+.info-table th {
+    color: var(--text-main);
+    font-weight: normal;
+    padding: 0.5rem 1rem;
+    width: 180px;
+    text-align: right;
+    vertical-align: top;
+    border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+}
+
+.info-table td {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+    vertical-align: top;
+    white-space: pre-wrap;
+}
+
+/* Bold specifics */
+.info-table tr:nth-child(2) td, /* Syllabus Name */
+.info-table tr:nth-child(3) td, /* Syllabus English */
+.info-table tr:nth-child(4) td  /* Subject Code */ {
+    font-weight: bold;
+}
+
+
+/* Section Styling */
+.section-meta {
+    color: var(--primary-green-fallback);
+    font-weight: bold;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* Data Tables */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    margin-bottom: 2rem;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--border-color);
+}
+
+.data-table thead th {
+    background-color: var(--table-header-bg);
+    color: var(--table-header-text);
+    padding: 0.5rem 1rem;
+    text-align: left;
+    font-weight: bold;
+    border: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.data-table tbody td {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    vertical-align: top;
+    white-space: pre-wrap;
+}
+
+.data-table tbody tr:nth-child(even) {
+    background-color: var(--table-row-alt);
+}
+
+.data-table tbody tr:nth-child(odd) {
+    background-color: #ffffff;
+}
+
+/* Specific alignments for Checkboxes */
+.checkbox-cell {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+/* Links */
+a {
+    color: var(--primary-blue);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.mapping-link {
+    display: inline-block;
+    margin-bottom: 2rem;
+}
+
+/* Action Buttons */
+.btn-download {
+    background-color: var(--primary-blue);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-weight: normal;
+    cursor: pointer;
+    margin-right: 1rem;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+    border-radius: 4px;
+}
+.btn-download:hover {
+    background-color: #0073ad;
+    text-decoration: none;
+}
+
+/* Floating Support Button */
+.btn-support-floating {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background-color: #8e44ad;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    text-decoration: none;
+    z-index: 1000;
+    transition: transform 0.2s;
+}
+
+.btn-support-floating:hover {
+    transform: scale(1.1);
+}
+
+/* Utility to ensure pre-wrap layout isn't overly wide */
+.word-break-all {
+    word-break: break-word;
+}

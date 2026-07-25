@@ -1,135 +1,194 @@
-/* PURE CSS RESET & BASE STYLES */
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-body {
-    background-color: #f4f7f6;
-    color: #333;
-    padding: 30px;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-}
+/* =======================================================
+   ADMIN MANAGEMENT PAGES
+   Shares the dashboard shell (sidebar + top header) via @import,
+   then styles the management "card" area.
+   All management rules are scoped under .container so they never
+   leak into the shared sidebar/header, and win over layout globals.
+   Brand: FPT orange (variables come from dashboard.css).
+   ======================================================= */
+@import url('dashboard.css');
+
+/* ===== PAGE CARD ===== */
 .container {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
     background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
     overflow: hidden;
 }
-
-/* FORMS SPECIFIC CONTAINER */
 .container.form-container {
-    max-width: 600px;
+    max-width: 640px;
 }
 
-/* HEADER */
-.header {
+/* ===== CARD HEADER ===== */
+.container .header {
     padding: 20px 30px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #fafafa;
+    background-color: #ffffff;
+    flex-wrap: wrap;
+    gap: 12px;
 }
-.header h2 {
-    font-size: 24px;
-    color: #2c3e50;
+.container .header h2 {
+    font-size: 22px;
+    color: #0f172a;
     margin: 0;
 }
-.header.form-header h2 {
+.container .header.form-header h2 {
     font-size: 20px;
 }
-.header-actions {
+.container .header-actions {
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
-/* BUTTONS */
-.btn {
+/* ===== BUTTONS ===== */
+.container .btn {
     text-decoration: none;
     font-weight: 600;
     font-size: 14px;
     padding: 8px 16px;
-    border-radius: 4px;
-    transition: all 0.3s ease;
-    border: none;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
     cursor: pointer;
     text-align: center;
+    display: inline-block;
 }
-.btn-primary {
-    background-color: #27ae60;
+.container .btn-primary {
+    background-color: var(--fpt-orange);
     color: #fff;
+    border-color: var(--fpt-orange);
 }
-.btn-primary:hover {
-    background-color: #2ecc71;
+.container .btn-primary:hover {
+    background-color: var(--fpt-orange-hover);
+    border-color: var(--fpt-orange-hover);
 }
-.btn-back {
-    border: 1px solid #3498db;
-    color: #3498db;
-    background: transparent;
+.container .btn-back {
+    border: 1px solid var(--fpt-orange-border);
+    color: var(--fpt-orange-hover);
+    background: var(--fpt-orange-light);
 }
-.btn-back:hover {
-    background-color: #3498db;
+.container .btn-back:hover {
+    background-color: var(--fpt-orange);
     color: #fff;
+    border-color: var(--fpt-orange);
 }
-.btn-cancel {
+.container .btn-cancel {
     background-color: #f1f3f4;
     color: #5f6368;
 }
-.btn-cancel:hover {
-    background-color: #e8eaed;
+.container .btn-cancel:hover {
+    background-color: #e2e6ea;
 }
-.btn-submit {
-    background-color: #3498db;
+.container .btn-submit {
+    background-color: var(--fpt-orange);
     color: #fff;
+    border-color: var(--fpt-orange);
 }
-.btn-submit:hover {
-    background-color: #2980b9;
+.container .btn-submit:hover {
+    background-color: var(--fpt-orange-hover);
+    border-color: var(--fpt-orange-hover);
 }
 
-/* TABLE STYLES */
-.table-container {
-    padding: 20px;
+/* ===== FILTER TABS (Role / Status) ===== */
+.container .filter-group {
+    display: flex;
+    gap: 10px;
+    padding: 10px 30px;
+    flex-wrap: wrap;
+    background-color: #fff;
+    align-items: center;
+}
+.container .filter-group.first { padding-top: 20px; }
+.container .filter-group.last {
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.container .filter-label {
+    font-size: 0.85rem;
+    color: #7f8c8d;
+    font-weight: 600;
+    min-width: 50px;
+}
+.container .tab-btn {
+    padding: 6px 14px;
+    border: 1px solid transparent;
+    background: #f1f5f9;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #64748b;
+    transition: all 0.2s;
+}
+.container .tab-btn:hover { background: #e2e8f0; }
+/* Unified: active filters now use the brand color (was orange vs blue) */
+.container .tab-btn.active {
+    background: var(--fpt-orange);
+    color: #fff;
+    border-color: var(--fpt-orange);
+}
+.container .search-input {
+    padding: 6px 14px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #495057;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    min-width: 260px;
+    background-color: #f8fafc;
+}
+.container .search-input:focus {
+    border-color: var(--fpt-orange);
+    background-color: #fff;
+    box-shadow: 0 0 0 3px var(--fpt-orange-light);
+}
+
+/* ===== TABLE ===== */
+.container .table-container {
+    padding: 20px 30px 30px;
     overflow-x: auto;
 }
-table {
+.container table {
     width: 100%;
     border-collapse: collapse;
     text-align: left;
 }
-th, td {
-    padding: 15px 20px;
+.container th,
+.container td {
+    padding: 14px 20px;
     border-bottom: 1px solid #f0f0f0;
     font-size: 14px;
 }
-th {
-    background-color: #f8f9fa;
+.container th {
+    background-color: #f8fafc;
     color: #6c757d;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-size: 12px;
 }
-tr:hover {
-    background-color: #fbfcfd;
+.container tbody tr:hover {
+    background-color: #fff7f2;
 }
-.user-col {
+.container .user-col {
     font-weight: 600;
-    color: #2c3e50;
+    color: #0f172a;
 }
-.email-col {
+.container .email-col {
     color: #7f8c8d;
     font-size: 13px;
 }
 
-/* BADGES */
-.badge {
+/* ===== BADGES ===== */
+.container .badge {
     padding: 4px 10px;
     border-radius: 12px;
     font-size: 12px;
@@ -137,53 +196,53 @@ tr:hover {
     display: inline-block;
     text-transform: uppercase;
 }
-.badge-active {
+.container .badge-active {
     background-color: #e6f4ea;
     color: #137333;
 }
-.badge-banned {
+.container .badge-banned {
     background-color: #fce8e6;
     color: #c5221f;
 }
-.badge-role {
-    background-color: #e8f0fe;
-    color: #1967d2;
+/* Role badge unified to brand tint (was blue) */
+.container .badge-role {
+    background-color: var(--fpt-orange-light);
+    color: var(--fpt-orange-hover);
 }
-.badge-create {
+/* Audit-log action badges keep distinct semantic colors on purpose */
+.container .badge-create {
     background-color: #e6f4ea;
     color: #137333;
 }
-.badge-update {
+.container .badge-update {
     background-color: #fef7e0;
     color: #b06000;
 }
-.badge-delete {
+.container .badge-delete {
     background-color: #fce8e6;
     color: #c5221f;
 }
-.badge-login  {
+.container .badge-login {
     background-color: #e8f0fe;
     color: #1967d2;
 }
-.badge-default {
+.container .badge-default {
     background-color: #f1f3f4;
     color: #5f6368;
 }
 
-/* ACTIONS IN TABLE */
-.action-links form {
+/* ===== IN-TABLE ACTIONS ===== */
+.container .action-links form {
     display: inline-block;
     margin-left: 5px;
 }
-.btn-edit {
-    color: #f39c12;
+.container .btn-edit {
+    color: var(--fpt-orange-hover);
     text-decoration: none;
     font-weight: 600;
 }
-.btn-edit:hover {
-    text-decoration: underline;
-}
-.btn-ban {
+.container .btn-edit:hover { text-decoration: underline; }
+.container .btn-ban {
     background: none;
     border: none;
     color: #e74c3c;
@@ -191,7 +250,7 @@ tr:hover {
     cursor: pointer;
     text-decoration: underline;
 }
-.btn-unban {
+.container .btn-unban {
     background: none;
     border: none;
     color: #27ae60;
@@ -200,45 +259,97 @@ tr:hover {
     text-decoration: underline;
 }
 
-/* FORMS */
-.form-body {
+/* ===== FORMS ===== */
+.container .form-body {
     padding: 30px;
 }
-.form-group {
+.container .form-group {
     margin-bottom: 20px;
 }
-.form-group label {
+.container .form-group label {
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
     font-size: 14px;
     color: #34495e;
 }
-.form-group input, .form-group select {
+.container .form-group input,
+.container .form-group select {
     width: 100%;
     padding: 10px 12px;
     border: 1px solid #ced4da;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 14px;
     color: #495057;
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
-.form-group input:focus, .form-group select:focus {
-    border-color: #3498db;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+.container .form-group input:focus,
+.container .form-group select:focus {
+    border-color: var(--fpt-orange-border);
+    box-shadow: 0 0 0 3px var(--fpt-orange-light);
 }
-.form-group input[readonly] {
+.container .form-group input[readonly] {
     background-color: #e9ecef;
     cursor: not-allowed;
 }
-.form-actions {
+.container .form-actions {
     display: flex;
     justify-content: space-between;
     margin-top: 30px;
 }
-.empty-state {
+.container .empty-state {
     text-align: center;
     padding: 50px 20px;
     color: #6c757d;
+}
+
+/* ===== IMPORT EXCEL ===== */
+.container .import-panel {
+    padding: 20px 30px;
+    background-color: var(--fpt-orange-light);
+    border-bottom: 1px solid var(--fpt-orange-border);
+}
+.container .import-hint {
+    font-size: 13px;
+    color: #5f6368;
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+.container .import-hint code {
+    background: #fff;
+    border: 1px solid var(--fpt-orange-border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 12px;
+}
+.container .import-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.container .import-banner {
+    margin: 16px 30px 0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    background-color: #e6f4ea;
+    border: 1px solid #b7e1c4;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+.container .import-banner.has-errors {
+    background-color: #fef7e0;
+    border-color: #f6d98a;
+}
+.container .import-errors {
+    width: 100%;
+    margin: 8px 0 0;
+    padding-left: 20px;
+    color: #7a4b00;
+    font-size: 13px;
+    line-height: 1.6;
 }

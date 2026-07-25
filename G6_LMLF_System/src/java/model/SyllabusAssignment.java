@@ -5,6 +5,8 @@
 package model;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -19,13 +21,26 @@ public class SyllabusAssignment {
     private int academicYear;
     private Timestamp assignedAt;
     private String assignmentStatus;
+    private Long templateFileId;
+    private Long submittedVersionId;
+    
+    // New DB fields
+    private Long assignedBy;
+    private Long syllabusId;
+    private Timestamp dueDate;
+    private Timestamp acceptedAt;
+    private Timestamp submittedAt;
+    private Timestamp completedAt;
 
     // Display helpers (for showing lecturer name/email/course code on front end)
     private String courseCode;
+    private String courseName;
     private String designerName;
     private String designerEmail;
     private String reviewerName;
     private String reviewerEmail;
+    private List<Long> reviewerIds = new ArrayList<>();
+    private String assignedByName;
 
     public SyllabusAssignment() {
     }
@@ -104,6 +119,14 @@ public class SyllabusAssignment {
         this.courseCode = courseCode;
     }
 
+    public String getCourseName() {
+        return courseName;
+    }
+
+    public void setCourseName(String courseName) {
+        this.courseName = courseName;
+    }
+
     public String getDesignerName() {
         return designerName;
     }
@@ -136,11 +159,97 @@ public class SyllabusAssignment {
         this.reviewerEmail = reviewerEmail;
     }
 
+    public List<Long> getReviewerIds() {
+        return reviewerIds;
+    }
+
+    public void setReviewerIds(List<Long> reviewerIds) {
+        this.reviewerIds = reviewerIds == null
+                ? new ArrayList<>()
+                : new ArrayList<>(reviewerIds);
+    }
+
+    public boolean hasReviewer(long reviewerId) {
+        return reviewerIds != null && reviewerIds.contains(reviewerId);
+    }
+
     public String getAssignmentStatus() {
         return assignmentStatus;
     }
 
     public void setAssignmentStatus(String assignmentStatus) {
         this.assignmentStatus = assignmentStatus;
+    }
+
+    public Long getTemplateFileId() {
+        return templateFileId;
+    }
+
+    public void setTemplateFileId(Long templateFileId) {
+        this.templateFileId = templateFileId;
+    }
+
+    public Long getSubmittedVersionId() {
+        return submittedVersionId;
+    }
+
+    public void setSubmittedVersionId(Long submittedVersionId) {
+        this.submittedVersionId = submittedVersionId;
+    }
+
+    public Long getAssignedBy() {
+        return assignedBy;
+    }
+
+    public void setAssignedBy(Long assignedBy) {
+        this.assignedBy = assignedBy;
+    }
+
+    public Long getSyllabusId() {
+        return syllabusId;
+    }
+
+    public void setSyllabusId(Long syllabusId) {
+        this.syllabusId = syllabusId;
+    }
+
+    public Timestamp getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(Timestamp dueDate) {
+        this.dueDate = dueDate;
+    }
+
+    public Timestamp getAcceptedAt() {
+        return acceptedAt;
+    }
+
+    public void setAcceptedAt(Timestamp acceptedAt) {
+        this.acceptedAt = acceptedAt;
+    }
+
+    public Timestamp getSubmittedAt() {
+        return submittedAt;
+    }
+
+    public void setSubmittedAt(Timestamp submittedAt) {
+        this.submittedAt = submittedAt;
+    }
+
+    public Timestamp getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(Timestamp completedAt) {
+        this.completedAt = completedAt;
+    }
+
+    public String getAssignedByName() {
+        return assignedByName;
+    }
+
+    public void setAssignedByName(String assignedByName) {
+        this.assignedByName = assignedByName;
     }
 }

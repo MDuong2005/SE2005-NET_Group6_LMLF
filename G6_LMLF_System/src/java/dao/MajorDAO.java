@@ -16,6 +16,7 @@ public List<Major> getAllMajors() {
     String sql = """
             SELECT *
             FROM majors
+            WHERE deleted_at IS NULL
             ORDER BY major_id DESC
             """;
 
@@ -46,6 +47,7 @@ public Major getMajorById(long id) {
             SELECT *
             FROM majors
             WHERE major_id = ?
+              AND deleted_at IS NULL
             """;
 
     try {
@@ -113,10 +115,9 @@ public boolean updateMajor(Major major) {
 
     String sql = """
             UPDATE majors
-            SET code = ?,
-                name = ?,
-                description = ?
+            SET description = ?
             WHERE major_id = ?
+              AND deleted_at IS NULL
             """;
 
     try {
@@ -124,10 +125,8 @@ public boolean updateMajor(Major major) {
         PreparedStatement ps =
                 connection.prepareStatement(sql);
 
-        ps.setString(1, major.getCode());
-        ps.setString(2, major.getName());
-        ps.setString(3, major.getDescription());
-        ps.setLong(4, major.getMajorId());
+        ps.setString(1, major.getDescription());
+        ps.setLong(2, major.getMajorId());
 
         return ps.executeUpdate() > 0;
 
@@ -141,8 +140,10 @@ public boolean updateMajor(Major major) {
 public boolean deleteMajor(long majorId) {
 
     String sql = """
-            DELETE FROM majors
+            UPDATE majors
+            SET deleted_at = GETDATE()
             WHERE major_id = ?
+              AND deleted_at IS NULL
             """;
 
     try {
@@ -168,8 +169,8 @@ public List<Major> searchMajor(String keyword) {
     String sql = """
             SELECT *
             FROM majors
-            WHERE code LIKE ?
-               OR name LIKE ?
+            WHERE deleted_at IS NULL
+              AND (? = '' OR code LIKE ? OR name LIKE ?)
             ORDER BY major_id DESC
             """;
 
@@ -178,11 +179,12 @@ public List<Major> searchMajor(String keyword) {
         PreparedStatement ps =
                 connection.prepareStatement(sql);
 
-        String search =
-                "%" + keyword + "%";
+        String normalizedKeyword = keyword == null ? "" : keyword.trim();
+        String search = "%" + normalizedKeyword + "%";
 
-        ps.setString(1, search);
+        ps.setString(1, normalizedKeyword);
         ps.setString(2, search);
+        ps.setString(3, search);
 
         ResultSet rs =
                 ps.executeQuery();
