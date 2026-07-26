@@ -302,37 +302,5 @@ public class ReviewerVersionDAO extends DBContext {
      * use this method because status aggregation is handled transactionally by
      * SyllabusReviewDAO.submitEvaluation().
      */
-    public boolean updateStatus(
-            long versionId,
-            String status
-    ) {
-        String sql = """
-                UPDATE syllabus_versions
-                SET status = ?,
-                    approved_at = CASE
-                        WHEN ? = 'APPROVED'
-                            THEN SYSDATETIME()
-                        ELSE approved_at
-                    END,
-                    rejected_at = CASE
-                        WHEN ? = 'REJECTED'
-                            THEN SYSDATETIME()
-                        ELSE rejected_at
-                    END
-                WHERE version_id = ?
-                """;
-
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, status);
-            statement.setString(2, status);
-            statement.setString(3, status);
-            statement.setLong(4, versionId);
-
-            return statement.executeUpdate() == 1;
-
-        } catch (SQLException exception) {
-            exception.printStackTrace();
-            return false;
-        }
-    }
+    
 }

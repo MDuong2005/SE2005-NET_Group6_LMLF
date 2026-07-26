@@ -9,17 +9,17 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
 import java.io.IOException;
 import java.io.InputStream;
-import utils.ReviewerExcelImportService;
+import utils.ImportExcle;
 
 @WebServlet(name = "ImportSyllabusExcelServlet", urlPatterns = {"/syllabus/import-excel"})
 @MultipartConfig
 public class ImportSyllabusExcelServlet extends HttpServlet {
 
-    private ReviewerExcelImportService importService;
+    private ImportExcle importService;
 
     @Override
     public void init() {
-        importService = new ReviewerExcelImportService();
+        importService = new ImportExcle();
     }
 
     @Override
