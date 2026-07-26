@@ -151,33 +151,6 @@ public class ReviewAssignmentDAO extends DBContext {
         }
     }
 
-    public boolean cancelRemainingAssignments(
-            long versionId,
-            long completedReviewerId
-    ) {
-        String sql = """
-                UPDATE syllabus_version_review_assignments
-                SET status = 'CANCELLED',
-                    completed_at = NULL
-                WHERE version_id = ?
-                  AND reviewer_id <> ?
-                  AND status IN ('PENDING', 'IN_PROGRESS')
-                """;
-
-        try (PreparedStatement statement
-                     = connection.prepareStatement(sql)) {
-
-            statement.setLong(1, versionId);
-            statement.setLong(2, completedReviewerId);
-            statement.executeUpdate();
-            return true;
-
-        } catch (SQLException exception) {
-            exception.printStackTrace();
-            return false;
-        }
-    }
-
     public int countAssignedReviewers(long versionId) {
         String sql = """
                 SELECT COUNT(*) AS total
