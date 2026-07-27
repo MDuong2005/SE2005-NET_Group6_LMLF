@@ -90,12 +90,7 @@
     <!-- FOOTER -->
     <footer>
         <div class="footer-logo">FPT University</div>
-        <div class="footer-links">
-            <a href="#" class="footer-link">Privacy Policy</a>
-            <a href="#" class="footer-link">Terms of Service</a>
-            <a href="#" class="footer-link">Accessibility</a>
-            <a href="#" class="footer-link">Contact Support</a>
-        </div>
+
         <div class="footer-copyright">
             © 2026 University Administration. All rights reserved.
         </div>

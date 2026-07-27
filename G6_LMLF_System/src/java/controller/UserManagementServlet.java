@@ -335,6 +335,11 @@ public class UserManagementServlet extends HttpServlet {
             errors.addAll(result.errors);
         }
 
+        if (imported > 0) {
+            String importSummary = "{\"fileName\":\"" + (submitted != null ? submitted : "users.xlsx") + "\", \"importedCount\":" + imported + ", \"failedCount\":" + failed + "}";
+            utils.AuditUtil.logAction(request, "IMPORT_USERS_EXCEL", "users", 0, null, importSummary);
+        }
+
         if (!errors.isEmpty()) {
             request.getSession().setAttribute("importErrors", errors);
         }

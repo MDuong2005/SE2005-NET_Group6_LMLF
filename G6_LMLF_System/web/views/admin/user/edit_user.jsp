@@ -41,7 +41,6 @@
                 <label>Account Status</label>
                 <select name="status" required>
                     <option value="ACTIVE" ${editUser.status == 'ACTIVE' ? 'selected' : ''}>ACTIVE</option>
-                    <option value="INACTIVE" ${editUser.status == 'INACTIVE' ? 'selected' : ''}>INACTIVE</option>
                     <option value="BANNED" ${editUser.status == 'BANNED' ? 'selected' : ''}>BANNED</option>
                 </select>
             </div>

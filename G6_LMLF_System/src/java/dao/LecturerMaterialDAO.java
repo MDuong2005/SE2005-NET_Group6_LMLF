@@ -380,4 +380,31 @@ public class LecturerMaterialDAO extends DBContext {
             }
         }
     }
+
+    public LecturerMaterial getMaterialById(long materialId) {
+        if (connection == null || materialId <= 0) {
+            return null;
+        }
+        String sql = "SELECT * FROM lecturer_materials WHERE lecturer_material_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, materialId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    LecturerMaterial m = new LecturerMaterial();
+                    m.setLecturerMaterialId(rs.getLong("lecturer_material_id"));
+                    m.setCourseId(rs.getLong("course_id"));
+                    m.setLecturerId(rs.getLong("lecturer_id"));
+                    m.setTitle(rs.getString("title"));
+                    m.setFileUrl(rs.getString("file_url"));
+                    m.setUploadedAt(rs.getTimestamp("uploaded_at"));
+                    m.setCategory(rs.getString("category"));
+                    m.setMaterialType(rs.getString("material_type"));
+                    return m;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }

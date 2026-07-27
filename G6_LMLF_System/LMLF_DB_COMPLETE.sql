@@ -598,26 +598,6 @@ CREATE TABLE learning_outcomes (
 GO
 
 -- =======================================================
--- 24. REVIEW_COMMENTS
--- Mô tả: Các bình luận và trao đổi qua lại trong quá trình review đề cương.
--- =======================================================
-CREATE TABLE review_comments (
-    comment_id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    review_id BIGINT NOT NULL,
-    parent_comment_id BIGINT NULL,
-    section_ref NVARCHAR(100) NULL,
-    body NVARCHAR(MAX) NULL,
-    created_by BIGINT NOT NULL,
-    created_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    resolved_at DATETIME2 NULL,
-
-    CONSTRAINT fk_review_comments_review FOREIGN KEY (review_id) REFERENCES syllabus_reviews(review_id),
-    CONSTRAINT fk_review_comments_creator FOREIGN KEY (created_by) REFERENCES users(user_id),
-    CONSTRAINT fk_review_comments_parent FOREIGN KEY (parent_comment_id) REFERENCES review_comments(comment_id)
-);
-GO
-
--- =======================================================
 -- 25. CURRICULUM_POS
 -- Mô tả: Chuẩn đầu ra của Chương trình đào tạo (PO - Program Outcomes).
 -- =======================================================
@@ -1548,27 +1528,7 @@ BEGIN
     INSERT INTO user_roles (user_id, role_id) VALUES (@CurrentUserId, @RoleId);
 END
 
--- 4. DESIGNER (Account)
-IF NOT EXISTS (SELECT 1 FROM users WHERE username = 'designer.local')
-BEGIN
-    INSERT INTO users (username, first_name, last_name, email, password_hash, auth_provider, is_external, must_change_password, status)
-    VALUES (N'designer.local', N'Thiết Kế', N'Trần', N'designer.local@lmlf.edu.vn', N'$2a$12$hTZK.nYKr3LDGQGHqjIxLugnX5wTFZuRcknKS79w0XmkCn.VZesZ2', 'LOCAL', 0, 0, 'ACTIVE');
-    SET @CurrentUserId = SCOPE_IDENTITY();
-    SELECT @RoleId = role_id FROM roles WHERE role_name = 'DESIGNER';
-    INSERT INTO user_roles (user_id, role_id) VALUES (@CurrentUserId, @RoleId);
-END
-
--- 5. REVIEWER (Account)
-IF NOT EXISTS (SELECT 1 FROM users WHERE username = 'reviewer.local')
-BEGIN
-    INSERT INTO users (username, first_name, last_name, email, password_hash, auth_provider, is_external, must_change_password, status)
-    VALUES (N'reviewer.local', N'Kiểm Duyệt', N'Phạm', N'reviewer.local@lmlf.edu.vn', N'$2a$12$hTZK.nYKr3LDGQGHqjIxLugnX5wTFZuRcknKS79w0XmkCn.VZesZ2', 'LOCAL', 0, 0, 'ACTIVE');
-    SET @CurrentUserId = SCOPE_IDENTITY();
-    SELECT @RoleId = role_id FROM roles WHERE role_name = 'REVIEWER';
-    INSERT INTO user_roles (user_id, role_id) VALUES (@CurrentUserId, @RoleId);
-END
-
--- 6. STUDENT (Account)
+-- 4. STUDENT (Account)
 IF NOT EXISTS (SELECT 1 FROM users WHERE username = 'sinhvien.local')
 BEGIN
     INSERT INTO users (username, first_name, last_name, email, password_hash, auth_provider, is_external, must_change_password, status)
@@ -1621,176 +1581,6 @@ END;
 GO
 
 -- =======================================================
--- READY-TO-USE TEST ACCOUNTS
--- Password for every account below: Test@123
--- =======================================================
-DECLARE @TestPasswordHash NVARCHAR(255)
-    = N'$2a$10$fqsbT4Bymk2P8gAnZ/50COAguJ4DKzQfo5Z/.jz53iTVN4xlOXpWy';
-
-DECLARE @TestUsers TABLE (
-    username NVARCHAR(50),
-    first_name NVARCHAR(100),
-    last_name NVARCHAR(100),
-    email NVARCHAR(255),
-    role_name NVARCHAR(50)
-);
-
-INSERT INTO @TestUsers (
-    username,
-    first_name,
-    last_name,
-    email,
-    role_name
-)
-VALUES
-(
-    N'academic.test',
-    N'Academic',
-    N'Office',
-    N'academic.test@lmlf.local',
-    N'ACADEMIC_OFFICE'
-),
-(
-    N'designer.test',
-    N'Designer',
-    N'Test',
-    N'designer.test@lmlf.local',
-    N'DESIGNER'
-),
-(
-    N'reviewer1.test',
-    N'Reviewer',
-    N'One',
-    N'reviewer1.test@lmlf.local',
-    N'REVIEWER'
-),
-(
-    N'reviewer2.test',
-    N'Reviewer',
-    N'Two',
-    N'reviewer2.test@lmlf.local',
-    N'REVIEWER'
-);
-
-DECLARE
-    @SeedUsername NVARCHAR(50),
-    @SeedFirstName NVARCHAR(100),
-    @SeedLastName NVARCHAR(100),
-    @SeedEmail NVARCHAR(255),
-    @SeedRoleName NVARCHAR(50),
-    @SeedUserId BIGINT,
-    @SeedRoleId BIGINT;
-
-DECLARE TestUserCursor CURSOR LOCAL FAST_FORWARD FOR
-SELECT
-    username,
-    first_name,
-    last_name,
-    email,
-    role_name
-FROM @TestUsers;
-
-OPEN TestUserCursor;
-
-FETCH NEXT FROM TestUserCursor INTO
-    @SeedUsername,
-    @SeedFirstName,
-    @SeedLastName,
-    @SeedEmail,
-    @SeedRoleName;
-
-WHILE @@FETCH_STATUS = 0
-BEGIN
-    SELECT @SeedUserId = user_id
-    FROM dbo.users
-    WHERE email = @SeedEmail;
-
-    IF @SeedUserId IS NULL
-    BEGIN
-        INSERT INTO dbo.users (
-            username,
-            first_name,
-            last_name,
-            email,
-            password_hash,
-            auth_provider,
-            is_external,
-            must_change_password,
-            status,
-            deleted_at
-        )
-        VALUES (
-            @SeedUsername,
-            @SeedFirstName,
-            @SeedLastName,
-            @SeedEmail,
-            @TestPasswordHash,
-            N'LOCAL',
-            0,
-            0,
-            N'ACTIVE',
-            NULL
-        );
-
-        SET @SeedUserId = SCOPE_IDENTITY();
-    END
-    ELSE
-    BEGIN
-        UPDATE dbo.users
-        SET username = @SeedUsername,
-            first_name = @SeedFirstName,
-            last_name = @SeedLastName,
-            password_hash = @TestPasswordHash,
-            auth_provider = N'LOCAL',
-            is_external = 0,
-            must_change_password = 0,
-            status = N'ACTIVE',
-            deleted_at = NULL
-        WHERE user_id = @SeedUserId;
-    END;
-
-    SELECT @SeedRoleId = role_id
-    FROM dbo.roles
-    WHERE role_name = @SeedRoleName;
-
-    IF @SeedRoleId IS NULL
-    BEGIN
-        THROW 52001, 'Required system role is missing.', 1;
-    END;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM dbo.user_roles
-        WHERE user_id = @SeedUserId
-          AND role_id = @SeedRoleId
-    )
-    BEGIN
-        INSERT INTO dbo.user_roles (
-            user_id,
-            role_id
-        )
-        VALUES (
-            @SeedUserId,
-            @SeedRoleId
-        );
-    END;
-
-    SET @SeedUserId = NULL;
-    SET @SeedRoleId = NULL;
-
-    FETCH NEXT FROM TestUserCursor INTO
-        @SeedUsername,
-        @SeedFirstName,
-        @SeedLastName,
-        @SeedEmail,
-        @SeedRoleName;
-END;
-
-CLOSE TestUserCursor;
-DEALLOCATE TestUserCursor;
-GO
-
--- =======================================================
 -- FINAL DATABASE VERIFICATION
 -- =======================================================
 DECLARE @ExpectedTables TABLE (
@@ -1825,7 +1615,6 @@ VALUES
         (N'syllabus_version_review_assignments'),
         (N'syllabus_reviews'),
         (N'syllabus_review_sections'),
-        (N'review_comments'),
         (N'learning_materials'),
         (N'lecturer_materials'),
         (N'account_requests'),
@@ -1909,12 +1698,12 @@ INNER JOIN dbo.user_roles userRole
 INNER JOIN dbo.roles roleRow
     ON roleRow.role_id = userRole.role_id
 WHERE userAccount.email IN (
-    N'academic.test@lmlf.local',
-    N'designer.test@lmlf.local',
-    N'reviewer1.test@lmlf.local',
-    N'reviewer2.test@lmlf.local'
+    N'admin.local@lmlf.edu.vn',
+    N'daotao.local@lmlf.edu.vn',
+    N'giangvien.local@lmlf.edu.vn',
+    N'sinhvien.local@lmlf.edu.vn'
 )
 ORDER BY roleRow.role_name, userAccount.email;
 
-PRINT 'LMLF OPTIMIZED FULL DATABASE BUILD COMPLETED: 33 TABLES + 2 VIEWS.';
+PRINT 'LMLF OPTIMIZED FULL DATABASE BUILD COMPLETED: 32 TABLES + 2 VIEWS.';
 GO

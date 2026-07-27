@@ -124,7 +124,7 @@
                                         <a href="${mat.fileUrl}" target="_blank" class="action-button" style="padding: 6px 12px; font-size: 0.75rem; text-decoration: none;">Open Link</a>
                                     </c:if>
                                     <c:if test="${mat.materialType == 'FILE'}">
-                                        <a href="${pageContext.request.contextPath}/download?path=${mat.fileUrl}" class="action-button" style="padding: 6px 12px; font-size: 0.75rem; text-decoration: none;">Download</a>
+                                        <a href="${pageContext.request.contextPath}/download?id=${mat.lecturerMaterialId}" class="action-button" style="padding: 6px 12px; font-size: 0.75rem; text-decoration: none;">Download</a>
                                     </c:if>
                                     
                                     <c:if test="${activeTab != 'shared'}">

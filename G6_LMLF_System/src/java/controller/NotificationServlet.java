@@ -170,7 +170,8 @@ public class NotificationServlet extends HttpServlet {
         }
 
         if (!user.hasRole("ACADEMIC_OFFICE")
-                && !user.hasRole("LECTURER")) {
+                && !user.hasRole("LECTURER")
+                && !user.hasRole("ADMIN")) {
 
             response.sendError(
                     HttpServletResponse.SC_FORBIDDEN,

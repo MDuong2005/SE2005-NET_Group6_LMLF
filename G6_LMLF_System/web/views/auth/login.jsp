@@ -117,13 +117,7 @@
                                                     class="form-input password-input" />
                                             </div>
 
-                                            <!-- Checkbox -->
-                                            <div class="checkbox-container">
-                                                <input type="checkbox" id="rememberMe" name="rememberMe" value="true"
-                                                    checked class="checkbox-input" />
-                                                <label for="rememberMe" class="checkbox-label">Remember me for 30
-                                                    days</label>
-                                            </div>
+
 
                                             <!-- Action Button -->
                                             <button type="submit" class="btn-submit">
@@ -171,12 +165,7 @@
             <!-- FOOTER -->
             <footer>
                 <div class="footer-logo">FPT University</div>
-                <div class="footer-links">
-                    <a href="#" class="footer-link">Privacy Policy</a>
-                    <a href="#" class="footer-link">Terms of Service</a>
-                    <a href="#" class="footer-link">Accessibility</a>
-                    <a href="#" class="footer-link">Contact Support</a>
-                </div>
+
                 <div class="footer-copyright">
                     © 2026 University Administration. All rights reserved.
                 </div>
