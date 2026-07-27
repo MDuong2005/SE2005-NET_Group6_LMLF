@@ -13,7 +13,7 @@ import model.SyllabusEditorData;
 import model.User;
 import utils.SessionUtil;
 
-/** Student-owned, read-only published syllabus browser. */
+
 @WebServlet(name = "StudentSyllabusServlet", urlPatterns = {"/student/syllabus"})
 public class StudentSyllabusServlet extends HttpServlet {
 

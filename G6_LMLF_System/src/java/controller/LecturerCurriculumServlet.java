@@ -26,7 +26,7 @@ public class LecturerCurriculumServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
             
-        // Must be logged in as LECTURER
+        
         if (!SessionUtil.isLoggedIn(request)) {
             response.sendRedirect(request.getContextPath() + "/login");
             return;

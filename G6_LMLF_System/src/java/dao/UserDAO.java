@@ -589,17 +589,7 @@ public class UserDAO extends DBContext {
         public final List<String> errors = new ArrayList<>();
     }
 
-    /**
-     * Insert many users in one transaction, each with a single role.
-     * {@code users} and {@code roleIds} are parallel lists (same index = same row).
-     * Rows that were already validated by the caller are inserted; a row that
-     * still fails at the DB level (e.g. a duplicate that slipped through) is
-     * skipped and reported, without aborting the whole batch. A systemic
-     * SQLException rolls the whole run back.
-     *
-     * @param rowLabels optional labels (e.g. "Row 5 (john@x.com)") used in error
-     *                  messages; may be null.
-     */
+
     public BatchResult insertUsersBatch(List<User> users, List<Long> roleIds, List<String> rowLabels) {
         BatchResult result = new BatchResult();
         if (connection == null) {
